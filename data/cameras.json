@@ -1,0 +1,236 @@
+[
+    {
+        "id": "cam-001",
+        "name": "München",
+        "cameraType": "Städtische Webcams",
+        "status": "online",
+        "location": "Marienplatz, Olympiaturm, Hauptbahnhof und Isar",
+        "wikipedia": "München",
+        "streamSource": "feratel · terra-hd",
+        "streams": [
+            {
+                "label": "Marienplatz",
+                "type": "image",
+                "url": "https://wtvpictfc.feratel.com/picture/35/3017.jpeg?design=noxdesign&dcsdesign=WTP_feratel.com",
+                "referer": "https://www.feratel.com/",
+                "refreshSeconds": 30,
+                "pageUrl": "https://www.feratel.com/de/webcams/deutschland/muenchen-marienplatz.html"
+            },
+            {
+                "label": "Olympiaturm",
+                "type": "image",
+                "url": "https://wtvpictfc.feratel.com/picture/35/3016.jpeg?design=noxdesign&dcsdesign=WTP_feratel.com",
+                "referer": "https://www.feratel.com/",
+                "refreshSeconds": 30,
+                "pageUrl": "https://www.feratel.com/en/webcams/germany/bavaria/munich-olympiaturm"
+            },
+            {
+                "label": "Hauptbahnhof",
+                "type": "image",
+                "url": "https://wtvpictfc.feratel.com/picture/35/3015.jpeg?design=noxdesign&dcsdesign=WTP_feratel.com",
+                "referer": "https://www.feratel.com/",
+                "refreshSeconds": 30,
+                "pageUrl": "https://www.feratel.com/en/webcams/germany/bavaria/munich-hauptbahnhof"
+            },
+            {
+                "label": "Isar",
+                "type": "image",
+                "url": "https://terra-hd.com/deutschesmuseum4/img/current/1200x675.jpg",
+                "referer": "https://terra-hd.com/",
+                "refreshSeconds": 30,
+                "pageUrl": "https://terra-hd.com/deutschesmuseum4/player.php"
+            }
+        ],
+        "latitude": 48.1374,
+        "longitude": 11.5755,
+        "altitude": 35
+    },
+    {
+        "id": "cam-002",
+        "name": "Hamburg Hafen",
+        "cameraType": "Hafenkamera",
+        "status": "online",
+        "location": "Empire Riverside Hotel, St. Pauli, Hamburg",
+        "wikipedia": "Hamburger Hafen",
+        "streamSource": "feratel",
+        "stream": {
+            "label": "Elbe & Hafen",
+            "type": "image",
+            "url": "https://wtvpictfc.feratel.com/picture/35/3325.jpeg?design=noxdesign&dcsdesign=WTP_feratel.com",
+            "referer": "https://www.feratel.com/",
+            "refreshSeconds": 30,
+            "pageUrl": "https://www.feratel.com/en/webcams/germany/hamburg/hamburg-empire-riverside-hotel"
+        },
+        "latitude": 53.5459,
+        "longitude": 9.9681,
+        "altitude": 25
+    },
+    {
+        "id": "cam-003",
+        "name": "Times Square",
+        "cameraType": "Öffentliche Webcam (EarthCam)",
+        "status": "online",
+        "location": "Times Square, New York City, USA",
+        "wikipedia": "Times Square",
+        "streamSource": "EarthCam via YouTube",
+        "stream": {
+            "type": "youtube",
+            "videoId": "JQ_jwk_7OVE",
+            "pageUrl": "https://www.earthcam.com/usa/newyork/timessquare/"
+        },
+        "latitude": 40.758,
+        "longitude": -73.9855,
+        "altitude": 40
+    },
+    {
+        "id": "cam-004",
+        "name": "Canal Grande",
+        "cameraType": "Öffentliche Webcam",
+        "status": "online",
+        "location": "Canal Grande, Venedig, Italien",
+        "wikipedia": "Canal Grande",
+        "streamSource": "I Love You Venice via YouTube",
+        "stream": {
+            "type": "youtube",
+            "channelId": "UCMpn1qLudF-zb4M4bqxLIbw",
+            "pageUrl": "https://www.youtube.com/channel/UCMpn1qLudF-zb4M4bqxLIbw/live"
+        },
+        "latitude": 45.4383,
+        "longitude": 12.3326,
+        "altitude": 15
+    },
+    {
+        "id": "cam-005",
+        "name": "Manhattan Skyline",
+        "cameraType": "Panorama-Webcam",
+        "status": "online",
+        "location": "Manhattan, New York City, USA",
+        "wikipedia": "Manhattan",
+        "streamSource": "YouTube Live",
+        "stream": {
+            "type": "youtube",
+            "videoId": "z-jYdOIKcTQ",
+            "pageUrl": "https://www.youtube.com/watch?v=z-jYdOIKcTQ"
+        },
+        "latitude": 40.7484,
+        "longitude": -73.9857,
+        "altitude": 120
+    },
+    {
+        "id": "cam-006",
+        "name": "SkylineWebcams Weltrundgang",
+        "cameraType": "Rotierende Webcam-Auswahl",
+        "status": "online",
+        "location": "Wechselnde Standorte weltweit (Rom, Italien)",
+        "wikipedia": "Rom",
+        "streamSource": "SkylineWebcams via YouTube",
+        "stream": {
+            "type": "youtube",
+            "channelId": "UC2WMV4vCYurHdHPd9pCqYSg",
+            "pageUrl": "https://www.skylinewebcams.com/"
+        },
+        "latitude": 41.9028,
+        "longitude": 12.4964,
+        "altitude": 30
+    },
+    {
+        "id": "cam-007",
+        "name": "GOES-East Erdbeobachtung",
+        "cameraType": "Satellitenkamera (NOAA)",
+        "status": "online",
+        "location": "Geostationär über Amerika, 75,2° West",
+        "wikipedia": "GOES-16",
+        "streamSource": "NOAA STAR – aktualisiert alle ~10 Minuten",
+        "stream": {
+            "label": "Vollscheibe",
+            "type": "image",
+            "url": "https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/GEOCOLOR/latest.jpg",
+            "refreshSeconds": 120,
+            "pageUrl": "https://www.star.nesdis.noaa.gov/goes/index.php"
+        },
+        "latitude": 0.0,
+        "longitude": -75.2,
+        "altitude": 100
+    },
+    {
+        "id": "cam-008",
+        "name": "Shibuya Crossing",
+        "cameraType": "Öffentliche Webcam",
+        "status": "online",
+        "location": "Shibuya, Tokio, Japan",
+        "wikipedia": "Shibuya",
+        "streamSource": "YouTube Live",
+        "stream": {
+            "type": "youtube",
+            "videoId": "3kPH7kTphnE",
+            "pageUrl": "https://worldcams.tv/japan/tokyo/shibuya-crossing"
+        },
+        "latitude": 35.6595,
+        "longitude": 139.7005,
+        "altitude": 45
+    },
+    {
+        "id": "cam-009",
+        "name": "Abbey Road Crossing",
+        "cameraType": "Öffentliche Webcam",
+        "status": "online",
+        "location": "Abbey Road, London, Großbritannien",
+        "wikipedia": "Abbey Road Studios",
+        "streamSource": "Abbey Road Studios",
+        "stream": {
+            "type": "iframe",
+            "url": "https://www.abbeyroad.com/crossing",
+            "pageUrl": "https://www.abbeyroad.com/crossing"
+        },
+        "latitude": 51.532,
+        "longitude": -0.1774,
+        "altitude": 30
+    },
+    {
+        "id": "cam-010",
+        "name": "Zugspitze",
+        "cameraType": "Bergkamera",
+        "status": "online",
+        "location": "Zugspitze, Bayern, Deutschland",
+        "wikipedia": "Zugspitze",
+        "streamSource": "Bayerische Zugspitzbahn",
+        "stream": {
+            "label": "Gipfel",
+            "type": "iframe",
+            "url": "https://zugspitze.de/de/webcams",
+            "pageUrl": "https://zugspitze.de/de/webcams"
+        },
+        "latitude": 47.4211,
+        "longitude": 10.9854,
+        "altitude": 2962
+    },
+    {
+        "id": "cam-011",
+        "name": "Bondi Beach",
+        "cameraType": "Strandkamera",
+        "status": "online",
+        "location": "Bondi Beach, Sydney, Australien",
+        "wikipedia": "Bondi Beach",
+        "streamSource": "Externe Webcam-Seite",
+        "stream": {
+            "type": "link",
+            "pageUrl": "https://www.swellnet.com/surfcams/bondi"
+        },
+        "latitude": -33.8908,
+        "longitude": 151.2743,
+        "altitude": 20
+    },
+    {
+        "id": "cam-012",
+        "name": "Eiffelturm Panorama",
+        "cameraType": "Panoramakamera",
+        "status": "offline",
+        "location": "Trocadéro, Paris, Frankreich",
+        "wikipedia": "Eiffelturm",
+        "streamSource": "",
+        "stream": null,
+        "latitude": 48.8616,
+        "longitude": 2.289,
+        "altitude": 60
+    }
+]

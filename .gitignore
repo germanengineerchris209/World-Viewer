@@ -1,0 +1,17 @@
+# Zugangsdaten - niemals veroeffentlichen
+.env
+
+# Der Cesium-Ion-Token steht in config.js. Er gehoert zwar in den
+# Browser, ist aber trotzdem persoenlich - deshalb bleibt die Datei
+# lokal. Veroeffentlicht wird stattdessen config.example.js.
+#
+#   Nach dem Klonen:  cp config.example.js config.js
+#
+# (Der Server liefert automatisch config.example.js aus, falls
+#  config.js fehlt - das Projekt laeuft also auch ohne diesen Schritt.)
+config.js
+
+node_modules/
+.DS_Store
+*.log
+.gev-cache/

@@ -1,0 +1,15 @@
+{
+  "name": "world-viewer",
+  "version": "2.3.1",
+  "description": "Browserbasierter 3D-Weltatlas mit Live-Daten zu Flugzeugen, Schiffen, Satelliten, Webcams, Erdbeben, Raketenstarts und Braenden - plus Claude-Sprachassistent.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server/server.mjs"
+  },
+  "dependencies": {}
+}

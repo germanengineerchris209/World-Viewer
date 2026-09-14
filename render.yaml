@@ -1,0 +1,42 @@
+# Render-Blueprint - ein Klick zum Hosten
+# ----------------------------------------------------------------
+# Auf render.com  ->  New  ->  Blueprint  ->  dieses Repository waehlen.
+# Render liest diese Datei und legt den Dienst automatisch an.
+#
+# Die Keys werden NICHT hier eingetragen, sondern nach dem ersten
+# Deploy im Render-Dashboard unter "Environment" gesetzt
+# (sync: false heisst genau das: Render fragt danach).
+services:
+  - type: web
+    name: world-viewer
+    runtime: node
+    plan: free
+    buildCommand: "echo 'keine Abhaengigkeiten - nichts zu bauen'"
+    startCommand: "node server/server.mjs"
+    healthCheckPath: /api/health
+    envVars:
+      # Render gibt den Port vor; der Server liest ihn aus PORT.
+      - key: NODE_VERSION
+        value: "20"
+
+      # -- Karten ------------------------------------------------
+      - key: CESIUM_ION_TOKEN
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+
+      # -- Live-Daten --------------------------------------------
+      - key: FIRMS_MAP_KEY
+        sync: false
+      - key: OPENSKY_CLIENT_ID
+        sync: false
+      - key: OPENSKY_CLIENT_SECRET
+        sync: false
+      - key: FR24_API_TOKEN
+        sync: false
+      - key: FLIGHT_PROVIDER
+        value: opensky
+
+      # -- KI-Assistent ------------------------------------------
+      - key: ANTHROPIC_API_KEY
+        sync: false

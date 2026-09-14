@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Viewer</title>
+
+    <!-- CesiumJS via CDN (keine Installation notwendig) -->
+    <script src="https://cdn.jsdelivr.net/npm/cesium@1.119.0/Build/Cesium/Cesium.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.119.0/Build/Cesium/Widgets/widgets.css">
+
+    <link rel="stylesheet" href="./style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+</head>
+<body>
+
+    <!-- ══════════════ Linke Sidebar ══════════════ -->
+    <aside id="sidebar">
+        <header id="sidebar-header">
+            <div id="logo">
+                <span class="logo-icon">🌍</span>
+                <div>
+                    <h1>WORLD VIEWER</h1>
+                    <span class="subtitle">Global Infrastructure Monitor</span>
+                </div>
+            </div>
+            <button id="sidebar-collapse" title="Sidebar ein-/ausklappen">◀</button>
+        </header>
+
+        <!-- Suche -->
+        <section class="sidebar-section">
+            <div id="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" placeholder="Callsign, Stadt, Koordinaten …"
+                       autocomplete="off" spellcheck="false">
+                <button id="search-clear" title="Suche löschen">✕</button>
+            </div>
+            <ul id="search-results" class="hidden"></ul>
+        </section>
+
+        <!-- Kartenansicht -->
+        <section class="sidebar-section">
+            <h2 class="section-title">Kartenansicht</h2>
+            <div id="basemap-list" class="basemap-grid">
+                <!-- wird von ui.js gefüllt -->
+            </div>
+            <div class="button-row" style="margin-top:8px">
+                <button id="btn-buildings" class="tool-btn" title="Fotorealistische 3D-Gebäude">
+                    🏙️ 3D-Gebäude
+                </button>
+            </div>
+        </section>
+
+        <!-- Layer -->
+        <section class="sidebar-section">
+            <h2 class="section-title">Layers</h2>
+            <div id="layer-list">
+                <!-- Layer-Schalter werden von ui.js dynamisch erzeugt -->
+            </div>
+
+            <!-- Status der Live-Flugdaten -->
+            <div id="flight-status" class="flight-status">
+                <div class="flight-status-head">
+                    <span id="flight-badge" class="flight-badge checking">PRÜFE …</span>
+                    <button id="flight-refresh" title="Jetzt neu laden">⟳</button>
+                </div>
+                <div id="flight-source" class="flight-status-line">–</div>
+                <div id="flight-hint" class="flight-status-hint"></div>
+            </div>
+        </section>
+
+        <!-- Ansicht -->
+        <section class="sidebar-section">
+            <h2 class="section-title">Ansicht</h2>
+            <div class="button-row">
+                <button id="btn-home" class="tool-btn" title="Zur Weltansicht zurück">🌐 Welt</button>
+                <button id="btn-mode" class="tool-btn" title="Zwischen 3D und 2D wechseln">🗺️ 2D/3D</button>
+            </div>
+            <div class="button-row">
+                <button id="btn-atmosphere" class="tool-btn" title="Beleuchtung Tag/Nacht">🌗 Licht</button>
+                <button id="btn-labels" class="tool-btn" title="Objektbeschriftungen ein/aus">🏷️ Labels</button>
+            </div>
+        </section>
+
+        <!-- Statistik -->
+        <section class="sidebar-section">
+            <h2 class="section-title">Status</h2>
+            <div id="stats">
+                <div class="stat-row"><span>Objekte gesamt</span><span id="stat-total">0</span></div>
+                <div class="stat-row"><span>Sichtbar</span><span id="stat-visible">0</span></div>
+                <div class="stat-row"><span>Simulation</span><span id="stat-sim">läuft</span></div>
+            </div>
+        </section>
+
+        <footer id="sidebar-footer">
+            <span id="coords-display">–</span>
+        </footer>
+    </aside>
+
+    <!-- ══════════════ Hauptbereich: 3D Globus ══════════════ -->
+    <main id="main">
+        <div id="cesiumContainer"></div>
+
+        <!-- Ladeanzeige -->
+        <div id="loading-overlay">
+            <div class="spinner"></div>
+            <p>Initialisiere World Viewer …</p>
+        </div>
+
+        <!-- ────────── Detailpanel (rechts) ────────── -->
+        <aside id="detail-panel" class="hidden">
+            <header id="detail-header">
+                <span id="detail-type-badge">OBJECT</span>
+                <button id="detail-close" title="Schließen">✕</button>
+            </header>
+
+            <h2 id="detail-title">–</h2>
+
+            <!-- Bild bzw. Livestream des Objekts -->
+            <figure id="detail-media">
+                <div id="detail-media-slot"></div>
+                <figcaption id="detail-media-credit"></figcaption>
+            </figure>
+
+            <!-- Kurzbeschreibung (z.B. aus Wikipedia) -->
+            <p id="detail-description" class="hidden"></p>
+
+            <div id="detail-content"></div>
+
+            <div class="button-row detail-actions">
+                <button id="detail-follow" class="tool-btn">🎯 Verfolgen</button>
+                <button id="detail-fly" class="tool-btn">✈️ Hinfliegen</button>
+            </div>
+            <div class="button-row hidden" id="detail-cockpit-row">
+                <button id="detail-cockpit" class="tool-btn">🛩️ Mitfliegen (Cockpit)</button>
+            </div>
+            <div class="button-row">
+                <button id="detail-ask" class="tool-btn ai-accent">✨ Claude dazu fragen</button>
+            </div>
+        </aside>
+
+        <!-- ────────── Cockpit-Anzeige ────────── -->
+        <div id="cockpit-hud" class="hidden">
+            <div id="cockpit-hud-main">
+                <span id="cockpit-callsign">–</span>
+                <span id="cockpit-type"></span>
+            </div>
+            <div id="cockpit-hud-values">
+                <div><label>Höhe</label><span id="cockpit-alt">–</span></div>
+                <div><label>Speed</label><span id="cockpit-speed">–</span></div>
+                <div><label>Kurs</label><span id="cockpit-heading">–</span></div>
+                <div><label>Steigen</label><span id="cockpit-vs">–</span></div>
+            </div>
+            <button id="cockpit-exit">Zurück zur Karte (Esc)</button>
+        </div>
+
+        <!-- ────────── KI-Assistent: Button unten links ────────── -->
+        <button id="ai-button" title="Claude zu diesem Ort fragen">
+            <span class="ai-button-icon">✨</span>
+            <span class="ai-button-label">Claude fragen</span>
+        </button>
+
+        <!-- ────────── KI-Assistent: Chatfenster ────────── -->
+        <section id="ai-panel" class="hidden">
+            <header id="ai-header">
+                <div class="ai-header-main">
+                    <span class="ai-avatar">✨</span>
+                    <div>
+                        <h3>Claude</h3>
+                        <span id="ai-place">📍 –</span>
+                    </div>
+                </div>
+                <div class="ai-header-actions">
+                    <button id="ai-speak-toggle"
+                            title="Antworten vorlesen">🔈</button>
+                    <button id="ai-handsfree-toggle"
+                            title="Freisprechen: nach der Antwort automatisch weiter zuhören">🔁</button>
+                    <button id="ai-clear" title="Chat leeren">🗑️</button>
+                    <button id="ai-close" title="Schließen">✕</button>
+                </div>
+            </header>
+
+            <!-- Einrichtung, falls noch kein Key/Proxy verfügbar ist -->
+            <div id="ai-setup" class="hidden">
+                <p><strong>KI-Assistent einrichten</strong></p>
+                <p class="ai-setup-mode"></p>
+                <p class="ai-setup-hint">
+                    Trage hier deinen Anthropic-API-Key ein, um Claude direkt aus dem
+                    Browser zu nutzen. Der Key wird nur lokal in diesem Browser
+                    gespeichert. Für den Einsatz im Internet stattdessen den
+                    mitgelieferten Proxy verwenden (siehe README).
+                </p>
+                <div class="ai-key-row">
+                    <input type="password" id="ai-key-input" placeholder="sk-ant-…"
+                           autocomplete="off" spellcheck="false">
+                    <button id="ai-key-save" class="tool-btn">Speichern</button>
+                </div>
+            </div>
+
+            <div id="ai-messages">
+                <div class="ai-msg ai-msg-system">
+                    <div class="ai-bubble">
+                        Hallo! Ich beantworte Fragen zu dem Ort, den du gerade auf dem
+                        Globus betrachtest – und zu den Objekten, die dort unterwegs sind.
+                    </div>
+                </div>
+            </div>
+
+            <div id="ai-suggestions"></div>
+
+            <div id="ai-listening" class="hidden">
+                <span class="ai-listening-dot"></span>
+                <span id="ai-transcript">Ich höre zu …</span>
+            </div>
+
+            <div id="ai-input-row">
+                <button id="ai-mic" title="Frage sprechen (Mikrofon)">🎤</button>
+                <textarea id="ai-input" rows="1"
+                          placeholder="Frage zu diesem Ort stellen …"></textarea>
+                <button id="ai-send" title="Senden (Enter)">➤</button>
+                <button id="ai-stop" class="hidden" title="Abbrechen">■</button>
+            </div>
+        </section>
+
+        <!-- ────────── Timeline (unten) ────────── -->
+        <footer id="timeline-bar">
+            <div id="timeline-controls">
+                <button id="tl-restart" title="Simulation zurücksetzen">⏮</button>
+                <button id="tl-play" title="Abspielen">▶</button>
+                <button id="tl-pause" title="Pause">⏸</button>
+            </div>
+            <div id="timeline-track">
+                <div id="timeline-progress"></div>
+            </div>
+            <div id="timeline-right">
+                <select id="tl-speed"
+                        title="Zeitraffer für die simulierten Layer (Schiffe, Satelliten, Demo-Flugzeuge). Live-Flugzeuge bewegen sich immer in Echtzeit.">
+                    <option value="1">1×</option>
+                    <option value="10" selected>10×</option>
+                    <option value="60">60×</option>
+                    <option value="300">300×</option>
+                </select>
+                <span id="tl-clock">00:00:00</span>
+                <span id="tl-live" class="live-badge">LIVE SIM</span>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Konfiguration (API-Keys) zuerst laden, dann die App als ES6-Modul -->
+    <script src="./config.js"></script>
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>

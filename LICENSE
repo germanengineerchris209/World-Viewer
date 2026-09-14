@@ -1,0 +1,44 @@
+MIT License
+
+Copyright (c) 2026 Chris Behrendt
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------------------------------------------------------------
+
+Teile dieses Projekts - insbesondere die Cockpit-Kamerafuehrung, die
+SGP4-Satellitenbahnen und Teile der Flugdatenverarbeitung - sind portiert aus:
+
+    gods-eye-view
+    Copyright (c) 2026 Bilawal Sidhu
+    https://github.com/bilawalsidhu/gods-eye-view
+    MIT License
+
+Die MIT-Lizenz deckt ausschliesslich Quellcode ab, nicht die ueber die App
+abgerufenen Daten. Fuer die Datenquellen gelten eigene Bedingungen - siehe
+DATENQUELLEN.md. Besonders zu beachten:
+
+  - CesiumJS - Apache 2.0
+  - satellite.js - MIT
+  - Esri World Imagery - nur ueber die vorgesehenen Dienste, mit Quellenangabe
+  - OpenStreetMap / Nominatim - ODbL, Nutzungsregeln beachten
+  - OpenSky Network - ausschliesslich nicht-kommerzielle Nutzung
+  - Transport for London - Pflichthinweis: "Powered by TfL Open Data"
+  - Flightradar24 - kostenpflichtig, Abrufe verbrauchen Guthaben
+  - NASA FIRMS, USGS, CelesTrak, Launch Library 2 - frei, mit Quellenangabe
