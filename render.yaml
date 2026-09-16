@@ -37,6 +37,10 @@ services:
       - key: FLIGHT_PROVIDER
         value: opensky
 
+      # -- Schiffe (AIS via AISStream, kostenlos) -----------------
+      - key: AISSTREAM_API_KEY
+        sync: false
+
       # -- KI-Assistent ------------------------------------------
       - key: ANTHROPIC_API_KEY
         sync: false
