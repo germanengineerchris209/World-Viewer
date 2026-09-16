@@ -286,6 +286,16 @@ export class UI {
         this.updateStats();
     }
 
+    /** Zähler der Layer-Schalter aktuell halten (z.B. bei Live-Daten wie AIS). */
+    refreshLayerCounts() {
+        for (const layer of this.layerManager.getAll()) {
+            const counter = this._el.layerList
+                ?.querySelector(`.layer-toggle input[data-layer="${layer.id}"]`)
+                ?.closest(".layer-toggle")?.querySelector(".layer-count");
+            if (counter) counter.textContent = layer.count;
+        }
+    }
+
     /* ─────────── Kartenauswahl ─────────── */
 
     /** Erzeugt die Basemap-Buttons in der Sidebar. */

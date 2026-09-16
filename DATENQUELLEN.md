@@ -56,6 +56,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 |---|---|---|
 | 🔥 Aktive Brände | NASA FIRMS | ✅ eingetragen |
 | 3D-Gelände, 3D-Gebäude (grau) | Cesium Ion | ✅ eingetragen |
+| 🚢 Schiffe (echte AIS-Daten) | AISStream | <https://aisstream.io> → Account → API Keys |
 | ✈️ Mehr Flug-Kontingent | OpenSky-Konto | <https://opensky-network.org> → OAuth2-Client |
 | 🚀 Mehr Start-Kontingent | Launch Library 2 | <https://ll.thespacedevs.com/docs/> |
 | 📷 Mehr TfL-Kontingent | TfL Open Data | <https://api-portal.tfl.gov.uk> |
@@ -67,7 +68,6 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | Fotorealistische 3D-Gebäude | Google Map Tiles API | nach Nutzung abgerechnet |
 | ✈️ Beste Flugdaten (Route, Registrierung) | Flightradar24 API | Abo, Abrechnung nach Credits |
 | ✨ KI-Assistent | Anthropic Claude API | nach Nutzung abgerechnet |
-| 🚢 Echte Schiffsdaten (noch nicht eingebaut) | AISStream | kostenlos, Schlüssel nötig |
 
 ---
 
@@ -87,6 +87,7 @@ Neue Schlüssel trägst du einfach in `.env` ein und startest den Server neu:
 ```bash
 FIRMS_MAP_KEY=...          # ✅ bereits eingetragen
 ANTHROPIC_API_KEY=sk-ant-… # KI-Assistent
+AISSTREAM_API_KEY=...      # echte Schiffsdaten (AIS)
 FR24_API_TOKEN=...         # Flightradar24
 OPENSKY_CLIENT_ID=...      # mehr Flug-Kontingent
 OPENSKY_CLIENT_SECRET=...
@@ -255,10 +256,6 @@ CORS-freigegeben sind und die Bilder teils hotlink-geschützt.
 
 Aus dem Referenzprojekt sinnvoll ergänzbar, aber noch offen:
 
-- **🚢 Echte Schiffsdaten** über AISStream (`wss://stream.aisstream.io/v0/stream`,
-  kostenloser Schlüssel). Braucht eine dauerhafte WebSocket-Verbindung auf
-  dem Server und einen Wachhund für Verbindungsabbrüche. Bis dahin bleiben
-  die Schiffe simuliert.
 - **Sprachsteuerung des Globus** – im Referenzprojekt 28 Sprachbefehle über
   die OpenAI-Realtime-API. Mit der Claude API ließe sich das über
   Werkzeugaufrufe nachbauen.

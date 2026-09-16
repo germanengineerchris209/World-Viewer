@@ -37,7 +37,7 @@ Viewer automatisch auf OpenStreetMap um, statt eine leere Kugel zu zeigen.
 | Layer | Objekte | Simulation |
 |---|---|---|
 | ✈️ Aircraft | live (bis 400) | echte Flugdaten, Koppelnavigation zwischen den Abrufen |
-| 🚢 Ships | 10 | fahren nach Kurs/Knoten |
+| 🚢 Ships | live (bis 600) sonst 10 Demo | echte AIS-Daten (AISStream), Koppelnavigation zwischen den Abrufen |
 | 🛰️ Satellites | 12 | vereinfachte Kreisbahn inkl. Erdrotation |
 | 📷 Cameras | 12 eigene + bis 450 aus Katalogen | Livebild von der Originalseite |
 | 🏗️ Infrastructure | 16 | statisch, farbcodiert nach Kategorie |
@@ -424,17 +424,23 @@ Registrieren in `app.js`. Für das Detailpanel einen Eintrag in
 **Echte Live-Daten anbinden** – jeweils nur `load()`/`update()` des Layers:
 
 - Flugzeuge: OpenSky Network REST-API, alle ~10 s pollen
-- Schiffe: AIS-Feed (z.B. aisstream.io) per WebSocket
+- Schiffe: erledigt – AIS-Feed über AISStream per Server-WebSocket
+  (`server/aisStream.mjs`), Client pollt `/api/ships`
 - Satelliten: TLE-Daten von celestrak.org + `satellite.js` statt der
   vereinfachten Kreisbahn
 - Historische Daten: `Timeline.mode = "history"` ist vorbereitet
 
 ## 5. Bekannte Grenzen
 
-- **Flugzeuge sind live**, sofern der Server läuft und ein Anbieter
-  konfiguriert ist – sonst Demo-Daten (die Sidebar zeigt es an).
-  **Schiffe sind weiterhin simuliert** (realistische, aber erfundene
-  Startwerte); der System-Prompt der KI weist darauf hin.
+- **Flugzeuge und Schiffe sind live**, sofern der Server läuft und ein
+  Anbieter/Key konfiguriert ist (Flugzeuge: OpenSky/Flightradar24;
+  Schiffe: AISSTREAM_API_KEY) – sonst Demo-Daten mit realistischen, aber
+  erfundenen Startwerten (die Sidebar zeigt den jeweiligen Modus an; der
+  System-Prompt der KI weist auf die Unsicherheit hin).
+- Bei AIS-Schiffen liefert AISStream keine Flagge/Nationalität – das Feld
+  „Flagge" im Detailpanel bleibt bei Live-Daten leer (nur bei den
+  Demo-Schiffen aus `data/ships.json` gefüllt). Ließe sich über den
+  MMSI-Ländercode (erste drei Ziffern) nachrüsten.
 - Bei Flightradar24 kostet jeder Abruf Guthaben. Die Voreinstellungen sind
   bewusst sparsam; wer das Intervall verkürzt oder `maxSpanDegrees` erhöht,
   verbraucht entsprechend mehr.

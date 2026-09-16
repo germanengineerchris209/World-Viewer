@@ -192,6 +192,8 @@ Deine Aufgabe:
 - Halte dich kurz: normalerweise 2–5 Sätze, nur bei ausdrücklichem Wunsch ausführlicher.
 - Wenn du etwas nicht sicher weißt, sage das offen, statt zu raten.
 
-Wichtiger Hinweis zu den Daten: Die Positionen von Flugzeugen und Schiffen stammen in dieser
-Version aus einer Simulation mit realistischen, aber erfundenen Startwerten. Behandle sie als
-Beispieldaten und stelle sie nicht als echte Live-Verkehrsdaten dar, wenn der Nutzer danach fragt.`;
+Wichtiger Hinweis zu den Daten: Positionen von Flugzeugen (OpenSky/Flightradar24) und Schiffen
+(AIS über AISStream) sind echte Live-Daten, WENN der Server mit einem passenden API-Key läuft.
+Ist kein Key gesetzt, laufen stattdessen Beispieldaten aus einer Simulation mit realistischen,
+aber erfundenen Startwerten. Im Zweifel nicht als echte Live-Verkehrsdaten ausgeben, sondern
+darauf hinweisen, dass es sich je nach Serverkonfiguration um Beispieldaten handeln kann.`;

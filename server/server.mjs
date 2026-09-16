@@ -12,6 +12,9 @@
  *      /api/launches          Raketenstarts der letzten 30 Tage
  *      /api/fires             Aktive Brände (NASA FIRMS, Key nötig)
  *      /api/cctv              Katalog öffentlicher Verkehrskameras
+ *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
+ *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
+ *      (server/aisStream.mjs) empfangen und zwischengespeichert
  *
  * Warum überhaupt ein Server? Weil weder Flightradar24 noch OpenSky noch
  * die Claude API CORS-Header senden – ein Browser darf sie also nicht
@@ -50,6 +53,7 @@ import { handleCameraProxy, buildAllowlist, getAllowlist } from "./cameraProxy.m
 import {
     handleCelestrak, handleLaunches, handleFires, handleCctvCatalog, TLE_GROUPS
 } from "./dataProxies.mjs";
+import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -73,6 +77,19 @@ const MIN_FETCH_INTERVAL_MS = Number(process.env.FLIGHT_CACHE_MS
     ?? (FLIGHT_PROVIDER === "fr24" ? 30_000 : 12_000));
 
 const MAX_AIRCRAFT = Number(process.env.FLIGHT_MAX ?? 400);
+
+// Schiffsdaten (AIS) über AISStream.io – kostenloser Key, siehe .env.example
+const AISSTREAM_API_KEY = process.env.AISSTREAM_API_KEY ?? "";
+const AISSTREAM_BBOX = parseAisBbox(process.env.AISSTREAM_BBOX);
+const MAX_SHIPS = Number(process.env.AISSTREAM_MAX_SHIPS ?? 1000);
+
+function parseAisBbox(raw) {
+    if (!raw) return null;
+    const parts = raw.split(",").map(Number);
+    if (parts.length !== 4 || parts.some(Number.isNaN)) return null;
+    const [south, west, north, east] = parts;
+    return { north, south, west, east };
+}
 
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY ?? "";
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
@@ -229,6 +246,34 @@ function handleFlightStatus(res) {
         minIntervalMs: MIN_FETCH_INTERVAL_MS,
         maxAircraft: MAX_AIRCRAFT
     });
+}
+
+/* ═══════════ Schiffsdaten (AIS) ═══════════ */
+
+function handleShips(req, res, query) {
+    // Bounding-Box ist optional – ohne sie kommen alle bekannten Schiffe
+    // (bis MAX_SHIPS) zurück, mit ihr nur die im Kartenausschnitt.
+    const hasBoundsParams = ["north", "south", "west", "east"].some(k => query.has(k));
+    const bounds = hasBoundsParams ? parseBounds(query) : null;
+    if (hasBoundsParams && !bounds) {
+        sendJson(res, 400, {
+            error: "Ungültige Bounding-Box. Erwartet: north, south, west, east."
+        });
+        return;
+    }
+
+    const limit = Math.min(Number(query.get("limit")) || MAX_SHIPS, MAX_SHIPS);
+    const ships = getShips(bounds, limit);
+
+    sendJson(res, 200, {
+        fetchedAt: Date.now(),
+        count: ships.length,
+        ships
+    });
+}
+
+function handleShipsStatus(res) {
+    sendJson(res, 200, getAisStatus());
 }
 
 /* ═══════════ Claude-Chat ═══════════ */
@@ -400,6 +445,13 @@ export function createServer() {
             case "/api/flights/status":
                 return handleFlightStatus(res);
 
+            case "/api/ships":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleShips(req, res, searchParams);
+
+            case "/api/ships/status":
+                return handleShipsStatus(res);
+
             case "/api/camera":
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleCameraProxy(res, searchParams, "/api/camera");
@@ -426,6 +478,7 @@ export function createServer() {
                     launches: true,
                     cctv: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
+                    ships: !!AISSTREAM_API_KEY,
                     tleGroups: TLE_GROUPS
                 });
 
@@ -438,7 +491,8 @@ export function createServer() {
                     ok: true,
                     keyConfigured: !!ANTHROPIC_KEY,
                     flightProvider: FLIGHT_PROVIDER,
-                    cameraProxy: true
+                    cameraProxy: true,
+                    aisConfigured: !!AISSTREAM_API_KEY
                 });
 
             default:
@@ -453,6 +507,7 @@ const isMain = process.argv[1] &&
 
 if (isMain) {
     const cameraHosts = initCameraAllowlist();
+    startAisStream({ apiKey: AISSTREAM_API_KEY, bbox: AISSTREAM_BBOX });
 
     createServer().listen(PORT, () => {
         console.log(`\n  🌍 World Viewer läuft auf http://localhost:${PORT}\n`);
@@ -482,6 +537,11 @@ if (isMain) {
             : "  ℹ️  Brände (NASA FIRMS): kein FIRMS_MAP_KEY – Layer bleibt leer\n"
             + "     Kostenlos: https://firms.modaps.eosdis.nasa.gov/api/map_key/");
         console.log("  📹 Verkehrskameras (TfL, Caltrans, Austin): bereit");
+
+        console.log(AISSTREAM_API_KEY
+            ? "  🚢 Schiffsdaten (AISStream): Key erkannt, verbinde per WebSocket …"
+            : "  ℹ️  Schiffsdaten (AISStream): kein AISSTREAM_API_KEY – Layer bleibt bei Demo-Daten\n"
+            + "     Kostenlos: https://aisstream.io");
 
         console.log(ANTHROPIC_KEY
             ? "  ✨ KI-Assistent: bereit"

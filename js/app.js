@@ -35,10 +35,11 @@ async function main() {
     /* 2 ── Layer */
     const layerManager = new LayerManager();
     const aircraftLayer = new AircraftLayer(worldViewer);
+    const shipLayer = new ShipLayer(worldViewer);
     const satelliteLayer = new SatelliteLayer(worldViewer);
 
     layerManager.register(aircraftLayer);
-    layerManager.register(new ShipLayer(worldViewer));
+    layerManager.register(shipLayer);
     layerManager.register(satelliteLayer);
     layerManager.register(new CameraLayer(worldViewer));
     layerManager.register(new InfrastructureLayer(worldViewer));
@@ -108,6 +109,7 @@ async function main() {
        Der Layer selbst drosselt die Anfragen, zusätzlich cacht der Server. */
     worldViewer.camera.moveEnd.addEventListener(() => {
         aircraftLayer.refreshLive();
+        shipLayer.refreshLive();
     });
 
     /* 4 ── Zentrale Update-Schleife */
@@ -145,6 +147,7 @@ async function main() {
         // "vor N Sekunden aktualisiert" mitlaufen lassen
         if (now - lastStatusUpdate > 2000) {
             ui.updateFlightStatus(aircraftLayer.getStatus());
+            ui.refreshLayerCounts();
             lastStatusUpdate = now;
         }
 

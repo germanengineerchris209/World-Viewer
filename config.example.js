@@ -130,6 +130,42 @@ window.WORLD_VIEWER_CONFIG = {
     },
 
 
+    /* ═══════════ Live-Schiffsdaten (AIS) ═══════════ */
+
+    ships: {
+        // "auto" = Live-AIS-Daten nutzen, wenn der Server einen
+        //          AISSTREAM_API_KEY hat, sonst automatisch die Demo-Daten
+        // "demo" = immer die Beispieldaten aus data/ships.json
+        mode: "auto",
+
+        // Endpunkt des eigenen Servers (server/server.mjs). Der hält die
+        // eigentliche WebSocket-Verbindung zu AISStream.io.
+        apiUrl: "/api/ships",
+
+        // Wie oft neue Positionen geholt werden (Sekunden)
+        refreshSeconds: 15,
+
+        // Mindestabstand zwischen zwei Anfragen beim Kameraschwenken
+        minRequestGapSeconds: 3,
+
+        // Größter abgefragter Kartenausschnitt in Grad
+        maxSpanDegrees: 60,
+
+        // Ab dieser Kamerahöhe werden gar keine Live-Daten mehr geholt
+        maxHeightKm: 30000,
+
+        // Obergrenze für gleichzeitig dargestellte Schiffe
+        maxShips: 600,
+
+        // Schiff entfernen, wenn es so lange nicht mehr gemeldet wurde
+        // (AIS-Meldungen kommen unregelmäßig – deshalb großzügig)
+        removeAfterSeconds: 1200,
+
+        // Quelle für den Demo-Betrieb
+        demoUrl: "./data/ships.json"
+    },
+
+
     /* ═══════════ Satelliten, Erdbeben, Starts, Brände ═══════════ */
 
     satellites: {
