@@ -85,7 +85,7 @@ export class Timeline {
         this._el.play.classList.toggle("active", this.playing);
         this._el.pause.classList.toggle("active", !this.playing);
         this._el.live.classList.toggle("paused", !this.playing);
-        this._el.live.textContent = this.playing ? "LIVE SIM" : "PAUSED";
+        this._el.live.textContent = this.playing ? "LIVE SIM" : "PAUSIERT";
         this._el.statSim.textContent = this.playing ? "läuft" : "pausiert";
     }
 }
