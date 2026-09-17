@@ -232,5 +232,90 @@
         "latitude": 48.8616,
         "longitude": 2.289,
         "altitude": 60
+    },
+    {
+        "id": "cam-013",
+        "name": "Niagarafälle",
+        "cameraType": "Öffentliche Webcam",
+        "status": "online",
+        "location": "Niagara Falls, Ontario, Kanada",
+        "wikipedia": "Niagarafälle",
+        "streamSource": "EarthCam via YouTube",
+        "stream": {
+            "type": "youtube",
+            "videoId": "gIv9J38Dax8",
+            "pageUrl": "https://www.earthcam.com/world/canada/niagarafalls/thefalls/"
+        },
+        "latitude": 43.0828,
+        "longitude": -79.0742,
+        "altitude": 60
+    },
+    {
+        "id": "cam-014",
+        "name": "Piazza San Marco",
+        "cameraType": "Öffentliche Webcam",
+        "status": "online",
+        "location": "Piazza San Marco, Venedig, Italien",
+        "wikipedia": "Markusplatz",
+        "streamSource": "SkylineWebcams via YouTube",
+        "stream": {
+            "type": "youtube",
+            "videoId": "_w_2nORo1L8",
+            "pageUrl": "https://www.skylinewebcams.com/en/webcam/italia/veneto/venezia/piazza-san-marco.html"
+        },
+        "latitude": 45.4342,
+        "longitude": 12.3388,
+        "altitude": 10
+    },
+    {
+        "id": "cam-015",
+        "name": "Dubai Marina",
+        "cameraType": "Öffentliche Webcam",
+        "status": "online",
+        "location": "Dubai Marina, Dubai, Vereinigte Arabische Emirate",
+        "wikipedia": "Dubai Marina",
+        "streamSource": "SkylineWebcams via YouTube",
+        "stream": {
+            "type": "youtube",
+            "videoId": "ka9MsehA8I4",
+            "pageUrl": "https://www.skylinewebcams.com/en/webcam/united-arab-emirates/dubai/dubai/dubai-marina.html"
+        },
+        "latitude": 25.0805,
+        "longitude": 55.1403,
+        "altitude": 25
+    },
+    {
+        "id": "cam-016",
+        "name": "Sydney Harbour Bridge & Opera House",
+        "cameraType": "Panorama-Webcam",
+        "status": "online",
+        "location": "Sydney Harbour, Sydney, Australien",
+        "wikipedia": "Sydney Opera House",
+        "streamSource": "Sydney Live Camera via YouTube",
+        "stream": {
+            "type": "youtube",
+            "videoId": "7pcL-0Wo77U",
+            "pageUrl": "https://www.youtube.com/@sydneylivecamera"
+        },
+        "latitude": -33.8523,
+        "longitude": 151.2108,
+        "altitude": 20
+    },
+    {
+        "id": "cam-017",
+        "name": "Fuji-san",
+        "cameraType": "Bergkamera",
+        "status": "online",
+        "location": "Fuji-Stadt, Präfektur Shizuoka, Japan",
+        "wikipedia": "Fuji (Berg)",
+        "streamSource": "YouTube Live",
+        "stream": {
+            "type": "youtube",
+            "videoId": "i3SL2jbBK2k",
+            "pageUrl": "https://www.youtube.com/watch?v=i3SL2jbBK2k"
+        },
+        "latitude": 35.3606,
+        "longitude": 138.7274,
+        "altitude": 3776
     }
 ]

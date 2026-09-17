@@ -217,7 +217,8 @@ fragt die drei Satelliten nacheinander ab, nicht parallel.
 Zwei Arten:
 
 **Handverlesene Standorte** in `data/cameras.json` – München (vier Ansichten),
-Hamburg, Times Square, Venedig, Shibuya, GOES-Satellitenbild.
+Hamburg, Times Square, Venedig, Shibuya, GOES-Satellitenbild, Niagarafälle,
+Piazza San Marco, Dubai Marina, Sydney Harbour Bridge & Opera House, Fuji-san.
 
 **Öffentliche Verkehrskamera-Kataloge**, automatisch geladen:
 
