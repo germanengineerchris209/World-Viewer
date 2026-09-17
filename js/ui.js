@@ -38,13 +38,13 @@ const F = {
  */
 const DETAIL_SCHEMAS = {
     aircraft: {
-        badge: "Aircraft Details",
+        badge: "Flugzeug-Details",
         title: (o) => o.metadata.callsign ?? o.name,
         fields: (o) => {
             const m = o.metadata;
             const rows = [
-                ["Callsign", F.text(m.callsign)],
-                ["Aircraft", F.text(m.aircraftType ?? m.type)]
+                ["Rufzeichen", F.text(m.callsign)],
+                ["Flugzeugtyp", F.text(m.aircraftType ?? m.type)]
             ];
             // Diese Angaben liefert nur Flightradar24, nicht OpenSky
             if (m.registration) rows.push(["Registrierung", F.text(m.registration)]);
@@ -56,35 +56,35 @@ const DETAIL_SCHEMAS = {
             if (m.route) rows.push(["Route", F.text(m.route), true]);
 
             rows.push(
-                ["Altitude", F.meters(o.position.altitude)],
-                ["Speed", F.kmh(o.speed)],
-                ["Heading", F.deg(o.heading)],
+                ["Höhe", F.meters(o.position.altitude)],
+                ["Geschwindigkeit", F.kmh(o.speed)],
+                ["Kurs", F.deg(o.heading)],
                 ["Steig-/Sinkrate", F.vertical(m.verticalRate)]
             );
-            if (m.squawk) rows.push(["Squawk", F.text(m.squawk)]);
+            if (m.squawk) rows.push(["Transpondercode", F.text(m.squawk)]);
             rows.push(
-                ["Latitude", F.coord(o.position.latitude)],
-                ["Longitude", F.coord(o.position.longitude)]
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
             );
             return rows;
         }
     },
     ship: {
-        badge: "Ship Details",
+        badge: "Schiff-Details",
         title: (o) => o.name,
         fields: (o) => [
             ["MMSI", F.text(o.metadata.mmsi)],
             ["Typ", F.text(o.metadata.shipType)],
             ["Flagge", F.text(o.metadata.flag)],
             ["Ziel", F.text(o.metadata.destination), true],
-            ["Speed", F.knots(o.speed)],
+            ["Geschwindigkeit", F.knots(o.speed)],
             ["Kurs", F.deg(o.heading)],
-            ["Latitude", F.coord(o.position.latitude)],
-            ["Longitude", F.coord(o.position.longitude)]
+            ["Breite", F.coord(o.position.latitude)],
+            ["Länge", F.coord(o.position.longitude)]
         ]
     },
     satellite: {
-        badge: "Satellite Details",
+        badge: "Satelliten-Details",
         title: (o) => o.name,
         fields: (o) => {
             const m = o.metadata;
@@ -101,33 +101,33 @@ const DETAIL_SCHEMAS = {
             }
             rows.push(
                 ["Bahndaten", m.live ? "CelesTrak (TLE, SGP4)" : "vereinfacht", true],
-                ["Latitude", F.coord(o.position.latitude)],
-                ["Longitude", F.coord(o.position.longitude)]
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
             );
             return rows;
         }
     },
     camera: {
-        badge: "Camera Details",
+        badge: "Kamera-Details",
         title: (o) => o.name,
         fields: (o) => [
             ["Typ", F.text(o.metadata.cameraType)],
             ["Status", F.text(o.metadata.status)],
             ["Ort", F.text(o.metadata.location), true],
-            ["Latitude", F.coord(o.position.latitude)],
-            ["Longitude", F.coord(o.position.longitude)]
+            ["Breite", F.coord(o.position.latitude)],
+            ["Länge", F.coord(o.position.longitude)]
         ]
     },
     infrastructure: {
-        badge: "Infrastructure",
+        badge: "Infrastruktur",
         title: (o) => o.name,
         fields: (o) => [
             ["Kategorie", InfrastructureLayer.categoryLabel(o.metadata.category)],
             ["Code", F.text(o.metadata.code)],
             ["Land", F.text(o.metadata.country)],
             ["Info", F.text(o.metadata.info), true],
-            ["Latitude", F.coord(o.position.latitude)],
-            ["Longitude", F.coord(o.position.longitude)]
+            ["Breite", F.coord(o.position.latitude)],
+            ["Länge", F.coord(o.position.longitude)]
         ]
     },
     earthquake: {
@@ -145,8 +145,8 @@ const DETAIL_SCHEMAS = {
             if (m.felt) rows.push(["Spürbar gemeldet", `${m.felt}×`]);
             if (m.tsunami) rows.push(["Tsunami-Hinweis", "ja"]);
             rows.push(
-                ["Latitude", F.coord(o.position.latitude)],
-                ["Longitude", F.coord(o.position.longitude)]
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
             );
             return rows;
         },
@@ -173,8 +173,8 @@ const DETAIL_SCHEMAS = {
             if (m.padName) rows.push(["Startrampe", F.text(m.padName), true]);
             if (m.padLocation) rows.push(["Ort", F.text(m.padLocation), true]);
             rows.push(
-                ["Latitude", F.coord(o.position.latitude)],
-                ["Longitude", F.coord(o.position.longitude)]
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
             );
             return rows;
         }
@@ -193,20 +193,20 @@ const DETAIL_SCHEMAS = {
                 ["Tag/Nacht", m.dayNight === "N" ? "Nacht" : m.dayNight === "D" ? "Tag" : "–"],
                 ["Erfasst", m.acquiredAt
                     ? new Date(m.acquiredAt).toLocaleString("de-DE") : "–", true],
-                ["Latitude", F.coord(o.position.latitude)],
-                ["Longitude", F.coord(o.position.longitude)]
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
             ];
         }
     },
     // Fallback für unbekannte Typen
     default: {
-        badge: "Object Details",
+        badge: "Objekt-Details",
         title: (o) => o.name,
         fields: (o) => [
             ["Typ", F.text(o.type)],
-            ["Latitude", F.coord(o.position.latitude)],
-            ["Longitude", F.coord(o.position.longitude)],
-            ["Altitude", F.meters(o.position.altitude)]
+            ["Breite", F.coord(o.position.latitude)],
+            ["Länge", F.coord(o.position.longitude)],
+            ["Höhe", F.meters(o.position.altitude)]
         ]
     }
 };
