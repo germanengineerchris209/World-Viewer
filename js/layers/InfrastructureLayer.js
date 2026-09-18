@@ -18,6 +18,8 @@ const CATEGORY_STYLE = {
     powerplant: { color: "#f87171", label: "Kraftwerk" },
     landmark:   { color: "#34d399", label: "Sehenswürdigkeit" },
     industry:   { color: "#a3a3a3", label: "Industrieanlage" },
+    datacenter: { color: "#818cf8", label: "Rechenzentrum" },
+    dam:        { color: "#22d3ee", label: "Staudamm" },
     default:    { color: "#e5e9f0", label: "Infrastruktur" }
 };
 

@@ -186,4 +186,26 @@ export class WorldViewer {
             height: carto.height
         };
     }
+
+    /** Aktuelle Kamera-Ausrichtung in Grad (für Share-Links). */
+    getCameraOrientation() {
+        return {
+            heading: Cesium.Math.toDegrees(this.camera.heading),
+            pitch: Cesium.Math.toDegrees(this.camera.pitch),
+            roll: Cesium.Math.toDegrees(this.camera.roll)
+        };
+    }
+
+    /** Kamera direkt (ohne Flug-Animation) auf eine gespeicherte Sicht setzen. */
+    setCameraView({ longitude, latitude, height, heading = 0, pitch = -90, roll = 0 }) {
+        this.stopFollowing();
+        this.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(longitude, latitude, height),
+            orientation: {
+                heading: Cesium.Math.toRadians(heading),
+                pitch: Cesium.Math.toRadians(pitch),
+                roll: Cesium.Math.toRadians(roll)
+            }
+        });
+    }
 }
