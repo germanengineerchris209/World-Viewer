@@ -222,6 +222,7 @@ export class UI {
         this.layerManager = layerManager;
         this.selectedObject = null;
         this.labelsVisible = true;
+        this.trailsVisible = false;
         this.assistant = null;         // wird von app.js gesetzt
 
         // Verhindert, dass ein spät eintreffendes Bild ins falsche Panel läuft
@@ -657,6 +658,12 @@ export class UI {
             this.labelsVisible = !this.labelsVisible;
             this.layerManager.setLabelsVisible(this.labelsVisible);
             e.target.classList.toggle("active", !this.labelsVisible);
+        });
+
+        document.getElementById("btn-trails").addEventListener("click", (e) => {
+            this.trailsVisible = !this.trailsVisible;
+            this.layerManager.setTrailsVisible(this.trailsVisible);
+            e.target.classList.toggle("active", this.trailsVisible);
         });
 
         document.getElementById("btn-buildings").addEventListener("click", async (e) => {

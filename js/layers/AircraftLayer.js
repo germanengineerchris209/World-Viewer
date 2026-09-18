@@ -42,6 +42,7 @@ export class AircraftLayer extends BaseLayer {
 
         this._iconUrl = svgDataUri(AIRCRAFT_SVG);
         this.source = new FlightDataSource();
+        this.enableTrails(Cesium.Color.fromCssColorString("#ffd166"));
 
         /** "live" | "demo" | "unknown" */
         this.mode = "unknown";
@@ -333,6 +334,7 @@ export class AircraftLayer extends BaseLayer {
         const entity = this.entityById.get(id);
         if (entity) this.dataSource.entities.remove(entity);
         this.entityById.delete(id);
+        this._removeTrailEntity(id);
         const i = this.objects.findIndex(o => o.id === id);
         if (i >= 0) this.objects.splice(i, 1);
     }
@@ -408,6 +410,8 @@ export class AircraftLayer extends BaseLayer {
             if (vs) {
                 obj.position.altitude = Math.max(0, obj.position.altitude + vs * delta);
             }
+
+            this._recordTrailPoint(obj);
         }
     }
 

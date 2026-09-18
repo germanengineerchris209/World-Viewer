@@ -37,6 +37,7 @@ export class ShipLayer extends BaseLayer {
 
         this._iconUrl = svgDataUri(SHIP_SVG);
         this.source = new ShipDataSource();
+        this.enableTrails(Cesium.Color.fromCssColorString("#4ade80"));
 
         /** "live" | "demo" | "unknown" */
         this.mode = "unknown";
@@ -280,6 +281,7 @@ export class ShipLayer extends BaseLayer {
         const entity = this.entityById.get(id);
         if (entity) this.dataSource.entities.remove(entity);
         this.entityById.delete(id);
+        this._removeTrailEntity(id);
         const i = this.objects.findIndex(o => o.id === id);
         if (i >= 0) this.objects.splice(i, 1);
     }
@@ -337,6 +339,8 @@ export class ShipLayer extends BaseLayer {
             );
             obj.position.latitude = next.latitude;
             obj.position.longitude = next.longitude;
+
+            this._recordTrailPoint(obj);
         }
     }
 
