@@ -17,6 +17,8 @@ import { Timeline } from "./timeline.js";
 import { Assistant } from "./ai/assistant.js";
 
 import { CockpitView } from "./cockpit.js";
+import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
+import { SensorStyles } from "./sensorStyles.js";
 
 import { AircraftLayer } from "./layers/AircraftLayer.js";
 import { ShipLayer } from "./layers/ShipLayer.js";
@@ -56,8 +58,10 @@ async function main() {
     aircraftLayer.onStatusChange((status) => ui.updateFlightStatus(status));
 
     await layerManager.loadAll();
+    await applyShareLinkFromUrl(worldViewer, layerManager);
     ui.buildLayerToggles();
     ui.updateFlightStatus(aircraftLayer.getStatus());
+    ui.buildShareUrl = () => buildShareUrl(worldViewer, layerManager);
 
     new Search(worldViewer, layerManager, ui);
 
@@ -69,6 +73,16 @@ async function main() {
     // KI-Assistent (Button unten links)
     const assistant = new Assistant(worldViewer, layerManager, ui);
     ui.assistant = assistant;
+
+    /* Sensor-Stile (CRT/NVG/FLIR/Noir/Schnee) über CSS-Filter */
+    const sensorStyles = new SensorStyles(worldViewer);
+    ui.sensorStyles = sensorStyles;
+    sensorStyles.onChange = (key, label) => {
+        const btn = document.getElementById("btn-sensor-style");
+        if (!btn) return;
+        btn.textContent = `🎛️ ${label}`;
+        btn.classList.toggle("active", key !== "normal");
+    };
 
     const timeline = new Timeline();
     timeline.onReset = async () => {
@@ -97,11 +111,16 @@ async function main() {
         }
     };
 
-    /* Escape verlässt die Cockpit-Ansicht */
+    /* Escape verlässt die Cockpit-Ansicht; Tasten 1–6 wechseln den Sensor-Stil */
     document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && cockpit.active) {
             e.preventDefault();
             cockpit.exit();
+            return;
+        }
+        const typing = ["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName);
+        if (!typing && e.key >= "1" && e.key <= "6") {
+            sensorStyles.applyByDigit(Number(e.key));
         }
     });
 

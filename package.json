@@ -9,7 +9,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "start": "node server/server.mjs"
+    "start": "node server/server.mjs",
+    "doctor": "node server/doctor.mjs"
   },
   "dependencies": {}
 }

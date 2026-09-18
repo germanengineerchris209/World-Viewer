@@ -122,7 +122,7 @@
     {
         "id": "infra-011",
         "name": "Itaipu-Staudamm",
-        "category": "powerplant",
+        "category": "dam",
         "code": "",
         "country": "Brasilien / Paraguay",
         "info": "Eines der größten Wasserkraftwerke der Welt",
@@ -190,5 +190,101 @@
         "longitude": 13.8074,
         "altitude": 0,
         "wikipedia": "Tesla Gigafactory Berlin-Brandenburg"
+    },
+    {
+        "id": "infra-017",
+        "name": "Drei-Schluchten-Damm",
+        "category": "dam",
+        "code": "",
+        "country": "China",
+        "info": "Größtes Wasserkraftwerk der Welt (Leistung)",
+        "latitude": 30.8239,
+        "longitude": 111.0035,
+        "altitude": 0,
+        "wikipedia": "Drei-Schluchten-Damm"
+    },
+    {
+        "id": "infra-018",
+        "name": "Hoover Dam",
+        "category": "dam",
+        "code": "",
+        "country": "USA",
+        "info": "Staumauer am Colorado River, Grenze Nevada/Arizona",
+        "latitude": 36.0161,
+        "longitude": -114.7377,
+        "altitude": 0,
+        "wikipedia": "Hoover Dam"
+    },
+    {
+        "id": "infra-019",
+        "name": "Assuan-Staudamm",
+        "category": "dam",
+        "code": "",
+        "country": "Ägypten",
+        "info": "Reguliert den Nil, staut den Nassersee",
+        "latitude": 23.9709,
+        "longitude": 32.8776,
+        "altitude": 0,
+        "wikipedia": "Assuan-Staudamm"
+    },
+    {
+        "id": "infra-020",
+        "name": "Google Data Center The Dalles",
+        "category": "datacenter",
+        "code": "",
+        "country": "USA",
+        "info": "Eines der ersten großen Google-Rechenzentren, am Columbia River",
+        "latitude": 45.6104,
+        "longitude": -121.1946,
+        "altitude": 0,
+        "wikipedia": "The Dalles, Oregon"
+    },
+    {
+        "id": "infra-021",
+        "name": "Meta Data Center Prineville",
+        "category": "datacenter",
+        "code": "",
+        "country": "USA",
+        "info": "Erstes von Facebook/Meta selbst gebautes Rechenzentrum",
+        "latitude": 44.2999,
+        "longitude": -120.8172,
+        "altitude": 0,
+        "wikipedia": "Prineville, Oregon"
+    },
+    {
+        "id": "infra-022",
+        "name": "Microsoft Data Center Boydton",
+        "category": "datacenter",
+        "code": "",
+        "country": "USA",
+        "info": "Großer Azure-Rechenzentrums-Campus in Virginia",
+        "latitude": 36.6676,
+        "longitude": -78.375,
+        "altitude": 0,
+        "wikipedia": "Boydton, Virginia"
+    },
+    {
+        "id": "infra-023",
+        "name": "Equinix FR5 Frankfurt",
+        "category": "datacenter",
+        "code": "",
+        "country": "Deutschland",
+        "info": "Einer der größten Internet-Knotenpunkte Europas (DE-CIX)",
+        "latitude": 50.1155,
+        "longitude": 8.6842,
+        "altitude": 0,
+        "wikipedia": "Equinix"
+    },
+    {
+        "id": "infra-024",
+        "name": "Digital Realty Singapur",
+        "category": "datacenter",
+        "code": "",
+        "country": "Singapur",
+        "info": "Wichtiger Rechenzentrums-Hub für Südostasien",
+        "latitude": 1.32,
+        "longitude": 103.75,
+        "altitude": 0,
+        "wikipedia": "Digital Realty"
     }
 ]

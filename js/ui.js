@@ -686,6 +686,24 @@ export class UI {
             this.aircraftLayer?.refreshLive(true);
         });
 
+        document.getElementById("btn-share").addEventListener("click", async (e) => {
+            if (!this.buildShareUrl) return;
+            const url = this.buildShareUrl();
+            const btn = e.target;
+            const original = btn.textContent;
+            try {
+                await navigator.clipboard.writeText(url);
+                btn.textContent = "✅ Kopiert";
+            } catch {
+                window.prompt("Link kopieren:", url);
+            }
+            setTimeout(() => { btn.textContent = original; }, 1800);
+        });
+
+        document.getElementById("btn-sensor-style").addEventListener("click", () => {
+            this.sensorStyles?.cycle();
+        });
+
         document.getElementById("sidebar-collapse").addEventListener("click", (e) => {
             const sidebar = document.getElementById("sidebar");
             sidebar.classList.toggle("collapsed");
