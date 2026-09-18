@@ -1,4 +1,4 @@
-# World Viewer – Dokumentation (Stand: 29.08.2026, v2.3)
+# World Viewer – Dokumentation (Stand: 18.09.2026, v2.4)
 
 Aktueller Stand, Architektur und Erweiterungswege der Anwendung.
 
@@ -306,6 +306,39 @@ jeder Layer seine **eigene** CustomDataSource, die Objekte liegen also
 nicht in der Standardsammlung – die Prüfung fragt jetzt
 `entity.entityCollection`.
 
+### 1.10 Beobachtungszonen / Alarme (neu in v2.4)
+
+Öffentliches Gotham-Feature ("Geofencing / Watchlist") nachgebaut, ohne
+neue Datenquellen: Es werden ausschließlich die bereits geladenen,
+öffentlichen Live-Positionen aller Layer genutzt.
+
+**Bedienung.** Sidebar → „Beobachtung" → „🎯 Zone hinzufügen" → Klick auf
+die Karte setzt den Mittelpunkt, danach werden Name und Radius abgefragt.
+Die Zone erscheint als gelber Kreis mit Beschriftung auf dem Globus und
+als Zeile in der Sidebar (mit „✕" zum Entfernen). Zonen werden in
+`localStorage` gespeichert und überleben ein Neuladen der Seite.
+
+**Prüfung.** `watchlist.check()` läuft alle 2 s aus der zentralen
+Update-Schleife in `app.js`. Für jedes Objekt aus jedem eingeblendeten
+Layer wird die Entfernung zum Zonenmittelpunkt per Haversine-Formel
+berechnet; unter-/überschreitet sie den Radius, wird ein „betreten"-
+bzw. „verlassen"-Ereignis ausgelöst. Der bisherige Zustand (innerhalb/
+außerhalb) wird pro Zone-Objekt-Paar gemerkt, damit nur echte Übergänge
+zählen, nicht jede Prüfung erneut.
+
+**Alarme.** Jedes Ereignis erscheint in der Alarmliste der Sidebar
+(Symbol, Objektname, Zone, Uhrzeit) – anklicken fliegt zum Objekt und
+öffnet das Detailpanel. Verschwindet ein Objekt aus der Anzeige (Layer
+ausgeblendet, AIS-/ADS-B-Timeout), wird das nicht als „verlassen"
+gewertet, um keine künstlichen Alarme zu erzeugen.
+
+Architektur: `js/watchlist.js` (Zonen, Geometrie, Zustand, Persistenz,
+keine DOM-Abhängigkeit) und `js/watchlistPanel.js` (Sidebar-UI, Dialog-
+Abfrage für Name/Radius). Das Anklicken des Globus für die Standortwahl
+läuft über `WorldViewer.requestLocationPick()` (`viewer.js`) – ein
+einmaliger Klick-Abfang, der der normalen Objektauswahl vorgezogen wird
+und sie danach unverändert weiterlaufen lässt.
+
 ## 2. Architektur
 
 ```
@@ -325,6 +358,8 @@ app.js
  │     └── streamPlayer.js          Livebild, ggf. über /api/camera
  ├── Search (search.js)
  ├── Timeline (timeline.js)
+ ├── Watchlist (watchlist.js) + WatchlistPanel (watchlistPanel.js)
+ │     Geofence-Zonen, Ein-/Austritts-Alarme, localStorage
  └── Assistant (ai/assistant.js)
        ├── claudeClient.js       API-Anbindung + SSE-Streaming
        └── locationContext.js    Ortskontext + Reverse-Geocoding
@@ -488,7 +523,23 @@ objektbezogene Frage über „Claude dazu fragen".
 Der Proxy wurde getrennt geprüft (Health, statische Auslieferung,
 Fehlermeldung ohne Key, 404, Pfad-Ausbruch).
 
+Browser (Beobachtungszonen): Zone per Kartenklick anlegen (Name/Radius-
+Dialog), Kreis + Beschriftung erscheinen korrekt am gewählten Ort,
+Sidebar-Eintrag entsteht. Gegen echte Live-Flugdaten (OpenSky) bei
+Frankfurt Airport geprüft: reale Flugzeuge und das Infrastruktur-Objekt
+lösen „betreten"-Alarme mit korrektem Namen/Zeitstempel aus, Alarm-Klick
+fliegt zum Objekt, Zone entfernen räumt Kreis und Zustand auf.
+
 ## 7. Changelog
+
+**18.09.2026 – v2.4** — Beobachtungszonen (Geofence-Alarme)
+- Neues Sidebar-Werkzeug „Beobachtung": Kreiszonen auf der Karte anlegen,
+  Ein-/Austritts-Alarme für alle Objekte aller Layer (Flugzeuge, Schiffe, …)
+- Reine Client-Auswertung der bereits geladenen öffentlichen Live-Daten
+  (Haversine-Distanz alle 2 s), keine neue Datenquelle, kein Server-Anteil
+- `WorldViewer.requestLocationPick()`: einmaliger Klick-Abfang für
+  Kartenklicks außerhalb der normalen Objektauswahl
+- Zonen persistieren in `localStorage`
 
 **29.08.2026 – v2.3.1**
 - Zugangsdaten eingebunden: NASA-FIRMS-Key (Brände) und Cesium-Ion-Token

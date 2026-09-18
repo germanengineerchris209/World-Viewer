@@ -15,6 +15,8 @@ import { UI } from "./ui.js";
 import { Search } from "./search.js";
 import { Timeline } from "./timeline.js";
 import { Assistant } from "./ai/assistant.js";
+import { Watchlist } from "./watchlist.js";
+import { WatchlistPanel } from "./watchlistPanel.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -64,6 +66,11 @@ async function main() {
     ui.buildShareUrl = () => buildShareUrl(worldViewer, layerManager);
 
     new Search(worldViewer, layerManager, ui);
+
+    /* Beobachtungszonen: Geofence-Alarme auf Basis der bereits geladenen
+       öffentlichen Live-Positionen (Flugzeuge, Schiffe, ...) */
+    const watchlist = new Watchlist(worldViewer, layerManager);
+    new WatchlistPanel(watchlist, worldViewer, ui);
 
     /* Cockpit-Ansicht: mit der Kamera im Flugzeug mitfliegen */
     const cockpit = new CockpitView(worldViewer, ui);
@@ -136,6 +143,7 @@ async function main() {
     let lastPanelRefresh = 0;
     let lastCoordsUpdate = 0;
     let lastStatusUpdate = 0;
+    let lastWatchlistCheck = 0;
 
     function updateWorld(now) {
         const realDelta = Math.min((now - lastFrame) / 1000, 0.5); // Tab-Wechsel abfedern
@@ -168,6 +176,12 @@ async function main() {
             ui.updateFlightStatus(aircraftLayer.getStatus());
             ui.refreshLayerCounts();
             lastStatusUpdate = now;
+        }
+
+        // Beobachtungszonen auf Ein-/Austritte prüfen (gedrosselt)
+        if (now - lastWatchlistCheck > 2000) {
+            watchlist.check();
+            lastWatchlistCheck = now;
         }
 
         requestAnimationFrame(updateWorld);
