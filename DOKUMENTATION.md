@@ -1,4 +1,4 @@
-# World Viewer – Dokumentation (Stand: 18.09.2026, v2.4)
+# World Viewer – Dokumentation (Stand: 18.09.2026, v2.5)
 
 Aktueller Stand, Architektur und Erweiterungswege der Anwendung.
 
@@ -339,6 +339,24 @@ läuft über `WorldViewer.requestLocationPick()` (`viewer.js`) – ein
 einmaliger Klick-Abfang, der der normalen Objektauswahl vorgezogen wird
 und sie danach unverändert weiterlaufen lässt.
 
+### 1.11 Bewegungsspuren / Track-Verlauf (neu in v2.5)
+
+Weiteres öffentliches Gotham-Feature ("historische Objektspuren"):
+Sidebar → „Ansicht" → „🧵 Spuren" blendet für Flugzeuge und Schiffe eine
+kurze Spur der letzten Positionen ein – ähnlich der Track-Historie in
+Gotham oder dem "Trail"-Feature von Flightradar24.
+
+Standardmäßig aus (kostet sonst unnötig Leistung bei hunderten
+Flugzeugen). Aktiviert, merkt sich jedes Objekt alle 4 Sekunden seine
+Position (`BaseLayer._recordTrailPoint()`), höchstens 25 Punkte – ältere
+fallen heraus. Die Spur ist eine `polyline`-Entity mit
+`CallbackProperty`-Positionsliste in der Layerfarbe (Flugzeuge Amber,
+Schiffe Grün). Layer, die das unterstützen, rufen im Konstruktor
+`this.enableTrails(farbe)` auf; alle anderen (Satelliten, Kameras,
+Infrastruktur, Erdbeben, ...) bleiben unberührt. Der globale Schalter
+läuft über `LayerManager.setTrailsVisible()`, das nur Layer mit
+`supportsTrails` anspricht.
+
 ## 2. Architektur
 
 ```
@@ -531,6 +549,13 @@ lösen „betreten"-Alarme mit korrektem Namen/Zeitstempel aus, Alarm-Klick
 fliegt zum Objekt, Zone entfernen räumt Kreis und Zustand auf.
 
 ## 7. Changelog
+
+**18.09.2026 – v2.5** — Bewegungsspuren (Track-Verlauf)
+- Sidebar-Schalter „🧵 Spuren": kurze Track-Historie für Flugzeuge und
+  Schiffe (letzte ~25 Positionen, alle 4s gespeichert), standardmäßig aus
+- `BaseLayer.enableTrails()`/`setTrailsVisible()` als generischer, opt-in
+  Mechanismus für bewegliche Layer; `LayerManager.setTrailsVisible()` für
+  den globalen Schalter
 
 **18.09.2026 – v2.4** — Beobachtungszonen (Geofence-Alarme)
 - Neues Sidebar-Werkzeug „Beobachtung": Kreiszonen auf der Karte anlegen,
