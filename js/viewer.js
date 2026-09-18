@@ -24,6 +24,7 @@ export class WorldViewer {
         this.basemaps = null;
         this.onObjectPicked = null;   // Callback: (entity | null) => void
         this._followedEntity = null;
+        this._pickLocationCallback = null;
     }
 
     /** Initialisiert den Cesium-Viewer. */
@@ -104,10 +105,36 @@ export class WorldViewer {
     _setupPicking() {
         const handler = new Cesium.ScreenSpaceEventHandler(this.scene.canvas);
         handler.setInputAction((movement) => {
+            // Ein ausstehender Standort-Klick (z.B. für eine neue
+            // Beobachtungszone) hat Vorrang vor der Objektauswahl.
+            if (this._pickLocationCallback) {
+                const callback = this._pickLocationCallback;
+                this._pickLocationCallback = null;
+                const cartesian = this.camera.pickEllipsoid(movement.position, this.scene.globe.ellipsoid);
+                if (!cartesian) { callback(null, null); return; }
+                const carto = Cesium.Cartographic.fromCartesian(cartesian);
+                callback(Cesium.Math.toDegrees(carto.longitude), Cesium.Math.toDegrees(carto.latitude));
+                return;
+            }
+
             const picked = this.scene.pick(movement.position);
             const entity = (picked && picked.id instanceof Cesium.Entity) ? picked.id : null;
             if (this.onObjectPicked) this.onObjectPicked(entity);
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    }
+
+    /**
+     * Wartet auf den nächsten Klick auf den Globus und liefert die
+     * Koordinate statt eine Objektauswahl auszulösen. Für Werkzeuge wie
+     * "Beobachtungszone hinzufügen" gedacht.
+     * @param {(lon: number|null, lat: number|null) => void} callback
+     */
+    requestLocationPick(callback) {
+        this._pickLocationCallback = callback;
+    }
+
+    cancelLocationPick() {
+        this._pickLocationCallback = null;
     }
 
     /* ───────────── Kamera-Funktionen ───────────── */
