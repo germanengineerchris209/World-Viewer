@@ -25,6 +25,8 @@ nicht rückwirkend umbenannt.
 
 | Issue | Titel | Status | Datei |
 |---|---|---|---|
+| WEB-12 | UI-Texte durchgängig auf Deutsch übersetzen | erledigt | [WEB-12-ui-uebersetzung-deutsch.md](./WEB-12-ui-uebersetzung-deutsch.md) |
+| WEB-15 | God's-Eye-View-Vergleich + Tier-1-Umsetzung | erledigt | [WEB-15-gods-eye-view-tier1.md](./WEB-15-gods-eye-view-tier1.md) |
 | WEB-20 | Open Source Palantir – Gotham-Features | erledigt | [WEB-20-open-source-palantir.md](./WEB-20-open-source-palantir.md) |
 
 *(Wird vom Documentation Agent bei jedem neuen/aktualisierten Task ergänzt.)*
