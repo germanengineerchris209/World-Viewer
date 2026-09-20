@@ -8,22 +8,12 @@
  * Zonen gerechnet, um Ein-/Austritte als Alarm zu melden.
  */
 
-import { toRad } from "./dataManager.js";
+import { haversineKm } from "./dataManager.js";
 
 const STORAGE_KEY = "world-viewer-watchlist-zones";
-const EARTH_RADIUS_KM = 6371;
 const MAX_ALERTS = 200;
 
 let zoneCounter = 0;
-
-/** Distanz zwischen zwei Koordinaten in km (Haversine). */
-function haversineKm(lat1, lon1, lat2, lon2) {
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 export class Watchlist {
 

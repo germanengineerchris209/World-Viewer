@@ -12,8 +12,15 @@
 import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { getObjectImage, getPlaceholderImage } from "./imageProvider.js";
 import { playCameraStream, stopActiveStream } from "./streamPlayer.js";
+import { findLinkedObjects } from "./linkAnalysis.js";
 
 const fmt = new Intl.NumberFormat("de-DE");
+
+const LINK_TYPE_ICONS = {
+    aircraft: "✈️", ship: "🚢", satellite: "🛰️",
+    camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
+    launch: "🚀", fire: "🔥"
+};
 
 /** Formatierungs-Helfer */
 const F = {
@@ -255,6 +262,8 @@ export class UI {
             cockpitHeading: document.getElementById("cockpit-heading"),
             cockpitVs: document.getElementById("cockpit-vs"),
             cockpitExit: document.getElementById("cockpit-exit"),
+            links: document.getElementById("detail-links"),
+            linksList: document.getElementById("detail-links-list"),
         };
 
         this.aircraftLayer = null;   // wird von app.js gesetzt
@@ -431,10 +440,41 @@ export class UI {
         // Mitfliegen gibt es nur bei Flugzeugen
         this._el.cockpitRow?.classList.toggle("hidden", object.type !== "aircraft");
 
-        // Bild/Stream nur beim Objektwechsel neu aufbauen, nicht bei jedem Tick
+        // Bild/Stream und Verknüpfungen nur beim Objektwechsel neu aufbauen,
+        // nicht bei jedem Tick (Link-Analyse über alle Objekte ist nicht gratis)
         if (changed || !isRefresh) {
             this._loadMedia(object);
+            this._renderLinks(object);
         }
+    }
+
+    /**
+     * Zeigt verwandte Objekte (gleiche Airline/Betreiber/Flagge, räumliche
+     * Nähe) unterhalb der Detailfelder – Gothams "Link Analysis" für die
+     * bereits geladenen öffentlichen Daten.
+     */
+    _renderLinks(object) {
+        const links = findLinkedObjects(object, this.layerManager);
+        if (links.length === 0) {
+            this._el.links.classList.add("hidden");
+            return;
+        }
+
+        this._el.linksList.innerHTML = links.map(({ object: o, reason }) => `
+            <li data-id="${o.id}">
+                <span class="link-icon">${LINK_TYPE_ICONS[o.type] ?? "📍"}</span>
+                <span class="link-name">${o.metadata?.callsign ?? o.name}</span>
+                <span class="link-reason">${reason}</span>
+            </li>`).join("");
+
+        this._el.linksList.querySelectorAll("li").forEach(li => {
+            li.addEventListener("click", () => {
+                const entity = this.layerManager.findEntityById(li.dataset.id);
+                if (entity) this.selectEntity(entity, { fly: true });
+            });
+        });
+
+        this._el.links.classList.remove("hidden");
     }
 
     /**
@@ -515,6 +555,7 @@ export class UI {
         this._mediaToken++;
         this._el.panel.classList.add("hidden");
         this._el.mediaSlot.innerHTML = "";
+        this._el.links.classList.add("hidden");
         this.selectedObject = null;
         this._clearHighlight();
         this.worldViewer.stopFollowing();
