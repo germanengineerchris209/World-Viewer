@@ -60,6 +60,13 @@ export class LayerManager {
         }
     }
 
+    /** Bewegungsspuren global ein-/ausblenden (nur Layer mit enableTrails()). */
+    setTrailsVisible(visible) {
+        for (const layer of this.layers.values()) {
+            if (layer.supportsTrails) layer.setTrailsVisible(visible);
+        }
+    }
+
     /** Entity über alle Layer hinweg per Objekt-ID finden. */
     findEntityById(objectId) {
         for (const layer of this.layers.values()) {

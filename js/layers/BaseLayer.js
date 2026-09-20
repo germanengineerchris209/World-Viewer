@@ -13,6 +13,9 @@
 
 import { loadJSON, normalizeRecord } from "../dataManager.js";
 
+const TRAIL_MAX_POINTS = 25;
+const TRAIL_MIN_INTERVAL_MS = 4000;
+
 export class BaseLayer {
 
     /**
@@ -36,6 +39,72 @@ export class BaseLayer {
         // Eigene DataSource → Layer komplett unabhängig steuerbar
         this.dataSource = new Cesium.CustomDataSource(this.id);
         this.viewer.dataSources.add(this.dataSource);
+
+        // Bewegungsspuren (Track-Verlauf) – standardmäßig aus, siehe enableTrails()
+        this._trailColor = null;
+        this._trailEntities = new Map();  // Objekt-ID → Cesium.Entity (Polyline)
+        this.trailsVisible = false;
+    }
+
+    /** Von Unterklassen mit beweglichen Objekten aufrufen (z.B. AircraftLayer). */
+    enableTrails(color) {
+        this._trailColor = color;
+    }
+
+    get supportsTrails() { return this._trailColor !== null; }
+
+    /**
+     * Merkt sich die aktuelle Position als neuen Spurpunkt (gedrosselt,
+     * damit die Spur nicht bei jedem Frame wächst).
+     */
+    _recordTrailPoint(obj) {
+        if (!this.trailsVisible) return;
+
+        const now = Date.now();
+        if (now - (obj.__lastTrailAt ?? 0) < TRAIL_MIN_INTERVAL_MS) return;
+        obj.__lastTrailAt = now;
+
+        obj.__trailPoints ??= [];
+        obj.__trailPoints.push({
+            longitude: obj.position.longitude,
+            latitude: obj.position.latitude,
+            altitude: obj.position.altitude
+        });
+        if (obj.__trailPoints.length > TRAIL_MAX_POINTS) obj.__trailPoints.shift();
+
+        if (!this._trailEntities.has(obj.id)) this._createTrailEntity(obj);
+    }
+
+    /** Legt die Polyline-Entity für die Spur eines Objekts an. */
+    _createTrailEntity(obj) {
+        const entity = this.dataSource.entities.add({
+            id: `${obj.id}-trail`,
+            show: this.trailsVisible,
+            polyline: {
+                positions: new Cesium.CallbackProperty(() =>
+                    (obj.__trailPoints ?? []).map(p =>
+                        Cesium.Cartesian3.fromDegrees(p.longitude, p.latitude, p.altitude)
+                    ), false),
+                width: 2,
+                material: this._trailColor.withAlpha(0.55),
+                clampToGround: false
+            }
+        });
+        this._trailEntities.set(obj.id, entity);
+        return entity;
+    }
+
+    /** Entfernt die Spur eines Objekts (beim Entfernen des Objekts selbst). */
+    _removeTrailEntity(id) {
+        const entity = this._trailEntities.get(id);
+        if (entity) this.dataSource.entities.remove(entity);
+        this._trailEntities.delete(id);
+    }
+
+    /** Globaler Schalter, siehe LayerManager.setTrailsVisible(). */
+    setTrailsVisible(visible) {
+        this.trailsVisible = visible;
+        for (const entity of this._trailEntities.values()) entity.show = visible;
     }
 
     /** Daten laden und Entities erzeugen. */
@@ -116,6 +185,7 @@ export class BaseLayer {
     clear() {
         this.dataSource.entities.removeAll();
         this.entityById.clear();
+        this._trailEntities.clear();
         this.objects = [];
     }
 
