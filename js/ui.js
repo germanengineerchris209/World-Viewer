@@ -13,6 +13,7 @@ import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { getObjectImage, getPlaceholderImage } from "./imageProvider.js";
 import { playCameraStream, stopActiveStream } from "./streamPlayer.js";
 import { findLinkedObjects } from "./linkAnalysis.js";
+import { buildDossierText, dossierFilename, downloadTextFile } from "./dossier.js";
 
 const fmt = new Intl.NumberFormat("de-DE");
 
@@ -675,6 +676,25 @@ export class UI {
                 this.worldViewer.followEntity(entity);
                 e.target.classList.add("active");
             }
+        });
+
+        // Objekt-Dossier als Textdatei herunterladen
+        document.getElementById("detail-dossier").addEventListener("click", () => {
+            const object = this.selectedObject;
+            if (!object) return;
+
+            const schema = DETAIL_SCHEMAS[object.type] ?? DETAIL_SCHEMAS.default;
+            const rows = schema.fields(object).map(([label, value]) => [label, value]);
+            const links = findLinkedObjects(object, this.layerManager);
+
+            const text = buildDossierText({
+                title: schema.title(object),
+                badge: schema.badge,
+                rows,
+                description: object.__wikiExtract ?? "",
+                links
+            });
+            downloadTextFile(dossierFilename(object.metadata?.callsign ?? object.name), text);
         });
 
         // "Claude dazu fragen" öffnet den Assistenten mit passender Frage

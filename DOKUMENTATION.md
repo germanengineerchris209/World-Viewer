@@ -1,4 +1,4 @@
-# World Viewer – Dokumentation (Stand: 18.09.2026, v2.6)
+# World Viewer – Dokumentation (Stand: 20.09.2026, v2.7)
 
 Aktueller Stand, Architektur und Erweiterungswege der Anwendung.
 
@@ -382,6 +382,21 @@ Objekten spürbar, aber für einen einzelnen Klick unproblematisch.
 `dataManager.js` verschoben, damit Beobachtungszonen und Link-Analyse
 dieselbe Funktion nutzen statt sie zu duplizieren.
 
+### 1.13 Objekt-Dossier (neu in v2.7)
+
+Letzter der ursprünglich skizzierten Gotham-Bausteine: „📄 Dossier" im
+Detailpanel lädt eine Textdatei mit einer Zusammenfassung des
+ausgewählten Objekts herunter – Datenfelder, Wikipedia-Kurzbeschreibung
+(falls geladen) und die Verknüpfungen aus 1.12, in einem Aufwasch.
+
+`js/dossier.js` formatiert nur bereits vorhandene Daten (keine neue
+Quelle, kein Server): `buildDossierText()` baut den Text,
+`downloadTextFile()` löst den Download über einen `Blob` + unsichtbaren
+`<a download>`-Link aus – dieselbe Technik, mit der auch Share-Links
+(`shareLink.js`) ohne Server auskommen. Der Dateiname wird aus dem
+Objektnamen und dem Erstellungsdatum abgeleitet
+(`dossier-<name>-<datum>.txt`).
+
 ## 2. Architektur
 
 ```
@@ -574,6 +589,12 @@ lösen „betreten"-Alarme mit korrektem Namen/Zeitstempel aus, Alarm-Klick
 fliegt zum Objekt, Zone entfernen räumt Kreis und Zustand auf.
 
 ## 7. Changelog
+
+**20.09.2026 – v2.7** — Objekt-Dossier
+- Neuer Button „📄 Dossier" im Detailpanel: lädt eine Textdatei mit
+  Datenfeldern, Kurzbeschreibung und Verknüpfungen des Objekts herunter
+- `js/dossier.js` neu (Textaufbereitung + Download über Blob-URL, kein
+  Server nötig, analog zu `shareLink.js`)
 
 **18.09.2026 – v2.6** — Verknüpfungen (Link-Analyse)
 - Neuer Abschnitt „🔗 Verknüpfungen" im Detailpanel: verwandte Objekte
