@@ -1,4 +1,4 @@
-# World Viewer – Dokumentation (Stand: 18.09.2026, v2.5)
+# World Viewer – Dokumentation (Stand: 20.09.2026, v2.7)
 
 Aktueller Stand, Architektur und Erweiterungswege der Anwendung.
 
@@ -357,6 +357,46 @@ Infrastruktur, Erdbeben, ...) bleiben unberührt. Der globale Schalter
 läuft über `LayerManager.setTrailsVisible()`, das nur Layer mit
 `supportsTrails` anspricht.
 
+### 1.12 Verknüpfungen / Link-Analyse (neu in v2.6)
+
+Gothams zentrales "Object-Centric"-Feature nachgebaut: Im Detailpanel
+erscheint unterhalb der Datenfelder ein Abschnitt „🔗 Verknüpfungen" mit
+Objekten, die zum ausgewählten Objekt in Beziehung stehen. Anklicken
+springt zum verknüpften Objekt (wie bei den Beobachtungs-Alarmen).
+
+Zwei Arten von Verknüpfungen, beide aus bereits geladenen Daten:
+
+1. **Gemeinsame Attribute** – je nach Typ ein anderes Merkmal: gleiche
+   Airline (Flugzeuge), gleicher Schiffstyp/gleiche Flagge (Schiffe),
+   gleicher Betreiber (Satelliten/Raketenstarts), gleiche Kategorie
+   (Infrastruktur). Definiert in `ATTRIBUTE_FIELDS` (`linkAnalysis.js`).
+2. **Räumliche Nähe** – alle anderen Objekte (typübergreifend) im Umkreis
+   von 30 km, nach Entfernung sortiert.
+
+Beide Listen werden zusammengeführt und auf 8 Einträge begrenzt. Die
+Berechnung läuft nur beim Objektwechsel (nicht bei jedem Detailpanel-
+Refresh), weil sie alle Objekte aller Layer durchsucht – bei tausenden
+Objekten spürbar, aber für einen einzelnen Klick unproblematisch.
+
+`haversineKm()` (Entfernungsformel) wurde dafür aus `watchlist.js` nach
+`dataManager.js` verschoben, damit Beobachtungszonen und Link-Analyse
+dieselbe Funktion nutzen statt sie zu duplizieren.
+
+### 1.13 Objekt-Dossier (neu in v2.7)
+
+Letzter der ursprünglich skizzierten Gotham-Bausteine: „📄 Dossier" im
+Detailpanel lädt eine Textdatei mit einer Zusammenfassung des
+ausgewählten Objekts herunter – Datenfelder, Wikipedia-Kurzbeschreibung
+(falls geladen) und die Verknüpfungen aus 1.12, in einem Aufwasch.
+
+`js/dossier.js` formatiert nur bereits vorhandene Daten (keine neue
+Quelle, kein Server): `buildDossierText()` baut den Text,
+`downloadTextFile()` löst den Download über einen `Blob` + unsichtbaren
+`<a download>`-Link aus – dieselbe Technik, mit der auch Share-Links
+(`shareLink.js`) ohne Server auskommen. Der Dateiname wird aus dem
+Objektnamen und dem Erstellungsdatum abgeleitet
+(`dossier-<name>-<datum>.txt`).
+
 ## 2. Architektur
 
 ```
@@ -549,6 +589,19 @@ lösen „betreten"-Alarme mit korrektem Namen/Zeitstempel aus, Alarm-Klick
 fliegt zum Objekt, Zone entfernen räumt Kreis und Zustand auf.
 
 ## 7. Changelog
+
+**20.09.2026 – v2.7** — Objekt-Dossier
+- Neuer Button „📄 Dossier" im Detailpanel: lädt eine Textdatei mit
+  Datenfeldern, Kurzbeschreibung und Verknüpfungen des Objekts herunter
+- `js/dossier.js` neu (Textaufbereitung + Download über Blob-URL, kein
+  Server nötig, analog zu `shareLink.js`)
+
+**18.09.2026 – v2.6** — Verknüpfungen (Link-Analyse)
+- Neuer Abschnitt „🔗 Verknüpfungen" im Detailpanel: verwandte Objekte
+  über gemeinsame Attribute (Airline, Flagge, Betreiber, Kategorie) und
+  räumliche Nähe (30 km), anklickbar
+- `js/linkAnalysis.js` neu; `haversineKm()` aus `watchlist.js` nach
+  `dataManager.js` verschoben (jetzt gemeinsam genutzt)
 
 **18.09.2026 – v2.5** — Bewegungsspuren (Track-Verlauf)
 - Sidebar-Schalter „🧵 Spuren": kurze Track-Historie für Flugzeuge und

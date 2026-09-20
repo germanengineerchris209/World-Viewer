@@ -313,6 +313,28 @@ body { display: flex; }
 
 .detail-actions { margin-top: 14px; }
 
+/* ── Verknüpfungen (Link-Analyse) ── */
+
+#detail-links { margin-top: 14px; }
+.detail-links-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+}
+#detail-links-list {
+    list-style: none; display: flex; flex-direction: column; gap: 4px;
+}
+#detail-links-list li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 8px; font-size: 12px;
+    background: rgba(255,255,255,0.04); cursor: pointer;
+}
+#detail-links-list li:hover { background: var(--bg-hover); }
+.link-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link-reason {
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    flex-shrink: 0;
+}
+
 /* ── Timeline ── */
 
 #timeline-bar {
