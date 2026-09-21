@@ -23,7 +23,8 @@ const ATTRIBUTE_FIELDS = {
     ],
     satellite: [{ field: "operator", label: "Betreiber" }],
     infrastructure: [{ field: "category", label: "Kategorie" }],
-    launch: [{ field: "provider", label: "Betreiber" }]
+    launch: [{ field: "provider", label: "Betreiber" }],
+    cable: [{ field: "operators", label: "Betreiber" }]
 };
 
 /**

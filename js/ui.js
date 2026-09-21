@@ -20,7 +20,7 @@ const fmt = new Intl.NumberFormat("de-DE");
 const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
-    launch: "🚀", fire: "🔥", radio: "📻"
+    launch: "🚀", fire: "🔥", radio: "📻", cable: "🔌"
 };
 
 /** Formatierungs-Helfer */
@@ -160,6 +160,24 @@ const DETAIL_SCHEMAS = {
             ["Breite", F.coord(o.position.latitude)],
             ["Länge", F.coord(o.position.longitude)]
         ]
+    },
+    cable: {
+        badge: "Seekabel",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const points = (m.landingPoints ?? [])
+                .map(p => `${p.name} (${p.country})`).join(" ↔ ");
+            const rows = [
+                ["Landepunkte", points, true],
+                ["Betreiber", F.text(m.operators), true],
+                ["In Betrieb seit", F.text(m.readyYear)]
+            ];
+            if (m.decommissioned) rows.push(["Stillgelegt", F.text(m.decommissioned)]);
+            if (m.lengthKm) rows.push(["Länge", F.km(m.lengthKm)]);
+            if (m.info) rows.push(["Info", F.text(m.info), true]);
+            return rows;
+        }
     },
     earthquake: {
         badge: "Erdbeben",
