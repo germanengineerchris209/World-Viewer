@@ -17,6 +17,8 @@ import { Timeline } from "./timeline.js";
 import { Assistant } from "./ai/assistant.js";
 import { Watchlist } from "./watchlist.js";
 import { WatchlistPanel } from "./watchlistPanel.js";
+import { DrawTools } from "./drawTools.js";
+import { DrawToolsPanel } from "./drawToolsPanel.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -73,6 +75,10 @@ async function main() {
        öffentlichen Live-Positionen (Flugzeuge, Schiffe, ...) */
     const watchlist = new Watchlist(worldViewer, layerManager);
     new WatchlistPanel(watchlist, worldViewer, ui);
+
+    /* Zeichnen & Messen: Freihand/Grenzen/Punkte zeichnen, Distanzen messen */
+    const drawTools = new DrawTools(worldViewer);
+    new DrawToolsPanel(drawTools, ui);
 
     /* Cockpit-Ansicht: mit der Kamera im Flugzeug mitfliegen */
     const cockpit = new CockpitView(worldViewer, ui);
