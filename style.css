@@ -566,6 +566,41 @@ body { display: flex; }
     display: inline-block;
 }
 
+/* ══════════════ Internetradio-Player ══════════════ */
+
+.radio-player {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: radial-gradient(circle at 50% 30%, rgba(52, 211, 153, 0.12), transparent 70%);
+}
+
+.radio-art {
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #0a0d14;
+    border: 1px solid var(--border);
+}
+
+.radio-art-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+}
+
+.radio-audio {
+    width: 88%;
+    max-width: 320px;
+}
+
 /* ══════════════ KI-Assistent: Button unten links ══════════════ */
 
 #ai-button {

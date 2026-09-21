@@ -236,6 +236,21 @@ CORS-freigegeben sind und die Bilder teils hotlink-geschützt.
 > © Crown copyright and database rights." Die App zeigt diesen Hinweis
 > im Bildnachweis jeder TfL-Kamera an.
 
+### 📻 Radiosender
+
+**Radio Browser API** (`api.radio-browser.info`) – öffentlich, ohne
+Anmeldung, ohne Schlüssel, kein Kostenrisiko. Die App fragt
+`all.api.radio-browser.info/json/stations/search?hasgeoinfo=true` ab
+(Mirrors rotieren per DNS) und zeigt nur Sender mit brauchbaren
+Geo-Koordinaten – knapp ein Drittel des Katalogs, da `hasgeoinfo=true`
+allein nicht zuverlässig filtert (zusätzlich clientseitig geprüft).
+
+CORS ist gesetzt (`Access-Control-Allow-Origin: *`), ein Server-Proxy
+ist daher nicht nötig – Layer und Livestream laufen komplett im
+Browser. Empfohlen (kein Zwang) ist ein aussagekräftiger
+`User-Agent`-Header; Richtwert 2-3 Anfragen/Sekunde, die App stellt
+nur eine Anfrage pro Aktualisierung.
+
 ### 🗺️ Karten und Gelände
 
 | | Quelle | Schlüssel |

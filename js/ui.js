@@ -11,7 +11,7 @@
 
 import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { getObjectImage, getPlaceholderImage } from "./imageProvider.js";
-import { playCameraStream, stopActiveStream } from "./streamPlayer.js";
+import { playCameraStream, playRadioStream, stopActiveStream } from "./streamPlayer.js";
 import { findLinkedObjects } from "./linkAnalysis.js";
 import { buildDossierText, dossierFilename, downloadTextFile } from "./dossier.js";
 
@@ -20,7 +20,7 @@ const fmt = new Intl.NumberFormat("de-DE");
 const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
-    launch: "🚀", fire: "🔥"
+    launch: "🚀", fire: "🔥", radio: "📻"
 };
 
 /** Formatierungs-Helfer */
@@ -125,6 +125,29 @@ const DETAIL_SCHEMAS = {
             ["Breite", F.coord(o.position.latitude)],
             ["Länge", F.coord(o.position.longitude)]
         ]
+    },
+    radio: {
+        badge: "Radiosender",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Genre", F.text(m.genre), true],
+                ["Land", F.text(m.country)],
+                ["Sprache", F.text(m.language)]
+            ];
+            if (m.codec) rows.push(["Format", `${m.codec}${m.bitrate ? " · " + m.bitrate + " kbps" : ""}`]);
+            rows.push(
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        },
+        extraHtml: (o) => o.metadata.homepage
+            ? `<div class="detail-field wide"><label>Webseite</label>
+                 <span><a href="${o.metadata.homepage}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">Sender-Homepage öffnen ↗</a></span></div>`
+            : ""
     },
     infrastructure: {
         badge: "Infrastruktur",
@@ -498,6 +521,14 @@ export class UI {
             playCameraStream(slot, object);
             const credit = object.metadata.attribution || object.metadata.streamSource;
             if (credit) this._el.mediaCredit.innerHTML = `<span>${credit}</span>`;
+            return;
+        }
+
+        // Radiosender: Livestream als Audioplayer
+        if (object.type === "radio") {
+            slot.classList.remove("loading");
+            playRadioStream(slot, object);
+            this._el.mediaCredit.innerHTML = `<span>Radio Browser (radio-browser.info)</span>`;
             return;
         }
 
