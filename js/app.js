@@ -30,6 +30,7 @@ import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { EarthquakeLayer } from "./layers/EarthquakeLayer.js";
 import { LaunchLayer } from "./layers/LaunchLayer.js";
 import { FireLayer } from "./layers/FireLayer.js";
+import { RadioLayer } from "./layers/RadioLayer.js";
 
 async function main() {
     /* 1 ── 3D-Globus mit Satellitenansicht */
@@ -50,6 +51,7 @@ async function main() {
     layerManager.register(new EarthquakeLayer(worldViewer));
     layerManager.register(new LaunchLayer(worldViewer));
     layerManager.register(new FireLayer(worldViewer));
+    layerManager.register(new RadioLayer(worldViewer));
 
     /* 3 ── UI, Suche, Timeline, KI */
     const ui = new UI(worldViewer, layerManager);

@@ -194,6 +194,15 @@ window.WORLD_VIEWER_CONFIG = {
         maxFires: 1500          // weltweit können es zehntausende sein
     },
 
+    radio: {
+        // Radio Browser API – frei, kein Key. Die Mirrors rotieren per
+        // DNS; "all.api.radio-browser.info" reicht als fester Einstieg.
+        apiUrl: "https://all.api.radio-browser.info/json/stations/search",
+        userAgent: "WorldViewer/1.0",
+        limit: 300,           // Sender mit Geo-Koordinaten, nach Beliebtheit
+        order: "votes"
+    },
+
 
     /* ═══════════ Kameras ═══════════ */
 

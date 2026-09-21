@@ -44,6 +44,7 @@ Viewer automatisch auf OpenStreetMap um, statt eine leere Kugel zu zeigen.
 | 🌋 Erdbeben | live (USGS, 24 h) | Fläche nach Magnitude, Farbe nach Herdtiefe |
 | 🚀 Raketenstarts | live (30 Tage) | Farbe nach Betreiber |
 | 🔥 Brände | live (NASA FIRMS, 24 h) | Farbe und Größe nach Strahlungsleistung |
+| 📻 Radiosender | live (Radio Browser API, bis 300) | Audioplayer im Detailpanel statt Bild |
 
 ### 1.3 Bilder zu jedem Objekt (neu in v2.0)
 

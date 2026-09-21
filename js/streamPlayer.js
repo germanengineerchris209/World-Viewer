@@ -360,6 +360,86 @@ function playIframe(stage, stream) {
     };
 }
 
+/* ═══════════ Internetradio ═══════════ */
+
+/**
+ * Startet einen Radiosender im angegebenen Container.
+ * Analog zu playCameraStream(), aber mit einem schlichten HTML5-
+ * `<audio>`-Element statt Bild/Video.
+ *
+ * @param {HTMLElement} container  Zielelement
+ * @param {object} station         normalisiertes Radio-Objekt
+ */
+export function playRadioStream(container, station) {
+    stopActiveStream();
+
+    container.innerHTML = "";
+    container.classList.remove("has-switcher");
+    container.classList.add("stream-container");
+
+    const meta = station.metadata ?? {};
+    if (!meta.streamUrl) {
+        renderFallback(container, {}, "Für diesen Sender ist kein Stream hinterlegt.");
+        return;
+    }
+
+    const stage = document.createElement("div");
+    stage.className = "radio-player";
+    container.appendChild(stage);
+
+    if (meta.favicon) {
+        const art = document.createElement("img");
+        art.className = "radio-art";
+        art.src = meta.favicon;
+        art.alt = "";
+        art.referrerPolicy = "no-referrer";
+        art.onerror = () => art.remove();
+        stage.appendChild(art);
+    } else {
+        const placeholder = document.createElement("div");
+        placeholder.className = "radio-art radio-art-placeholder";
+        placeholder.textContent = "📻";
+        stage.appendChild(placeholder);
+    }
+
+    const audio = document.createElement("audio");
+    audio.className = "radio-audio";
+    audio.controls = true;
+    audio.autoplay = true;
+    audio.src = meta.streamUrl;
+
+    let stopped = false;
+    audio.addEventListener("error", () => {
+        if (stopped) return;
+        renderFallback(stage, { pageUrl: meta.homepage || meta.streamUrl },
+            "Stream aktuell nicht erreichbar.");
+    });
+
+    stage.appendChild(audio);
+
+    const badge = document.createElement("span");
+    badge.className = "stream-live-badge";
+    badge.textContent = "● LIVE";
+    stage.appendChild(badge);
+
+    addOverlayLinks(stage, { pageUrl: meta.homepage });
+
+    // Höflichkeitsklick beim Radio-Browser-Betreiber registrieren
+    // (zählt zur Popularität des Senders) – Ergebnis wird nicht ausgewertet.
+    if (meta.stationuuid) {
+        const base = window.WORLD_VIEWER_CONFIG?.radio?.apiUrl
+            || "https://all.api.radio-browser.info/json/stations/search";
+        const clickBase = base.replace(/\/stations\/search$/, "/url");
+        fetch(`${clickBase}/${meta.stationuuid}`, { mode: "cors" }).catch(() => {});
+    }
+
+    active.cleanup = () => {
+        stopped = true;
+        audio.pause();
+        audio.src = "";
+    };
+}
+
 /* ═══════════ Hinweise und Bedienelemente ═══════════ */
 
 function renderFallback(stage, stream, message) {
