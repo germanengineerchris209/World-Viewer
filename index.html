@@ -87,6 +87,34 @@
             <ul id="watchlist-alerts"></ul>
         </section>
 
+        <!-- Zeichnen / Whiteboard: Freihand, Grenzen, Distanzmessung -->
+        <section class="sidebar-section">
+            <h2 class="section-title">Zeichnen &amp; Messen</h2>
+            <div class="button-row">
+                <button id="draw-freehand" class="tool-btn"
+                        title="Freihand zeichnen: Maustaste gedrückt halten und ziehen">
+                    ✏️ Freihand
+                </button>
+                <button id="draw-polygon" class="tool-btn"
+                        title="Grenze zeichnen: Eckpunkte anklicken">
+                    ⬠ Grenze
+                </button>
+            </div>
+            <div class="button-row">
+                <button id="draw-point" class="tool-btn" title="Punkt markieren">📍 Punkt</button>
+                <button id="draw-measure" class="tool-btn" title="Distanz messen: Punkte anklicken">📏 Distanz</button>
+            </div>
+            <p id="draw-hint" class="draw-hint hidden"></p>
+            <div class="button-row">
+                <button id="draw-finish" class="tool-btn hidden" title="Zeichnung abschließen">✓ Fertig</button>
+            </div>
+            <div id="draw-features"></div>
+            <div class="button-row" style="margin-top:8px">
+                <button id="draw-export" class="tool-btn" title="Als GeoJSON-Datei herunterladen">💾 Export</button>
+                <button id="draw-clear" class="tool-btn" title="Alle Zeichnungen löschen">🗑️ Leeren</button>
+            </div>
+        </section>
+
         <!-- Ansicht -->
         <section class="sidebar-section">
             <h2 class="section-title">Ansicht</h2>

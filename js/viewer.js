@@ -25,6 +25,7 @@ export class WorldViewer {
         this.onObjectPicked = null;   // Callback: (entity | null) => void
         this._followedEntity = null;
         this._pickLocationCallback = null;
+        this.inputSuppressed = false; // true während z.B. das Zeichenwerkzeug aktiv ist
     }
 
     /** Initialisiert den Cesium-Viewer. */
@@ -116,6 +117,10 @@ export class WorldViewer {
                 callback(Cesium.Math.toDegrees(carto.longitude), Cesium.Math.toDegrees(carto.latitude));
                 return;
             }
+
+            // Solange ein anderes Werkzeug (z.B. Zeichnen/Messen) die Klicks
+            // selbst auswertet, keine Objektauswahl auslösen.
+            if (this.inputSuppressed) return;
 
             const picked = this.scene.pick(movement.position);
             const entity = (picked && picked.id instanceof Cesium.Entity) ? picked.id : null;

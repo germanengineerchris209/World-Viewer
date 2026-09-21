@@ -218,6 +218,31 @@ body { display: flex; }
     font-family: var(--mono); font-size: 10px; color: var(--text-dim);
 }
 
+/* ── Zeichnen & Messen ── */
+
+.draw-hint {
+    font-size: 11px; color: var(--text-dim); padding: 4px 2px 8px;
+    line-height: 1.4;
+}
+
+.draw-feature-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 8px; font-size: 12px;
+}
+.draw-feature-row:hover { background: var(--bg-hover); }
+.df-icon { flex-shrink: 0; }
+.df-name {
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer;
+}
+.df-name:hover { color: var(--accent); }
+.df-meta { font-family: var(--mono); color: var(--text-dim); font-size: 11px; }
+.df-remove {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 12px; padding: 0 2px;
+}
+.df-remove:hover { color: var(--red); }
+
 /* ── Statistik ── */
 
 .stat-row {
