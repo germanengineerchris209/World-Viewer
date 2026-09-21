@@ -1,0 +1,227 @@
+[
+    {
+        "id": "cable-001",
+        "name": "TAT-8",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Tuckerton, New Jersey", "country": "USA", "latitude": 39.6021, "longitude": -74.3288 },
+            { "name": "Widemouth Bay", "country": "Großbritannien", "latitude": 50.7908, "longitude": -4.5629 }
+        ],
+        "operators": "AT&T, France Télécom, British Telecom",
+        "readyYear": 1988,
+        "decommissioned": 2002,
+        "info": "Erstes transatlantisches Glasfaserkabel; landete auch in Penmarch, Frankreich. 2002 stillgelegt.",
+        "wikipedia": "TAT-8"
+    },
+    {
+        "id": "cable-002",
+        "name": "MAREA",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Virginia Beach", "country": "USA", "latitude": 36.8529, "longitude": -75.978 },
+            { "name": "Sopelana (Bilbao)", "country": "Spanien", "latitude": 43.382, "longitude": -2.993 }
+        ],
+        "operators": "Microsoft, Meta, Telxius",
+        "readyYear": 2017,
+        "lengthKm": 6600,
+        "info": "Eines der kapazitätsstärksten Transatlantikkabel (200 Tbit/s Designkapazität).",
+        "wikipedia": "MAREA"
+    },
+    {
+        "id": "cable-003",
+        "name": "Dunant",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Virginia Beach", "country": "USA", "latitude": 36.8529, "longitude": -75.978 },
+            { "name": "Saint-Hilaire-de-Riez", "country": "Frankreich", "latitude": 46.7167, "longitude": -1.95 }
+        ],
+        "operators": "Google",
+        "readyYear": 2021,
+        "lengthKm": 6600,
+        "info": "Erstes rein von Google gebautes Transatlantikkabel, benannt nach Henry Dunant.",
+        "wikipedia": "Dunant (submarine communications cable)"
+    },
+    {
+        "id": "cable-004",
+        "name": "Grace Hopper",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "New York (Rockaway Beach)", "country": "USA", "latitude": 40.5795, "longitude": -73.8151 },
+            { "name": "Bude", "country": "Großbritannien", "latitude": 50.8236, "longitude": -4.5432 }
+        ],
+        "operators": "Google",
+        "readyYear": 2022,
+        "lengthKm": 6250,
+        "info": "Zusätzlicher Zweig verbindet New York auch mit Bilbao, Spanien.",
+        "wikipedia": "Grace Hopper (submarine communications cable)"
+    },
+    {
+        "id": "cable-005",
+        "name": "Southern Cross Cable",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Sydney", "country": "Australien", "latitude": 33.8688, "longitude": 151.2093 },
+            { "name": "Morro Bay, Kalifornien", "country": "USA", "latitude": 35.3658, "longitude": -120.8499 }
+        ],
+        "operators": "Southern Cross Cables Limited (Spark, Singtel/Optus, Telstra, Verizon)",
+        "readyYear": 2000,
+        "lengthKm": 30500,
+        "info": "Verbindet zusätzlich Neuseeland, Fidschi und Hawaii auf dem Weg in die USA.",
+        "wikipedia": "Southern Cross Cable"
+    },
+    {
+        "id": "cable-006",
+        "name": "Hawaiki Cable",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Sydney", "country": "Australien", "latitude": 33.8688, "longitude": 151.2093 },
+            { "name": "Pacific City, Oregon", "country": "USA", "latitude": 45.2054, "longitude": -123.9587 }
+        ],
+        "operators": "BW Digital",
+        "readyYear": 2018,
+        "lengthKm": 15000,
+        "info": "Zweige nach Neuseeland, Tonga und Neukaledonien.",
+        "wikipedia": "Hawaiki Cable"
+    },
+    {
+        "id": "cable-007",
+        "name": "FASTER",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Bandon, Oregon", "country": "USA", "latitude": 43.1187, "longitude": -124.4079 },
+            { "name": "Chikura, Chiba", "country": "Japan", "latitude": 34.9333, "longitude": 139.9333 }
+        ],
+        "operators": "Google, KDDI, SingTel, China Telecom Global, China Mobile International, Global Transit",
+        "readyYear": 2016,
+        "lengthKm": 11629,
+        "info": "Zusätzliche Landung in Shima (Japan) und ein Zweig nach Taiwan.",
+        "wikipedia": "FASTER (submarine cable)"
+    },
+    {
+        "id": "cable-008",
+        "name": "Unity",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Chikura, Chiba", "country": "Japan", "latitude": 34.9333, "longitude": 139.9333 },
+            { "name": "Los Angeles", "country": "USA", "latitude": 33.9192, "longitude": -118.4165 }
+        ],
+        "operators": "Bharti Airtel, Global Transit, Google, KDDI, Pacnet, SingTel",
+        "readyYear": 2010,
+        "lengthKm": 10000,
+        "info": "Eines der ersten Transpazifikkabel mit Google-Beteiligung.",
+        "wikipedia": "Unity (submarine cable)"
+    },
+    {
+        "id": "cable-009",
+        "name": "Curie",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "El Segundo, Los Angeles", "country": "USA", "latitude": 33.9192, "longitude": -118.4165 },
+            { "name": "Valparaíso", "country": "Chile", "latitude": -33.0472, "longitude": -71.6127 }
+        ],
+        "operators": "Google",
+        "readyYear": 2019,
+        "lengthKm": 10500,
+        "info": "Chiles erstes neues Seekabel seit fast 20 Jahren; Verzweigung nach Panama.",
+        "wikipedia": "Curie (submarine communications cable)"
+    },
+    {
+        "id": "cable-010",
+        "name": "EllaLink",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Sines", "country": "Portugal", "latitude": 37.9564, "longitude": -8.8647 },
+            { "name": "Fortaleza", "country": "Brasilien", "latitude": -3.7319, "longitude": -38.5267 }
+        ],
+        "operators": "EllaLink (Marguerite / Alcatel Submarine Networks)",
+        "readyYear": 2021,
+        "lengthKm": 5900,
+        "info": "Erste direkte Glasfaserverbindung zwischen Südamerika und Europa; Zwischenlandungen auf Madeira und den Kapverden.",
+        "wikipedia": "EllaLink"
+    },
+    {
+        "id": "cable-011",
+        "name": "SAT-3/WASC",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Sesimbra", "country": "Portugal", "latitude": 38.4444, "longitude": -9.101 },
+            { "name": "Melkbosstrand", "country": "Südafrika", "latitude": -33.7286, "longitude": 18.4463 }
+        ],
+        "operators": "Konsortium u.a. Telkom, France Télécom, AT&T, VSNL, Nitel",
+        "readyYear": 2001,
+        "lengthKm": 13000,
+        "info": "Erste direkte Breitbandverbindung entlang der Westküste Afrikas, mit Landepunkten u.a. in Senegal, Ghana, Nigeria und Angola.",
+        "wikipedia": "SAT-3/WASC"
+    },
+    {
+        "id": "cable-012",
+        "name": "West Africa Cable System (WACS)",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Yzerfontein", "country": "Südafrika", "latitude": -33.3453, "longitude": 18.1585 },
+            { "name": "Seixal (Lissabon)", "country": "Portugal", "latitude": 38.6403, "longitude": -9.0994 }
+        ],
+        "operators": "Konsortium u.a. MTN Group, Vodacom, Tata Communications, Cable & Wireless",
+        "readyYear": 2012,
+        "lengthKm": 14530,
+        "info": "14 Landepunkte entlang der Westküste Afrikas sowie auf den Kanaren; nördlicher Endpunkt zusätzlich in Somerset, UK.",
+        "wikipedia": "West Africa Cable System"
+    },
+    {
+        "id": "cable-013",
+        "name": "SEA-ME-WE 3",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Norden", "country": "Deutschland", "latitude": 53.5928, "longitude": 7.2081 },
+            { "name": "Okinawa", "country": "Japan", "latitude": 26.2124, "longitude": 127.6809 }
+        ],
+        "operators": "92-Parteien-Konsortium, federführend France Télécom und China Telecom",
+        "readyYear": 2000,
+        "decommissioned": 2024,
+        "lengthKm": 39000,
+        "info": "Mit 39.000 km eines der längsten je gebauten Seekabel; verband 33 Landepunkte über Ägypten, Indien und Singapur. 2024 nach 24 Betriebsjahren stillgelegt.",
+        "wikipedia": "SEA-ME-WE 3"
+    },
+    {
+        "id": "cable-014",
+        "name": "AAE-1 (Asia-Africa-Europe-1)",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Hongkong", "country": "China", "latitude": 22.3193, "longitude": 114.1694 },
+            { "name": "Marseille", "country": "Frankreich", "latitude": 43.2965, "longitude": 5.3698 }
+        ],
+        "operators": "Internationales Betreiberkonsortium",
+        "readyYear": 2017,
+        "lengthKm": 25000,
+        "info": "Route über Vietnam, Indien, Pakistan, den Golf, Ägypten, Griechenland und Italien.",
+        "wikipedia": "AAE-1"
+    },
+    {
+        "id": "cable-015",
+        "name": "Pacific Light Cable Network (PLCN)",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "El Segundo, Los Angeles", "country": "USA", "latitude": 33.9192, "longitude": -118.4165 },
+            { "name": "Baler", "country": "Philippinen", "latitude": 15.7594, "longitude": 121.5629 }
+        ],
+        "operators": "Meta, Google, Pacific Light Data Communication",
+        "readyYear": 2022,
+        "lengthKm": 13000,
+        "info": "Ursprünglich geplante Landung in Hongkong wurde 2020 aus Sicherheitsbedenken der US-Regierung gestrichen; zusätzlicher Zweig nach Taiwan.",
+        "wikipedia": "Pacific Light Cable Network"
+    },
+    {
+        "id": "cable-016",
+        "name": "Trans-Pacific Express (TPE)",
+        "category": "cable",
+        "landingPoints": [
+            { "name": "Qingdao", "country": "China", "latitude": 36.0671, "longitude": 120.3826 },
+            { "name": "Nedonna Beach, Oregon", "country": "USA", "latitude": 45.7593, "longitude": -123.954 }
+        ],
+        "operators": "China Telecom, China Unicom, Chunghwa Telecom, Korea Telecom, Verizon, AT&T, NTT",
+        "readyYear": 2008,
+        "lengthKm": 17700,
+        "info": "Direkte Route zwischen China und Nordamerika, mit weiteren Landepunkten in Japan, Südkorea und Taiwan.",
+        "wikipedia": "Trans-Pacific Express Cable"
+    }
+]
