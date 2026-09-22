@@ -23,6 +23,7 @@ import { DrawToolsPanel } from "./drawToolsPanel.js";
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
 import { SensorStyles } from "./sensorStyles.js";
+import { TacticalHUD } from "./hud.js";
 
 import { AircraftLayer } from "./layers/AircraftLayer.js";
 import { ShipLayer } from "./layers/ShipLayer.js";
@@ -91,10 +92,16 @@ async function main() {
     const assistant = new Assistant(worldViewer, layerManager, ui);
     ui.assistant = assistant;
 
-    /* Sensor-Stile (CRT/NVG/FLIR/Noir/Schnee) über CSS-Filter */
+    /* Sensor-Stile (CRT/NVG/FLIR/Noir/Schnee/HUD) über CSS-Filter */
     const sensorStyles = new SensorStyles(worldViewer);
     ui.sensorStyles = sensorStyles;
+
+    /* Taktisches HUD: Ziel-Boxen + Telemetrie-Overlay über dem Viewport,
+       gehört zu den Sensor-Stilen (Taste 7 bzw. Klick bis "Tactical HUD") */
+    const tacticalHud = new TacticalHUD(worldViewer, layerManager);
+
     sensorStyles.onChange = (key, label) => {
+        tacticalHud.setActive(key === "hud");
         const btn = document.getElementById("btn-sensor-style");
         if (!btn) return;
         btn.textContent = `🎛️ ${label}`;
@@ -128,7 +135,7 @@ async function main() {
         }
     };
 
-    /* Escape verlässt die Cockpit-Ansicht; Tasten 1–6 wechseln den Sensor-Stil */
+    /* Escape verlässt die Cockpit-Ansicht; Tasten 1–7 wechseln den Sensor-Stil */
     document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && cockpit.active) {
             e.preventDefault();
@@ -136,7 +143,7 @@ async function main() {
             return;
         }
         const typing = ["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName);
-        if (!typing && e.key >= "1" && e.key <= "6") {
+        if (!typing && e.key >= "1" && e.key <= "7") {
             sensorStyles.applyByDigit(Number(e.key));
         }
     });
@@ -180,6 +187,9 @@ async function main() {
             ui.updateCameraCoords();
             lastCoordsUpdate = now;
         }
+
+        // Taktisches HUD neu zeichnen (nur wenn aktiv, siehe TacticalHUD.update)
+        tacticalHud.update(ui.selectedObject?.id ?? null);
 
         // "vor N Sekunden aktualisiert" mitlaufen lassen
         if (now - lastStatusUpdate > 2000) {
