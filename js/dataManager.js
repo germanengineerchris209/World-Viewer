@@ -36,12 +36,24 @@ export async function loadJSON(url) {
     }
 }
 
+/**
+ * Entfernt unsichtbare Unicode-Steuerzeichen (z.B. Bidi-Marker wie
+ * LEFT-TO-RIGHT MARK) aus Anzeigenamen. Solche Zeichen kommen bei
+ * extern bezogenen Datensätzen vor (z.B. Radiosender-Namen) und
+ * bringen Cesiums Label-Renderer zum Absturz – der gesamte Globus
+ * hört dann auf zu rendern (siehe WEB-31).
+ */
+function sanitizeLabelText(text) {
+    const cleaned = String(text).replace(/[\p{Cf}\p{Cc}]/gu, "").trim();
+    return cleaned || "Unbekannt";
+}
+
 /** Wandelt einen Roh-Datensatz in das einheitliche Format um. */
 export function normalizeRecord(raw, type) {
     return {
         id: raw.id ?? `${type}-${Math.random().toString(36).slice(2, 9)}`,
         type,
-        name: raw.name ?? raw.callsign ?? raw.id ?? "Unbekannt",
+        name: sanitizeLabelText(raw.name ?? raw.callsign ?? raw.id ?? "Unbekannt"),
         position: {
             latitude: raw.position?.latitude ?? raw.latitude ?? 0,
             longitude: raw.position?.longitude ?? raw.longitude ?? 0,

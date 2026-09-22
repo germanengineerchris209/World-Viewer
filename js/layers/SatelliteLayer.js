@@ -93,7 +93,12 @@ export class SatelliteLayer extends BaseLayer {
         await this._loadDemo();
     }
 
-    /** Holt die TLE-Gruppen über den eigenen Server. */
+    /**
+     * Holt die TLE-Gruppen über den eigenen Server – PARALLEL, nicht
+     * nacheinander: fünf sequentielle Requests würden sich bei
+     * langsamer Verbindung zum Server oder zu CelesTrak aufsummieren
+     * und die Ladeanzeige minutenlang blockieren (siehe WEB-31).
+     */
     async _loadFromCelestrak() {
         const cfg = CFG();
         const groups = cfg.groups ?? ["stations", "visual", "gps-ops", "galileo", "geo"];
@@ -101,11 +106,22 @@ export class SatelliteLayer extends BaseLayer {
         const seen = new Set();
         let count = 0;
 
-        for (const group of groups) {
-            try {
+        const responses = await Promise.allSettled(
+            groups.map(async (group) => {
                 const res = await fetch(`/api/celestrak/${group}`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const text = await res.text();
+                return res.text();
+            })
+        );
+
+        // In der ursprünglichen Gruppen-Reihenfolge auswerten, damit das
+        // "erste Gruppe gewinnt"-Dedupe weiterhin deterministisch ist.
+        for (let i = 0; i < groups.length; i++) {
+            const group = groups[i];
+            const result = responses[i];
+            try {
+                if (result.status === "rejected") throw result.reason;
+                const text = result.value;
 
                 let added = 0;
                 for (const entry of parseTle(text)) {
