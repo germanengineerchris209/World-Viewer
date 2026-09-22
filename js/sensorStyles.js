@@ -15,10 +15,12 @@ const STYLES = {
     flir:   { label: "FLIR (Wärmebild)",
               filter: "grayscale(1) invert(1) sepia(1) hue-rotate(180deg) saturate(6) contrast(1.25)" },
     noir:   { label: "Noir", filter: "grayscale(1) contrast(1.25) brightness(0.95)" },
-    snow:   { label: "Schnee", filter: "brightness(1.3) contrast(0.9) saturate(0.6)" }
+    snow:   { label: "Schnee", filter: "brightness(1.3) contrast(0.9) saturate(0.6)" },
+    hud:    { label: "Tactical HUD",
+              filter: "contrast(1.08) saturate(1.05) brightness(1.02)" }
 };
 
-const ORDER = ["normal", "crt", "nvg", "flir", "noir", "snow"];
+const ORDER = ["normal", "crt", "nvg", "flir", "noir", "snow", "hud"];
 
 export class SensorStyles {
 
@@ -44,7 +46,7 @@ export class SensorStyles {
         this.apply(ORDER[this._index]);
     }
 
-    /** Direkt per Tastendruck 1–6 anwählen. */
+    /** Direkt per Tastendruck 1–7 anwählen. */
     applyByDigit(digit) {
         const key = ORDER[digit - 1];
         if (key) this.apply(key);
