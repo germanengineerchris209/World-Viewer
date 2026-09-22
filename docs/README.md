@@ -28,5 +28,6 @@ nicht rückwirkend umbenannt.
 | WEB-12 | UI-Texte durchgängig auf Deutsch übersetzen | erledigt | [WEB-12-ui-uebersetzung-deutsch.md](./WEB-12-ui-uebersetzung-deutsch.md) |
 | WEB-15 | God's-Eye-View-Vergleich + Tier-1-Umsetzung | erledigt | [WEB-15-gods-eye-view-tier1.md](./WEB-15-gods-eye-view-tier1.md) |
 | WEB-20 | Open Source Palantir – Gotham-Features | erledigt | [WEB-20-open-source-palantir.md](./WEB-20-open-source-palantir.md) |
+| WEB-33 | UI Update – Liquid Glass + Rebranding zu ARGUS | erledigt | [WEB-33-ui-update-liquid-glass.md](./WEB-33-ui-update-liquid-glass.md) |
 
 *(Wird vom Documentation Agent bei jedem neuen/aktualisierten Task ergänzt.)*
