@@ -44,6 +44,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | ✈️ Flugzeuge (Alternative) | adsb.lol | regional um einen Punkt |
 | 🛰️ Satelliten (echte Bahnen) | CelesTrak + SGP4 | |
 | 🌋 Erdbeben | USGS | letzte 24 Stunden |
+| 🗻 Vulkane | Smithsonian GVP / USGS Volcano Hazards Program | handkuratierte Auswahl, statisch |
 | 🚀 Raketenstarts | Launch Library 2 | 15 Abrufe/Stunde |
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
