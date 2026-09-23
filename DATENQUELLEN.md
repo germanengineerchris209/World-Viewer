@@ -49,6 +49,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
 | Objektfotos | Wikipedia | |
 | Ortsnamen | OpenStreetMap/Nominatim | |
+| 🌫️ Luftqualität (AQI) | Open-Meteo Air Quality API | Großstädte, handkuratiert |
 
 ### 🟡 Kostenloser Schlüssel nötig
 
@@ -250,6 +251,21 @@ ist daher nicht nötig – Layer und Livestream laufen komplett im
 Browser. Empfohlen (kein Zwang) ist ein aussagekräftiger
 `User-Agent`-Header; Richtwert 2-3 Anfragen/Sekunde, die App stellt
 nur eine Anfrage pro Aktualisierung.
+
+### 🌫️ Luftqualität (AQI)
+
+**Open-Meteo Air Quality API** (`air-quality-api.open-meteo.com`) –
+öffentlich, ohne Anmeldung, ohne Schlüssel für nicht-kommerzielle
+Nutzung. Die App fragt PM2.5, PM10, Ozon, Stickstoffdioxid sowie
+europäischen und US-AQI für eine handkuratierte Liste von Großstädten
+(`data/aqi-locations.json`) ab – in EINER Anfrage, da `latitude`/
+`longitude` kommaseparierte Listen akzeptieren und die Antwort ein
+Array in derselben Reihenfolge liefert.
+
+CORS ist gesetzt (`Access-Control-Allow-Origin: *`, per curl
+verifiziert), ein Server-Proxy ist daher nicht nötig. Werte
+aktualisieren sich bei Open-Meteo stündlich, die App fragt alle 30
+Minuten nach. Reine Umweltdaten ohne Personenbezug.
 
 ### 🗺️ Karten und Gelände
 

@@ -10,6 +10,7 @@
  */
 
 import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
+import { VolcanoLayer } from "./layers/VolcanoLayer.js";
 import { getObjectImage, getPlaceholderImage } from "./imageProvider.js";
 import { playCameraStream, playRadioStream, stopActiveStream } from "./streamPlayer.js";
 import { findLinkedObjects } from "./linkAnalysis.js";
@@ -20,7 +21,7 @@ const fmt = new Intl.NumberFormat("de-DE");
 const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
-    launch: "🚀", fire: "🔥", radio: "📻", cable: "🔌"
+    launch: "🚀", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻"
 };
 
 /** Formatierungs-Helfer */
@@ -149,6 +150,29 @@ const DETAIL_SCHEMAS = {
                     style="color:#38bdf8">Sender-Homepage öffnen ↗</a></span></div>`
             : ""
     },
+    aqi: {
+        badge: "Luftqualität",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [];
+            if (m.europeanAqi != null) rows.push(["Euro-AQI", F.text(m.europeanAqi)]);
+            if (m.usAqi != null) rows.push(["US-AQI", F.text(m.usAqi)]);
+            rows.push(
+                ["PM2.5", m.pm2_5 != null ? `${fmt.format(m.pm2_5)} µg/m³` : "–"],
+                ["PM10", m.pm10 != null ? `${fmt.format(m.pm10)} µg/m³` : "–"],
+                ["Ozon (O₃)", m.ozone != null ? `${fmt.format(m.ozone)} µg/m³` : "–"],
+                ["Stickstoffdioxid (NO₂)", m.nitrogenDioxide != null ? `${fmt.format(m.nitrogenDioxide)} µg/m³` : "–"]
+            );
+            if (m.measuredAt) rows.push(["Stand", new Date(m.measuredAt).toLocaleString("de-DE"), true]);
+            rows.push(
+                ["Land", F.text(m.country)],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        }
+    },
     infrastructure: {
         badge: "Infrastruktur",
         title: (o) => o.name,
@@ -204,6 +228,24 @@ const DETAIL_SCHEMAS = {
                  <span><a href="${o.metadata.usgsUrl}" target="_blank" rel="noopener"
                     style="color:#38bdf8">USGS-Bericht öffnen ↗</a></span></div>`
             : ""
+    },
+    volcano: {
+        badge: "Vulkan",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Status", VolcanoLayer.statusLabel(m.status)],
+                ["Typ", F.text(m.volcanoType)],
+                ["Land", F.text(m.country)],
+                ["Höhe", F.meters(m.elevation)],
+                ["Letzte Eruption", F.text(m.lastEruption), true],
+                ["Info", F.text(m.info), true],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            ];
+            return rows;
+        }
     },
     launch: {
         badge: "Raketenstart",
