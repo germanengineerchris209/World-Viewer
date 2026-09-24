@@ -203,6 +203,15 @@ window.WORLD_VIEWER_CONFIG = {
         order: "votes"
     },
 
+    aqi: {
+        // Open-Meteo Air Quality API – frei, kein Key für nicht-kommerzielle
+        // Nutzung. Städteliste liegt in data/aqi-locations.json; alle
+        // Koordinaten werden in EINER Anfrage abgefragt (kommaseparierte
+        // Listen). Aktualisiert sich stündlich, öfter abfragen bringt nichts.
+        apiUrl: "https://air-quality-api.open-meteo.com/v1/air-quality",
+        refreshSeconds: 1800
+    },
+
 
     /* ═══════════ Kameras ═══════════ */
 

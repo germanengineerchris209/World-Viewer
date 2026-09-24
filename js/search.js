@@ -46,7 +46,7 @@ const CITIES = [
 // Icons je Treffertyp
 const TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
-    camera: "📷", infrastructure: "🏗️", cable: "🔌",
+    camera: "📷", infrastructure: "🏗️", cable: "🔌", aqi: "🌫️",
     city: "🏙️", coords: "📍"
 };
 

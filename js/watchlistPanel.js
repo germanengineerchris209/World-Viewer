@@ -10,7 +10,7 @@
 const TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
-    launch: "🚀", fire: "🔥"
+    launch: "🚀", fire: "🔥", volcano: "🗻"
 };
 
 const EVENT_LABEL = { entered: "hat betreten", exited: "hat verlassen" };
