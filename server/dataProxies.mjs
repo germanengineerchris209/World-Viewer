@@ -225,6 +225,56 @@ function normalizeLaunches(json) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   2b. Launch Library 2 – vergangene Starts (für das Zeitleisten-Replay)
+   ═══════════════════════════════════════════════════════════ */
+
+const LAUNCH_HISTORY_TTL_MS = 30 * 60 * 1000;
+
+export async function handleLaunchesHistory(res, days) {
+    const span = Math.min(Math.max(Number(days) || 30, 1), 90);
+
+    try {
+        const result = await cachedFetch(`launches:history:${span}`, LAUNCH_HISTORY_TTL_MS, async () => {
+            const end = new Date();
+            const start = new Date(end.getTime() - span * 86_400_000);
+
+            // "previous" liefert bereits erfolgte Starts (net in der Vergangenheit)
+            const url = new URL("https://ll.thespacedevs.com/2.3.0/launches/previous/");
+            url.searchParams.set("net__gte", start.toISOString());
+            url.searchParams.set("net__lte", end.toISOString());
+            url.searchParams.set("limit", "100");
+            url.searchParams.set("mode", "detailed");
+
+            const token = process.env.LL2_API_TOKEN;
+            const upstream = await fetchWithTimeout(url, {
+                headers: {
+                    Accept: "application/json",
+                    ...(token ? { Authorization: `Token ${token}` } : {})
+                }
+            }, 20_000);
+
+            if (!upstream.ok) {
+                throw new Error(upstream.status === 429
+                    ? "Kontingent erschöpft (15 Abrufe/Stunde ohne Token)"
+                    : `Launch Library antwortete mit ${upstream.status}`);
+            }
+
+            const json = await upstream.json();
+            return { data: JSON.stringify(normalizeLaunches(json)), contentType: "application/json" };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Vergangene Starts nicht abrufbar: ${err.message}` });
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
    3. NASA FIRMS – aktive Brände
    ═══════════════════════════════════════════════════════════ */
 
@@ -286,6 +336,71 @@ export async function handleFires(res) {
 
     } catch (err) {
         sendJson(res, 502, { error: `Branddaten nicht abrufbar: ${err.message}` });
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3b. NASA FIRMS – historische Brände (für das Zeitleisten-Replay)
+   ═══════════════════════════════════════════════════════════ */
+
+const FIRMS_HISTORY_TTL_MS = 60 * 60 * 1000;
+// Die NRT-Flächenabfrage erlaubt maximal 10 Tage pro Anfrage (API-Limit)
+const FIRMS_HISTORY_MAX_DAYS = 10;
+
+export async function handleFiresHistory(res, days) {
+    const key = process.env.FIRMS_MAP_KEY;
+    if (!key) {
+        sendJson(res, 503, {
+            error: "no_key",
+            message: "FIRMS_MAP_KEY ist nicht gesetzt. Kostenlos anfordern: "
+                + "https://firms.modaps.eosdis.nasa.gov/api/map_key/"
+        });
+        return;
+    }
+
+    const span = Math.min(Math.max(Number(days) || 7, 1), FIRMS_HISTORY_MAX_DAYS);
+
+    try {
+        const result = await cachedFetch(`fires:history:${span}`, FIRMS_HISTORY_TTL_MS, async () => {
+            const fires = [];
+            let anySuccess = false;
+
+            for (const source of FIRMS_SOURCES) {
+                try {
+                    const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/`
+                        + `${encodeURIComponent(key)}/${source}/world/${span}`;
+                    const upstream = await fetchWithTimeout(url, {}, 60_000);
+                    if (!upstream.ok) continue;
+
+                    const text = await upstream.text();
+                    const parsed = parseFirmsCsv(text);
+                    if (parsed) { fires.push(...parsed); anySuccess = true; }
+                } catch (err) {
+                    console.warn(`[firms:history] ${source}: ${err.message}`);
+                }
+            }
+            if (!anySuccess) throw new Error("Keine FIRMS-Quelle erreichbar");
+
+            return {
+                data: JSON.stringify({
+                    fetchedAt: Date.now(),
+                    days: span,
+                    maxDays: FIRMS_HISTORY_MAX_DAYS,
+                    count: fires.length,
+                    fires
+                }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Historische Branddaten nicht abrufbar: ${err.message}` });
     }
 }
 

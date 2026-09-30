@@ -10,7 +10,9 @@
  *   5. weitere offene Datenquellen (aus "God's Eye View", MIT):
  *      /api/celestrak/:group  Bahndaten (TLE) für echte Satellitenbahnen
  *      /api/launches          Raketenstarts der letzten 30 Tage
+ *      /api/launches/history  Vergangene Starts für das Zeitleisten-Replay
  *      /api/fires             Aktive Brände (NASA FIRMS, Key nötig)
+ *      /api/fires/history     Historische Brände für das Zeitleisten-Replay
  *      /api/cctv              Katalog öffentlicher Verkehrskameras
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
@@ -51,7 +53,8 @@ import { fileURLToPath } from "node:url";
 import { fetchFlights, parseBounds } from "./flightProviders.mjs";
 import { handleCameraProxy, buildAllowlist, getAllowlist } from "./cameraProxy.mjs";
 import {
-    handleCelestrak, handleLaunches, handleFires, handleCctvCatalog, TLE_GROUPS
+    handleCelestrak, handleLaunches, handleLaunchesHistory,
+    handleFires, handleFiresHistory, handleCctvCatalog, TLE_GROUPS
 } from "./dataProxies.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
 
@@ -466,6 +469,14 @@ export function createServer() {
             case "/api/fires":
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleFires(res);
+
+            case "/api/launches/history":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleLaunchesHistory(res, searchParams.get("days"));
+
+            case "/api/fires/history":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleFiresHistory(res, searchParams.get("days"));
 
             case "/api/cctv":
                 if (req.method !== "GET") return res.writeHead(405).end();

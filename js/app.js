@@ -14,6 +14,7 @@ import { LayerManager } from "./layerManager.js";
 import { UI } from "./ui.js";
 import { Search } from "./search.js";
 import { Timeline } from "./timeline.js";
+import { HistoryReplay } from "./historyReplay.js";
 import { Assistant } from "./ai/assistant.js";
 import { Watchlist } from "./watchlist.js";
 import { WatchlistPanel } from "./watchlistPanel.js";
@@ -126,6 +127,10 @@ async function main() {
         ui.updateFlightStatus(aircraftLayer.getStatus());
     };
 
+    /* Zeitleisten-Replay: historische Erdbeben/Brände/Starts abspielen
+       (Play/Pause/Scrub), unabhängig vom Zeitraffer der Simulation oben */
+    const historyReplay = new HistoryReplay(worldViewer, layerManager, ui);
+
     /* Klick auf Objekte → Auswahl + Detailpanel */
     worldViewer.onObjectPicked = (entity) => {
         if (cockpit.active) return;      // im Cockpit wird nicht ausgewählt
@@ -176,6 +181,9 @@ async function main() {
 
         // Simulationszeit weiterschalten (0 wenn pausiert)
         const simDelta = timeline.tick(realDelta);
+
+        // Zeitleisten-Replay: historische Ereignisse nach Scrubber-Position einblenden
+        historyReplay.tick(realDelta);
 
         // Layer aktualisieren. Live-Daten bewegen sich in ECHTER Zeit,
         // die Simulation (Schiffe, Satelliten, Demo-Flugzeuge) im Zeitraffer.
