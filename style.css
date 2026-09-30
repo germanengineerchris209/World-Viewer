@@ -429,6 +429,26 @@ body { display: flex; }
 
 .detail-actions { margin-top: 14px; }
 
+/* ── Kraftstoffreserven (Füllstands-Balken) ── */
+
+.fuel-reserve-block { display: flex; flex-direction: column; gap: 10px; }
+.fuel-row-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px; margin-bottom: 4px;
+}
+.fuel-row-label { color: var(--text); font-weight: 600; }
+.fuel-row-percent { font-family: var(--mono); font-weight: 700; }
+.fuel-bar-track {
+    height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08);
+    overflow: hidden;
+}
+.fuel-bar-fill { height: 100%; border-radius: 4px; }
+.fuel-row-meta {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    margin-top: 4px;
+}
+
 /* ── Verknüpfungen (Link-Analyse) ── */
 
 #detail-links { margin-top: 14px; }

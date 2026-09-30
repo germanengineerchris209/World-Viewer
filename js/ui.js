@@ -11,6 +11,7 @@
 
 import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { VolcanoLayer } from "./layers/VolcanoLayer.js";
+import { FUEL_TYPES, fillBandFor } from "./layers/FuelReserveLayer.js";
 import { getObjectImage, getPlaceholderImage } from "./imageProvider.js";
 import { playCameraStream, playRadioStream, stopActiveStream } from "./streamPlayer.js";
 import { findLinkedObjects } from "./linkAnalysis.js";
@@ -22,7 +23,8 @@ const fmt = new Intl.NumberFormat("de-DE");
 const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
-    launch: "🚀", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻"
+    launch: "🚀", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
+    fuelReserve: "⛽"
 };
 
 /** Formatierungs-Helfer */
@@ -246,6 +248,42 @@ const DETAIL_SCHEMAS = {
                 ["Länge", F.coord(o.position.longitude)]
             ];
             return rows;
+        }
+    },
+    fuelReserve: {
+        badge: "Kraftstoffreserven",
+        title: (o) => o.metadata.country ?? o.name,
+        fields: (o) => [
+            ["Land", F.text(o.metadata.country)],
+            ["Breite", F.coord(o.position.latitude)],
+            ["Länge", F.coord(o.position.longitude)]
+        ],
+        extraHtml: (o) => {
+            const m = o.metadata;
+            const rows = FUEL_TYPES.map(key => {
+                const f = m[key];
+                if (!f) return "";
+                const band = fillBandFor(f.fillPercent);
+                return `
+                    <div class="fuel-row">
+                        <div class="fuel-row-head">
+                            <span class="fuel-row-label">${f.label}</span>
+                            <span class="fuel-row-percent" style="color:${band.color}">
+                                ${fmt.format(f.fillPercent)} %
+                            </span>
+                        </div>
+                        <div class="fuel-bar-track">
+                            <div class="fuel-bar-fill" style="width:${Math.min(100, Math.max(0, f.fillPercent))}%; background:${band.color}"></div>
+                        </div>
+                        <div class="fuel-row-meta">
+                            <span>${fmt.format(Math.round(f.currentAmountMillionLiters))} / ${fmt.format(Math.round(f.maxAmountMillionLiters))} Mio. l</span>
+                            <span>${fmt.format(f.daysOfSupply)} Tage Reichweite</span>
+                        </div>
+                    </div>`;
+            }).join("");
+
+            return `<div class="detail-field wide fuel-reserve-block">${rows}</div>` +
+                (m.info ? `<div class="detail-field wide"><label>Info</label><span>${F.text(m.info)}</span></div>` : "");
         }
     },
     launch: {
