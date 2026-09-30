@@ -293,6 +293,12 @@ body { display: flex; }
 }
 .watchlist-alert:hover { background: var(--bg-hover); }
 .watchlist-alert.wa-exited { border-left-color: var(--amber); }
+.watchlist-alert.wa-anomaly.wa-warning { border-left-color: var(--amber); }
+.watchlist-alert.wa-anomaly.wa-critical {
+    border-left-color: var(--red);
+    background: rgba(248,113,113,0.1);
+    animation: pulse 2.4s infinite;
+}
 .wa-text { flex: 1; min-width: 0; }
 .wa-time {
     font-family: var(--mono); font-size: 10px; color: var(--text-dim);
