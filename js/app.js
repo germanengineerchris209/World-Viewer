@@ -37,6 +37,7 @@ import { FireLayer } from "./layers/FireLayer.js";
 import { RadioLayer } from "./layers/RadioLayer.js";
 import { CableLayer } from "./layers/CableLayer.js";
 import { AQILayer } from "./layers/AQILayer.js";
+import { HeatmapLayer } from "./layers/HeatmapLayer.js";
 
 async function main() {
     /* 1 ── 3D-Globus mit Satellitenansicht */
@@ -61,6 +62,7 @@ async function main() {
     layerManager.register(new FireLayer(worldViewer));
     layerManager.register(new RadioLayer(worldViewer));
     layerManager.register(new AQILayer(worldViewer));
+    layerManager.register(new HeatmapLayer(worldViewer, layerManager));
 
     /* 3 ── UI, Suche, Timeline, KI */
     const ui = new UI(worldViewer, layerManager);

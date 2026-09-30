@@ -15,6 +15,7 @@ import { getObjectImage, getPlaceholderImage } from "./imageProvider.js";
 import { playCameraStream, playRadioStream, stopActiveStream } from "./streamPlayer.js";
 import { findLinkedObjects } from "./linkAnalysis.js";
 import { buildDossierText, dossierFilename, downloadTextFile } from "./dossier.js";
+import { GraphView } from "./graphView.js";
 
 const fmt = new Intl.NumberFormat("de-DE");
 
@@ -348,7 +349,12 @@ export class UI {
             cockpitExit: document.getElementById("cockpit-exit"),
             links: document.getElementById("detail-links"),
             linksList: document.getElementById("detail-links-list"),
+            graphPanel: document.getElementById("graph-panel"),
+            graphCanvas: document.getElementById("graph-canvas"),
+            graphSubtitle: document.getElementById("graph-subtitle"),
         };
+
+        this._graphView = null;
 
         this.aircraftLayer = null;   // wird von app.js gesetzt
         this.cockpit = null;         // wird von app.js gesetzt
@@ -562,6 +568,29 @@ export class UI {
     }
 
     /**
+     * Öffnet die Netzwerk-Graph-Ansicht der Link-Analyse für `object`
+     * (Gothams "Graph"-App): Knoten = Objekte, Kanten = Verknüpfungsgrund.
+     * Klick auf einen Knoten zentriert den Graphen auf das neue Objekt
+     * und aktualisiert das Detailpanel im Hintergrund.
+     */
+    openGraphView(object) {
+        if (!this._graphView) {
+            this._graphView = new GraphView({
+                container: this._el.graphCanvas,
+                subtitleEl: this._el.graphSubtitle,
+                layerManager: this.layerManager,
+                onSelect: (nextObject) => this.showObjectDetails(nextObject)
+            });
+        }
+        this._el.graphPanel.classList.remove("hidden");
+        this._graphView.show(object);
+    }
+
+    closeGraphView() {
+        this._el.graphPanel.classList.add("hidden");
+    }
+
+    /**
      * Lädt das Medium zum Objekt:
      *   Kameras → Livestream einbetten
      *   sonst   → Foto (Wikipedia) bzw. generierte Illustration
@@ -648,6 +677,7 @@ export class UI {
         this._el.panel.classList.add("hidden");
         this._el.mediaSlot.innerHTML = "";
         this._el.links.classList.add("hidden");
+        this.closeGraphView();
         this.selectedObject = null;
         this._clearHighlight();
         this.worldViewer.stopFollowing();
@@ -786,6 +816,17 @@ export class UI {
                 links
             });
             downloadTextFile(dossierFilename(object.metadata?.callsign ?? object.name), text);
+        });
+
+        // Verknüpfungen als interaktiver Netzwerk-Graph ("Graph"-App)
+        document.getElementById("detail-graph").addEventListener("click", () => {
+            if (this.selectedObject) this.openGraphView(this.selectedObject);
+        });
+        document.getElementById("graph-close").addEventListener("click", () => this.closeGraphView());
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !this._el.graphPanel.classList.contains("hidden")) {
+                this.closeGraphView();
+            }
         });
 
         // "Claude dazu fragen" öffnet den Assistenten mit passender Frage

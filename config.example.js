@@ -212,6 +212,15 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 1800
     },
 
+    heatmap: {
+        // Pattern-of-Life-Heatmap: reine Weiterverarbeitung der bereits
+        // geladenen Live-Positionen von Aircraft/Ships, keine neue Quelle.
+        windowMinutes: 30,        // rollierendes Zeitfenster für Stichproben
+        sampleIntervalSeconds: 15, // wie oft Positionen ins Fenster übernommen werden
+        rebuildSeconds: 5,        // wie oft das Gitter neu gezeichnet wird
+        gridCells: 24             // Gitterauflösung (Zellen je Achse)
+    },
+
 
     /* ═══════════ Kameras ═══════════ */
 
