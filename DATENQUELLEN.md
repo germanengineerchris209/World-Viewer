@@ -51,6 +51,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | Objektfotos | Wikipedia | |
 | Ortsnamen | OpenStreetMap/Nominatim | |
 | 🌫️ Luftqualität (AQI) | Open-Meteo Air Quality API | Großstädte, handkuratiert |
+| ⛽ Kraftstoffreserven | modelliert nach IEA-Bevorratungsregeln / nationalen Mindestbevorratungsgesetzen | 20 größte Volkswirtschaften, statische Modellwerte, keine Live-Meldung |
 
 ### 🟡 Kostenloser Schlüssel nötig
 
@@ -267,6 +268,24 @@ CORS ist gesetzt (`Access-Control-Allow-Origin: *`, per curl
 verifiziert), ein Server-Proxy ist daher nicht nötig. Werte
 aktualisieren sich bei Open-Meteo stündlich, die App fragt alle 30
 Minuten nach. Reine Umweltdaten ohne Personenbezug.
+
+### ⛽ Kraftstoffreserven
+
+Vorbild ist Neuseelands öffentliche Übersicht über Dieselreserven
+("Minimum Stockholding Obligation"): Füllstand in Prozent des
+Maximalbestands sowie Reichweite in Tagen. `data/fuel-reserves.json`
+überträgt das Konzept handkuratiert auf Benzin, Diesel und Kerosin
+(Jet A-1) für die 20 größten Volkswirtschaften (nach nominalem BIP).
+
+Es gibt keine einzelne, frei abfragbare API, die produktscharfe
+Lagerbestände (Benzin/Diesel/Kerosin getrennt) für alle 20 Länder
+liefert. Die Werte sind daher **Modellwerte**, abgeleitet aus öffentlich
+bekannten Bevorratungspflichten – vor allem der IEA-90-Tage-Regel für
+Mitgliedsstaaten und nationalen Mindestbevorratungsgesetzen (analog zur
+neuseeländischen MSO). Jeder Datensatz trägt ein `info`-Feld mit diesem
+Hinweis. Kein Live-Feed, keine amtliche Echtzeitmeldung einzelner
+Tanklager – für reale Entscheidungen bitte die offiziellen nationalen
+Stellen (z.B. IEA Oil Stocks Reporting System) konsultieren.
 
 ### 🗺️ Karten und Gelände
 

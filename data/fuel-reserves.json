@@ -1,0 +1,682 @@
+[
+    {
+        "id": "fuel-us",
+        "name": "USA",
+        "country": "USA",
+        "latitude": 38.9072,
+        "longitude": -77.0369,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 87000,
+            "maxAmountMillionLiters": 111538.5,
+            "fillPercent": 78.0,
+            "dailyConsumptionMillionLiters": 1450,
+            "daysOfSupply": 60
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 32500,
+            "maxAmountMillionLiters": 39634.1,
+            "fillPercent": 82.0,
+            "dailyConsumptionMillionLiters": 500,
+            "daysOfSupply": 65
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 11250,
+            "maxAmountMillionLiters": 15202.7,
+            "fillPercent": 74.0,
+            "dailyConsumptionMillionLiters": 250,
+            "daysOfSupply": 45
+        }
+    },
+    {
+        "id": "fuel-cn",
+        "name": "China",
+        "country": "China",
+        "latitude": 39.9042,
+        "longitude": 116.4074,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 9000,
+            "maxAmountMillionLiters": 12857.1,
+            "fillPercent": 70.0,
+            "dailyConsumptionMillionLiters": 300,
+            "daysOfSupply": 30
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 15750,
+            "maxAmountMillionLiters": 21283.8,
+            "fillPercent": 74.0,
+            "dailyConsumptionMillionLiters": 450,
+            "daysOfSupply": 35
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 2400,
+            "maxAmountMillionLiters": 3692.3,
+            "fillPercent": 65.0,
+            "dailyConsumptionMillionLiters": 120,
+            "daysOfSupply": 20
+        }
+    },
+    {
+        "id": "fuel-de",
+        "name": "Deutschland",
+        "country": "Deutschland",
+        "latitude": 52.52,
+        "longitude": 13.405,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 5400,
+            "maxAmountMillionLiters": 6352.9,
+            "fillPercent": 85.0,
+            "dailyConsumptionMillionLiters": 60,
+            "daysOfSupply": 90
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 12350,
+            "maxAmountMillionLiters": 14034.1,
+            "fillPercent": 88.0,
+            "dailyConsumptionMillionLiters": 130,
+            "daysOfSupply": 95
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 2800,
+            "maxAmountMillionLiters": 3500.0,
+            "fillPercent": 80.0,
+            "dailyConsumptionMillionLiters": 35,
+            "daysOfSupply": 80
+        }
+    },
+    {
+        "id": "fuel-jp",
+        "name": "Japan",
+        "country": "Japan",
+        "latitude": 35.6762,
+        "longitude": 139.6503,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 11900,
+            "maxAmountMillionLiters": 14512.2,
+            "fillPercent": 82.0,
+            "dailyConsumptionMillionLiters": 140,
+            "daysOfSupply": 85
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 6300,
+            "maxAmountMillionLiters": 7411.8,
+            "fillPercent": 85.0,
+            "dailyConsumptionMillionLiters": 70,
+            "daysOfSupply": 90
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 3000,
+            "maxAmountMillionLiters": 3846.2,
+            "fillPercent": 78.0,
+            "dailyConsumptionMillionLiters": 40,
+            "daysOfSupply": 75
+        }
+    },
+    {
+        "id": "fuel-in",
+        "name": "Indien",
+        "country": "Indien",
+        "latitude": 28.6139,
+        "longitude": 77.209,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 2090,
+            "maxAmountMillionLiters": 3073.5,
+            "fillPercent": 68.0,
+            "dailyConsumptionMillionLiters": 95,
+            "daysOfSupply": 22
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 7000,
+            "maxAmountMillionLiters": 10000.0,
+            "fillPercent": 70.0,
+            "dailyConsumptionMillionLiters": 280,
+            "daysOfSupply": 25
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 630,
+            "maxAmountMillionLiters": 1016.1,
+            "fillPercent": 62.0,
+            "dailyConsumptionMillionLiters": 35,
+            "daysOfSupply": 18
+        }
+    },
+    {
+        "id": "fuel-gb",
+        "name": "Vereinigtes Königreich",
+        "country": "Vereinigtes Königreich",
+        "latitude": 51.5074,
+        "longitude": -0.1278,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 3375,
+            "maxAmountMillionLiters": 4218.8,
+            "fillPercent": 80.0,
+            "dailyConsumptionMillionLiters": 45,
+            "daysOfSupply": 75
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 7200,
+            "maxAmountMillionLiters": 8674.7,
+            "fillPercent": 83.0,
+            "dailyConsumptionMillionLiters": 90,
+            "daysOfSupply": 80
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 2600,
+            "maxAmountMillionLiters": 3421.1,
+            "fillPercent": 76.0,
+            "dailyConsumptionMillionLiters": 40,
+            "daysOfSupply": 65
+        }
+    },
+    {
+        "id": "fuel-fr",
+        "name": "Frankreich",
+        "country": "Frankreich",
+        "latitude": 48.8566,
+        "longitude": 2.3522,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 3325,
+            "maxAmountMillionLiters": 3866.3,
+            "fillPercent": 86.0,
+            "dailyConsumptionMillionLiters": 35,
+            "daysOfSupply": 95
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 11000,
+            "maxAmountMillionLiters": 12359.6,
+            "fillPercent": 89.0,
+            "dailyConsumptionMillionLiters": 110,
+            "daysOfSupply": 100
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 2975,
+            "maxAmountMillionLiters": 3672.8,
+            "fillPercent": 81.0,
+            "dailyConsumptionMillionLiters": 35,
+            "daysOfSupply": 85
+        }
+    },
+    {
+        "id": "fuel-it",
+        "name": "Italien",
+        "country": "Italien",
+        "latitude": 41.9028,
+        "longitude": 12.4964,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 2640,
+            "maxAmountMillionLiters": 3180.7,
+            "fillPercent": 83.0,
+            "dailyConsumptionMillionLiters": 30,
+            "daysOfSupply": 88
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 7820,
+            "maxAmountMillionLiters": 9093.0,
+            "fillPercent": 86.0,
+            "dailyConsumptionMillionLiters": 85,
+            "daysOfSupply": 92
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 1950,
+            "maxAmountMillionLiters": 2532.5,
+            "fillPercent": 77.0,
+            "dailyConsumptionMillionLiters": 25,
+            "daysOfSupply": 78
+        }
+    },
+    {
+        "id": "fuel-br",
+        "name": "Brasilien",
+        "country": "Brasilien",
+        "latitude": -15.7939,
+        "longitude": -47.8828,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 2340,
+            "maxAmountMillionLiters": 3545.5,
+            "fillPercent": 66.0,
+            "dailyConsumptionMillionLiters": 130,
+            "daysOfSupply": 18
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 3600,
+            "maxAmountMillionLiters": 5294.1,
+            "fillPercent": 68.0,
+            "dailyConsumptionMillionLiters": 180,
+            "daysOfSupply": 20
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 300,
+            "maxAmountMillionLiters": 500.0,
+            "fillPercent": 60.0,
+            "dailyConsumptionMillionLiters": 20,
+            "daysOfSupply": 15
+        }
+    },
+    {
+        "id": "fuel-ca",
+        "name": "Kanada",
+        "country": "Kanada",
+        "latitude": 45.4215,
+        "longitude": -75.6972,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 7410,
+            "maxAmountMillionLiters": 9148.1,
+            "fillPercent": 81.0,
+            "dailyConsumptionMillionLiters": 95,
+            "daysOfSupply": 78
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 5330,
+            "maxAmountMillionLiters": 6345.2,
+            "fillPercent": 84.0,
+            "dailyConsumptionMillionLiters": 65,
+            "daysOfSupply": 82
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 1360,
+            "maxAmountMillionLiters": 1813.3,
+            "fillPercent": 75.0,
+            "dailyConsumptionMillionLiters": 20,
+            "daysOfSupply": 68
+        }
+    },
+    {
+        "id": "fuel-ru",
+        "name": "Russland",
+        "country": "Russland",
+        "latitude": 55.7558,
+        "longitude": 37.6173,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 3080,
+            "maxAmountMillionLiters": 4277.8,
+            "fillPercent": 72.0,
+            "dailyConsumptionMillionLiters": 110,
+            "daysOfSupply": 28
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 5760,
+            "maxAmountMillionLiters": 7680.0,
+            "fillPercent": 75.0,
+            "dailyConsumptionMillionLiters": 180,
+            "daysOfSupply": 32
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 660,
+            "maxAmountMillionLiters": 1047.6,
+            "fillPercent": 63.0,
+            "dailyConsumptionMillionLiters": 30,
+            "daysOfSupply": 22
+        }
+    },
+    {
+        "id": "fuel-kr",
+        "name": "Südkorea",
+        "country": "Südkorea",
+        "latitude": 37.5665,
+        "longitude": 126.978,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 4400,
+            "maxAmountMillionLiters": 5301.2,
+            "fillPercent": 83.0,
+            "dailyConsumptionMillionLiters": 55,
+            "daysOfSupply": 80
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 5100,
+            "maxAmountMillionLiters": 5930.2,
+            "fillPercent": 86.0,
+            "dailyConsumptionMillionLiters": 60,
+            "daysOfSupply": 85
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 2160,
+            "maxAmountMillionLiters": 2734.2,
+            "fillPercent": 79.0,
+            "dailyConsumptionMillionLiters": 30,
+            "daysOfSupply": 72
+        }
+    },
+    {
+        "id": "fuel-au",
+        "name": "Australien",
+        "country": "Australien",
+        "latitude": -35.2809,
+        "longitude": 149.13,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 3250,
+            "maxAmountMillionLiters": 4276.3,
+            "fillPercent": 76.0,
+            "dailyConsumptionMillionLiters": 50,
+            "daysOfSupply": 65
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 4550,
+            "maxAmountMillionLiters": 5759.5,
+            "fillPercent": 79.0,
+            "dailyConsumptionMillionLiters": 65,
+            "daysOfSupply": 70
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 1160,
+            "maxAmountMillionLiters": 1657.1,
+            "fillPercent": 70.0,
+            "dailyConsumptionMillionLiters": 20,
+            "daysOfSupply": 58
+        }
+    },
+    {
+        "id": "fuel-es",
+        "name": "Spanien",
+        "country": "Spanien",
+        "latitude": 40.4168,
+        "longitude": -3.7038,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 2300,
+            "maxAmountMillionLiters": 2738.1,
+            "fillPercent": 84.0,
+            "dailyConsumptionMillionLiters": 25,
+            "daysOfSupply": 92
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 7125,
+            "maxAmountMillionLiters": 8189.7,
+            "fillPercent": 87.0,
+            "dailyConsumptionMillionLiters": 75,
+            "daysOfSupply": 95
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 2460,
+            "maxAmountMillionLiters": 3113.9,
+            "fillPercent": 79.0,
+            "dailyConsumptionMillionLiters": 30,
+            "daysOfSupply": 82
+        }
+    },
+    {
+        "id": "fuel-mx",
+        "name": "Mexiko",
+        "country": "Mexiko",
+        "latitude": 19.4326,
+        "longitude": -99.1332,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 1920,
+            "maxAmountMillionLiters": 3000.0,
+            "fillPercent": 64.0,
+            "dailyConsumptionMillionLiters": 120,
+            "daysOfSupply": 16
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 1170,
+            "maxAmountMillionLiters": 1772.7,
+            "fillPercent": 66.0,
+            "dailyConsumptionMillionLiters": 65,
+            "daysOfSupply": 18
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 210,
+            "maxAmountMillionLiters": 362.1,
+            "fillPercent": 58.0,
+            "dailyConsumptionMillionLiters": 15,
+            "daysOfSupply": 14
+        }
+    },
+    {
+        "id": "fuel-id",
+        "name": "Indonesien",
+        "country": "Indonesien",
+        "latitude": -6.2088,
+        "longitude": 106.8456,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 2200,
+            "maxAmountMillionLiters": 3283.6,
+            "fillPercent": 67.0,
+            "dailyConsumptionMillionLiters": 110,
+            "daysOfSupply": 20
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 2420,
+            "maxAmountMillionLiters": 3507.2,
+            "fillPercent": 69.0,
+            "dailyConsumptionMillionLiters": 110,
+            "daysOfSupply": 22
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 240,
+            "maxAmountMillionLiters": 393.4,
+            "fillPercent": 61.0,
+            "dailyConsumptionMillionLiters": 15,
+            "daysOfSupply": 16
+        }
+    },
+    {
+        "id": "fuel-nl",
+        "name": "Niederlande",
+        "country": "Niederlande",
+        "latitude": 52.3676,
+        "longitude": 4.9041,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 1425,
+            "maxAmountMillionLiters": 1637.9,
+            "fillPercent": 87.0,
+            "dailyConsumptionMillionLiters": 15,
+            "daysOfSupply": 95
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 3430,
+            "maxAmountMillionLiters": 3811.1,
+            "fillPercent": 90.0,
+            "dailyConsumptionMillionLiters": 35,
+            "daysOfSupply": 98
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 2200,
+            "maxAmountMillionLiters": 2650.6,
+            "fillPercent": 83.0,
+            "dailyConsumptionMillionLiters": 25,
+            "daysOfSupply": 88
+        }
+    },
+    {
+        "id": "fuel-sa",
+        "name": "Saudi-Arabien",
+        "country": "Saudi-Arabien",
+        "latitude": 24.7136,
+        "longitude": 46.6753,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 1760,
+            "maxAmountMillionLiters": 2346.7,
+            "fillPercent": 75.0,
+            "dailyConsumptionMillionLiters": 80,
+            "daysOfSupply": 22
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 1500,
+            "maxAmountMillionLiters": 1948.1,
+            "fillPercent": 77.0,
+            "dailyConsumptionMillionLiters": 60,
+            "daysOfSupply": 25
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 400,
+            "maxAmountMillionLiters": 579.7,
+            "fillPercent": 69.0,
+            "dailyConsumptionMillionLiters": 20,
+            "daysOfSupply": 20
+        }
+    },
+    {
+        "id": "fuel-tr",
+        "name": "Türkei",
+        "country": "Türkei",
+        "latitude": 39.9334,
+        "longitude": 32.8597,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 600,
+            "maxAmountMillionLiters": 821.9,
+            "fillPercent": 73.0,
+            "dailyConsumptionMillionLiters": 25,
+            "daysOfSupply": 24
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 1950,
+            "maxAmountMillionLiters": 2565.8,
+            "fillPercent": 76.0,
+            "dailyConsumptionMillionLiters": 75,
+            "daysOfSupply": 26
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 360,
+            "maxAmountMillionLiters": 545.5,
+            "fillPercent": 66.0,
+            "dailyConsumptionMillionLiters": 20,
+            "daysOfSupply": 18
+        }
+    },
+    {
+        "id": "fuel-ch",
+        "name": "Schweiz",
+        "country": "Schweiz",
+        "latitude": 46.948,
+        "longitude": 7.4474,
+        "altitude": 0,
+        "info": "Modellwerte auf Basis öffentlich bekannter Bevorratungspflichten (u.a. IEA-90-Tage-Regel für Mitgliedsstaaten, nationale Mindestbevorratung wie in Neuseeland) – keine amtliche Echtzeitmeldung einzelner Tanklager.",
+        "source": "Modelliert nach IEA Oil Stocks Reporting System / nationalen Mindestbevorratungsgesetzen",
+        "gasoline": {
+            "label": "Benzin",
+            "currentAmountMillionLiters": 1350,
+            "maxAmountMillionLiters": 1500.0,
+            "fillPercent": 90.0,
+            "dailyConsumptionMillionLiters": 10,
+            "daysOfSupply": 135
+        },
+        "diesel": {
+            "label": "Diesel",
+            "currentAmountMillionLiters": 3000,
+            "maxAmountMillionLiters": 3225.8,
+            "fillPercent": 93.0,
+            "dailyConsumptionMillionLiters": 20,
+            "daysOfSupply": 150
+        },
+        "kerosene": {
+            "label": "Kerosin (Jet A-1)",
+            "currentAmountMillionLiters": 1200,
+            "maxAmountMillionLiters": 1395.3,
+            "fillPercent": 86.0,
+            "dailyConsumptionMillionLiters": 10,
+            "daysOfSupply": 120
+        }
+    }
+]
