@@ -432,9 +432,16 @@ body { display: flex; }
 /* ── Verknüpfungen (Link-Analyse) ── */
 
 #detail-links { margin-top: 14px; }
+.detail-links-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 8px;
+}
 .detail-links-title {
     font-size: 11px; font-weight: 700; letter-spacing: 1px;
-    text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+    text-transform: uppercase; color: var(--text-dim); margin-bottom: 0;
+}
+#detail-graph {
+    padding: 3px 10px; font-size: 11px; flex-shrink: 0;
 }
 #detail-links-list {
     list-style: none; display: flex; flex-direction: column; gap: 4px;
@@ -449,6 +456,54 @@ body { display: flex; }
 .link-reason {
     font-family: var(--mono); font-size: 10px; color: var(--text-dim);
     flex-shrink: 0;
+}
+
+/* ── Netzwerk-Graph (Link-Analyse als Node-Graph) ── */
+
+#graph-panel {
+    position: absolute; top: 5%; left: 50%; transform: translateX(-50%);
+    width: min(880px, calc(100vw - 48px));
+    height: min(640px, calc(100vh - 10%));
+    background: linear-gradient(165deg, rgba(16,21,32,0.92), rgba(16,21,32,0.97) 60%);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    z-index: 45;
+    display: flex; flex-direction: column;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 20px 60px rgba(0,0,0,0.55);
+    animation: slideIn 0.2s ease;
+}
+
+#graph-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 10px;
+}
+#graph-header h2 { font-size: 16px; margin: 0; }
+#graph-subtitle {
+    display: block; font-family: var(--mono); font-size: 11px;
+    color: var(--text-dim); margin-top: 2px;
+}
+#graph-close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 16px; cursor: pointer;
+}
+#graph-close:hover { color: var(--text); }
+
+#graph-canvas {
+    flex: 1; min-height: 0;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+}
+
+#graph-hint {
+    margin: 8px 0 0; font-size: 11px; color: var(--text-dim); text-align: center;
+}
+
+@media (max-width: 640px) {
+    #graph-panel { width: calc(100vw - 24px); height: calc(100vh - 24px); top: 12px; padding: 10px 12px; }
 }
 
 /* ── Timeline ── */

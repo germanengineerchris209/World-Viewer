@@ -9,6 +9,9 @@
     <script src="https://cdn.jsdelivr.net/npm/cesium@1.119.0/Build/Cesium/Cesium.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.119.0/Build/Cesium/Widgets/widgets.css">
 
+    <!-- vis-network via CDN (MIT-Lizenz, kein Key) – Netzwerk-Graph für die Link-Analyse -->
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+
     <link rel="stylesheet" href="./style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
 </head>
@@ -182,7 +185,10 @@
 
             <!-- Verknüpfte Objekte (Link-Analyse) -->
             <div id="detail-links" class="hidden">
-                <h3 class="detail-links-title">🔗 Verknüpfungen</h3>
+                <div class="detail-links-head">
+                    <h3 class="detail-links-title">🔗 Verknüpfungen</h3>
+                    <button id="detail-graph" class="tool-btn" title="Verknüpfungen als Netzwerk-Graph anzeigen">🕸️ Graph</button>
+                </div>
                 <ul id="detail-links-list"></ul>
             </div>
 
@@ -200,6 +206,19 @@
                 <button id="detail-ask" class="tool-btn ai-accent">✨ Claude dazu fragen</button>
             </div>
         </aside>
+
+        <!-- ────────── Netzwerk-Graph (Link-Analyse als Node-Graph) ────────── -->
+        <div id="graph-panel" class="hidden">
+            <header id="graph-header">
+                <div>
+                    <h2>🕸️ Netzwerk-Graph</h2>
+                    <span id="graph-subtitle">–</span>
+                </div>
+                <button id="graph-close" title="Schließen">✕</button>
+            </header>
+            <div id="graph-canvas"></div>
+            <p id="graph-hint">Klick auf einen Knoten: Objekt auswählen &amp; Graph neu zentrieren · Ziehen: verschieben · Scrollen: zoomen</p>
+        </div>
 
         <!-- ────────── Cockpit-Anzeige ────────── -->
         <div id="cockpit-hud" class="hidden">
