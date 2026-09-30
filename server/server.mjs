@@ -12,6 +12,7 @@
  *      /api/launches          Raketenstarts der letzten 30 Tage
  *      /api/fires             Aktive Brände (NASA FIRMS, Key nötig)
  *      /api/cctv              Katalog öffentlicher Verkehrskameras
+ *      /api/events            Globale Ereignis-Lage (GDELT GEO 2.0)
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -51,7 +52,7 @@ import { fileURLToPath } from "node:url";
 import { fetchFlights, parseBounds } from "./flightProviders.mjs";
 import { handleCameraProxy, buildAllowlist, getAllowlist } from "./cameraProxy.mjs";
 import {
-    handleCelestrak, handleLaunches, handleFires, handleCctvCatalog, TLE_GROUPS
+    handleCelestrak, handleLaunches, handleFires, handleCctvCatalog, handleEvents, TLE_GROUPS
 } from "./dataProxies.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
 
@@ -471,12 +472,17 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleCctvCatalog(res);
 
+            case "/api/events":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleEvents(res);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
                     celestrak: true,
                     launches: true,
                     cctv: true,
+                    events: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
                     tleGroups: TLE_GROUPS
@@ -537,6 +543,7 @@ if (isMain) {
             : "  ℹ️  Brände (NASA FIRMS): kein FIRMS_MAP_KEY – Layer bleibt leer\n"
             + "     Kostenlos: https://firms.modaps.eosdis.nasa.gov/api/map_key/");
         console.log("  📹 Verkehrskameras (TfL, Caltrans, Austin): bereit");
+        console.log("  📰 Ereignisse (GDELT GEO 2.0): bereit");
 
         console.log(AISSTREAM_API_KEY
             ? "  🚢 Schiffsdaten (AISStream): Key erkannt, verbinde per WebSocket …"

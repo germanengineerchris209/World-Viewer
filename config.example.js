@@ -194,6 +194,15 @@ window.WORLD_VIEWER_CONFIG = {
         maxFires: 1500          // weltweit können es zehntausende sein
     },
 
+    events: {
+        // GDELT Project GEO 2.0 API – frei, kein Key. Server-Proxy, weil
+        // GDELT keine CORS-Header sendet. GDELT selbst aktualisiert seine
+        // Kartendaten alle 15 Minuten, öfter abfragen bringt nichts.
+        apiUrl: "/api/events",
+        refreshSeconds: 900,
+        maxEvents: 800
+    },
+
     radio: {
         // Radio Browser API – frei, kein Key. Die Mirrors rotieren per
         // DNS; "all.api.radio-browser.info" reicht als fester Einstieg.
