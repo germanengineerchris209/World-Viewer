@@ -212,6 +212,15 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 1800
     },
 
+    weather: {
+        // Open-Meteo Forecast API – dieselbe Quelle wie der AQI-Layer,
+        // frei, kein Key für nicht-kommerzielle Nutzung. Städteliste liegt
+        // in data/weather-locations.json, alle Koordinaten werden in EINER
+        // Anfrage abgefragt (kommaseparierte Listen).
+        apiUrl: "https://api.open-meteo.com/v1/forecast",
+        refreshSeconds: 900
+    },
+
     heatmap: {
         // Pattern-of-Life-Heatmap: reine Weiterverarbeitung der bereits
         // geladenen Live-Positionen von Aircraft/Ships, keine neue Quelle.
