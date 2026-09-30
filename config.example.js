@@ -194,6 +194,14 @@ window.WORLD_VIEWER_CONFIG = {
         maxFires: 1500          // weltweit können es zehntausende sein
     },
 
+    // Zeitleisten-Replay: dieselben Quellen wie oben, nur über die
+    // "history"-Endpunkte (7-/30-Tage-Feeds statt nur "aktuell")
+    history: {
+        defaultRangeDays: 7,
+        fires: { apiUrl: "/api/fires/history", maxFires: 4000 },
+        launches: { apiUrl: "/api/launches/history" }
+    },
+
     radio: {
         // Radio Browser API – frei, kein Key. Die Mirrors rotieren per
         // DNS; "all.api.radio-browser.info" reicht als fester Einstieg.

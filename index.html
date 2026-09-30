@@ -90,6 +90,31 @@
             <ul id="watchlist-alerts"></ul>
         </section>
 
+        <!-- Zeitleisten-Replay: historische Erdbeben/Brände/Starts abspielen -->
+        <section class="sidebar-section">
+            <h2 class="section-title">Zeitleisten-Replay</h2>
+            <div class="button-row">
+                <button id="history-toggle" class="tool-btn"
+                        title="Erdbeben/Brände/Raketenstarts der letzten Tage zeitlich abspielen">
+                    🕰️ Replay starten
+                </button>
+            </div>
+            <div id="history-options" class="hidden">
+                <div class="button-row">
+                    <select id="history-range" title="Betrachteter Zeitraum">
+                        <option value="7" selected>7 Tage</option>
+                        <option value="30">30 Tage</option>
+                    </select>
+                </div>
+                <div class="button-row">
+                    <label class="history-check"><input type="checkbox" id="history-eq" checked> 🌋 Erdbeben</label>
+                    <label class="history-check"><input type="checkbox" id="history-fire" checked> 🔥 Brände</label>
+                    <label class="history-check"><input type="checkbox" id="history-launch" checked> 🚀 Starts</label>
+                </div>
+                <div id="history-status" class="flight-status-line">–</div>
+            </div>
+        </section>
+
         <!-- Zeichnen / Whiteboard: Freihand, Grenzen, Distanzmessung -->
         <section class="sidebar-section">
             <h2 class="section-title">Zeichnen &amp; Messen</h2>
@@ -323,6 +348,28 @@
                 </select>
                 <span id="tl-clock">00:00:00</span>
                 <span id="tl-live" class="live-badge">LIVE SIM</span>
+            </div>
+        </footer>
+
+        <!-- ────────── Zeitleisten-Replay (unten, ersetzt die Timeline solange aktiv) ────────── -->
+        <footer id="history-bar" class="hidden">
+            <div id="history-controls">
+                <button id="hp-restart" title="Zum Anfang">⏮</button>
+                <button id="hp-play" title="Abspielen">▶</button>
+                <button id="hp-pause" title="Pause">⏸</button>
+            </div>
+            <div id="history-track">
+                <input type="range" id="history-scrub" min="0" max="1000" value="0" step="1">
+            </div>
+            <div id="history-right">
+                <select id="hp-speed" title="Abspielgeschwindigkeit">
+                    <option value="600">10 Min/s</option>
+                    <option value="3600" selected>1 Std/s</option>
+                    <option value="21600">6 Std/s</option>
+                    <option value="86400">1 Tag/s</option>
+                </select>
+                <span id="history-clock">–</span>
+                <button id="history-close" title="Replay beenden">✕</button>
             </div>
         </footer>
     </main>
