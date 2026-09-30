@@ -15,6 +15,10 @@ const TYPE_ICONS = {
 
 const EVENT_LABEL = { entered: "hat betreten", exited: "hat verlassen" };
 
+// Notfall-Squawk / AIS-Anomalien (WEB-54) – zweite Alarmkategorie im
+// selben Panel, analog zu den Geofence-Alarmen oben.
+const ANOMALY_ICON = { squawk: "🚨", ais: "⚠️" };
+
 const MAX_VISIBLE_ALERTS = 30;
 
 export class WatchlistPanel {
@@ -23,11 +27,13 @@ export class WatchlistPanel {
      * @param {Watchlist} watchlist
      * @param {WorldViewer} worldViewer
      * @param {UI} ui
+     * @param {AnomalyAlerts} [anomalyAlerts]
      */
-    constructor(watchlist, worldViewer, ui) {
+    constructor(watchlist, worldViewer, ui, anomalyAlerts = null) {
         this.watchlist = watchlist;
         this.worldViewer = worldViewer;
         this.ui = ui;
+        this.anomalyAlerts = anomalyAlerts;
 
         this._picking = false;
 
@@ -41,6 +47,10 @@ export class WatchlistPanel {
         watchlist.onAlert = (alert) => this._addAlertRow(alert);
         watchlist.onZonesChanged = () => this._renderZones();
 
+        if (this.anomalyAlerts) {
+            this.anomalyAlerts.onAlert = (alert) => this._addAlertRow(alert);
+        }
+
         this._bind();
         this._renderZones();
     }
@@ -50,6 +60,7 @@ export class WatchlistPanel {
         this._el.clearBtn.addEventListener("click", () => {
             this._el.alertList.innerHTML = "";
             this.watchlist.clearAlerts();
+            this.anomalyAlerts?.clearAlerts();
         });
     }
 
@@ -106,13 +117,23 @@ export class WatchlistPanel {
 
     _addAlertRow(alert) {
         const li = document.createElement("li");
-        li.className = `watchlist-alert wa-${alert.event}`;
         const time = new Date(alert.timestamp).toLocaleTimeString("de-DE");
-        const icon = TYPE_ICONS[alert.objectType] ?? "📍";
+        const isAnomaly = alert.category === "squawk" || alert.category === "ais";
+
+        let icon, text;
+        if (isAnomaly) {
+            li.className = `watchlist-alert wa-anomaly wa-${alert.severity}`;
+            icon = ANOMALY_ICON[alert.category] ?? "⚠️";
+            text = `<strong>${alert.objectName}</strong> – ${alert.detail}`;
+        } else {
+            li.className = `watchlist-alert wa-${alert.event}`;
+            icon = TYPE_ICONS[alert.objectType] ?? "📍";
+            text = `${alert.objectName} ${EVENT_LABEL[alert.event]} „${alert.zoneName}"`;
+        }
+
         li.innerHTML = `
             <span class="wa-icon">${icon}</span>
-            <span class="wa-text">${alert.objectName} ${EVENT_LABEL[alert.event]}
-                „${alert.zoneName}"</span>
+            <span class="wa-text">${text}</span>
             <span class="wa-time">${time}</span>`;
         li.addEventListener("click", () => {
             const entity = this.ui.layerManager.findEntityById(alert.objectId);
