@@ -2,8 +2,19 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- maximum-scale/user-scalable=no: verhindert, dass das Browser-Pinch-Zoom
+         mit Cesiums eigener Touch-Steuerung des Globus kollidiert -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ARGUS</title>
+
+    <!-- PWA: installierbar machen (WEB-60) -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0b0e14">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ARGUS">
+    <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
 
     <!-- CesiumJS via CDN (keine Installation notwendig) -->
     <script src="https://cdn.jsdelivr.net/npm/cesium@1.119.0/Build/Cesium/Cesium.js"></script>
@@ -13,7 +24,9 @@
     <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 
     <link rel="stylesheet" href="./style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+    <link rel="icon" type="image/x-icon" href="./assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/icons/icon-16.png">
 </head>
 <body>
 
@@ -377,5 +390,15 @@
     <!-- Konfiguration (API-Keys) zuerst laden, dann die App als ES6-Modul -->
     <script src="./config.js"></script>
     <script type="module" src="./js/app.js"></script>
+
+    <!-- Service Worker: Offline-Shell-Caching der statischen Assets (WEB-60) -->
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./sw.js")
+                    .catch((err) => console.warn("Service Worker Registrierung fehlgeschlagen:", err));
+            });
+        }
+    </script>
 </body>
 </html>
