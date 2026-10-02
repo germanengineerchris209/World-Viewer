@@ -183,6 +183,15 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 300
     },
 
+    volcanoes: {
+        // Ampel aus Smithsonian GVP + amtlichen USGS-Warnstufen.
+        // Warnstufen werden im Tagesrhythmus herausgegeben, häufigeres
+        // Abrufen bringt nichts. Ohne laufenden Server greift der Layer
+        // auf data/volcanoes.json zurück.
+        refreshSeconds: 3600,
+        maxVolcanoes: 600       // aktive Vulkane werden zuerst gezeichnet
+    },
+
     launches: {
         apiUrl: "/api/launches",
         refreshSeconds: 900

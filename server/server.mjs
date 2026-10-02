@@ -14,6 +14,7 @@
  *      /api/fires             Aktive Brände (NASA FIRMS, Key nötig)
  *      /api/fires/history     Historische Brände für das Zeitleisten-Replay
  *      /api/cctv              Katalog öffentlicher Verkehrskameras
+ *      /api/volcanoes         Vulkane weltweit mit Aktivitätsampel
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -54,7 +55,7 @@ import { fetchFlights, parseBounds } from "./flightProviders.mjs";
 import { handleCameraProxy, buildAllowlist, getAllowlist } from "./cameraProxy.mjs";
 import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
-    handleFires, handleFiresHistory, handleCctvCatalog, TLE_GROUPS
+    handleFires, handleFiresHistory, handleCctvCatalog, handleVolcanoes, TLE_GROUPS
 } from "./dataProxies.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
 
@@ -482,12 +483,17 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleCctvCatalog(res);
 
+            case "/api/volcanoes":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleVolcanoes(res);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
                     celestrak: true,
                     launches: true,
                     cctv: true,
+                    volcanoes: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
                     tleGroups: TLE_GROUPS

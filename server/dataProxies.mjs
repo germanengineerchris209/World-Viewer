@@ -13,11 +13,14 @@
  *   • NASA FIRMS braucht einen geheimen Key
  *   • Launch Library hat ein sehr knappes Kontingent (15 Abrufe/Stunde)
  *   • Die Kamerakataloge (Caltrans, TfL, Austin) sind nicht CORS-freigegeben
+ *   • Der GeoServer des Smithsonian GVP sendet keine CORS-Header
  *
  * Alle Handler teilen sich denselben Cache mit "Serve-Stale": Ist die
  * Quelle gerade nicht erreichbar, wird die letzte gute Antwort geliefert,
  * statt die Karte leerzuräumen.
  */
+
+import { countryDe, typeDe, displayName } from "./volcanoLabels.mjs";
 
 const UA = "world-viewer/2.3 (+https://github.com/)";
 
@@ -646,6 +649,319 @@ async function loadAustinCameras() {
         if (cameras.length >= CCTV_MAX_PER_SOURCE) break;
     }
     return { source: "City of Austin", cameras };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   5. Vulkane – Smithsonian GVP + USGS Volcano Hazards Program
+   ═══════════════════════════════════════════════════════════
+
+   Drei Quellen werden zu einer Ampel zusammengeführt:
+
+   a) GVP "Holocene Volcanoes" – der weltweite Katalog (1214 Vulkane).
+      Wir nehmen alle mit einem Ausbruch seit 1900 als Grundgesamtheit
+      der "aktiven/überwachten" Vulkane. Ändert sich fast nie → 24 h TTL.
+
+   b) GVP "Eruptions since 1960" mit ContinuingEruption='True' – die
+      global laufenden Ausbrüche. Deckt auch Länder ohne eigenes
+      Observatorium ab.
+
+   c) USGS HANS "getCapElevated" – amtliche Warnstufen mit offiziellem
+      Aviation Color Code. Gilt nur für US-Vulkane, ist dort aber die
+      verlässlichste Quelle und hat daher Vorrang.
+
+   Warum serverseitig? Das GVP-GeoServer sendet KEINE CORS-Header, der
+   Browser darf ihn also nicht direkt abfragen. (USGS sendet welche –
+   siehe den Direktabruf-Fallback in js/layers/VolcanoLayer.js.)
+
+   Reine Naturphänomene, kein Personenbezug, kein API-Schlüssel. */
+
+const GVP_WFS = "https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows";
+const USGS_ELEVATED = "https://volcanoes.usgs.gov/hans-public/api/volcano/getCapElevated";
+
+const VOLCANO_CATALOG_TTL_MS = 24 * 60 * 60 * 1000;   // Katalog ist quasi statisch
+const VOLCANO_STATUS_TTL_MS = 15 * 60 * 1000;         // Warnstufen ändern sich täglich
+
+// Nur Vulkane mit Ausbruch ab diesem Jahr gelten als "aktiv/überwacht".
+// 1900 ergibt 438 von 1214 – genug für eine Weltkarte, ohne sie zuzumüllen.
+const VOLCANO_MIN_ERUPTION_YEAR = 1900;
+
+// Ein laufender Ausbruch, der innerhalb dieser Frist begann, zählt als
+// "Ausbruch im Gange" (rot). Ältere Dauerausbrüche wie Stromboli (seit
+// 1934) sind zwar aktiv, aber kein akutes Ereignis → orange.
+const VOLCANO_FRESH_ERUPTION_MS = 365 * 86_400_000;
+
+/** GVP-WFS-Abfrage als GeoJSON. */
+async function fetchGvp(typeName, { properties, cqlFilter } = {}) {
+    const url = new URL(GVP_WFS);
+    url.searchParams.set("service", "WFS");
+    url.searchParams.set("version", "1.0.0");
+    url.searchParams.set("request", "GetFeature");
+    url.searchParams.set("typeName", `GVP-VOTW:${typeName}`);
+    url.searchParams.set("outputFormat", "application/json");
+    if (properties) url.searchParams.set("propertyName", properties.join(","));
+    if (cqlFilter) url.searchParams.set("CQL_FILTER", cqlFilter);
+
+    const upstream = await fetchWithTimeout(url, { headers: { Accept: "application/json" } }, 45_000);
+    if (!upstream.ok) throw new Error(`GVP antwortete mit ${upstream.status}`);
+
+    // Der GeoServer meldet Fehler als XML-ServiceExceptionReport mit
+    // Status 200 – ohne diese Prüfung landet eine Fehlerseite im Cache
+    const text = await upstream.text();
+    if (text.trimStart().startsWith("<")) {
+        throw new Error(`GVP meldet einen Fehler für ${typeName}`);
+    }
+
+    const json = JSON.parse(text);
+    if (!Array.isArray(json?.features)) throw new Error("GVP-Antwort ohne features");
+    return json.features;
+}
+
+/** a) Weltweiter Katalog, auf die seit 1900 aktiven Vulkane reduziert. */
+async function loadVolcanoCatalog() {
+    const features = await fetchGvp("Smithsonian_VOTW_Holocene_Volcanoes", {
+        properties: [
+            "Volcano_Number", "Volcano_Name", "Country", "Region",
+            "Primary_Volcano_Type", "Elevation", "Latitude", "Longitude",
+            "Last_Eruption_Year", "Tectonic_Setting"
+        ]
+    });
+
+    const volcanoes = [];
+    for (const feature of features) {
+        const p = feature.properties ?? {};
+        const lastEruptionYear = Number(p.Last_Eruption_Year);
+        if (!Number.isFinite(lastEruptionYear) || lastEruptionYear < VOLCANO_MIN_ERUPTION_YEAR) continue;
+
+        const lat = Number(p.Latitude);
+        const lon = Number(p.Longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+        const vnum = String(p.Volcano_Number);
+        volcanoes.push({
+            id: `volc-${vnum}`,
+            vnum,
+            name: displayName(p.Volcano_Name),
+            country: countryDe(p.Country),
+            region: p.Region ?? "",
+            volcanoType: typeDe(p.Primary_Volcano_Type),
+            elevation: Number(p.Elevation) || 0,
+            tectonicSetting: p.Tectonic_Setting ?? "",
+            lastEruptionYear,
+            latitude: lat,
+            longitude: lon,
+            altitude: Number(p.Elevation) || 0,
+            // Grundzustand: im Katalog, aber ohne aktuelles Ereignis
+            status: "green",
+            statusSource: "catalog",
+            gvpUrl: `https://volcano.si.edu/volcano.cfm?vn=${vnum}`
+        });
+    }
+    if (!volcanoes.length) throw new Error("GVP-Katalog lieferte keine Vulkane");
+    return volcanoes;
+}
+
+/** b) Weltweit laufende Ausbrüche (GVP). */
+async function loadContinuingEruptions() {
+    const features = await fetchGvp("E3WebApp_Eruptions1960", {
+        cqlFilter: "ContinuingEruption='True'"
+    });
+
+    // Pro Vulkan den jüngsten laufenden Ausbruch behalten
+    const byVnum = new Map();
+    for (const feature of features) {
+        const p = feature.properties ?? {};
+        const vnum = String(p.VolcanoNumber ?? "");
+        if (!vnum) continue;
+
+        const startedAt = parseGvpDate(p.StartDate);
+        const previous = byVnum.get(vnum);
+        if (previous && previous.startedAt >= startedAt) continue;
+
+        byVnum.set(vnum, {
+            vnum,
+            name: displayName(p.VolcanoName),
+            startedAt,
+            startYear: Number(p.StartDateYear) || null,
+            vei: Number.isFinite(Number(p.ExplosivityIndexMax)) ? Number(p.ExplosivityIndexMax) : null,
+            latitude: Number(p.LatitudeDecimal),
+            longitude: Number(p.LongitudeDecimal)
+        });
+    }
+    return byVnum;
+}
+
+/** GVP liefert Datumsangaben als "JJJJMMTT"-String. */
+function parseGvpDate(raw) {
+    const text = String(raw ?? "").trim();
+    const match = /^(\d{4})(\d{2})(\d{2})$/.exec(text);
+    if (!match) return 0;
+    const ms = Date.parse(`${match[1]}-${match[2]}-${match[3]}T00:00:00Z`);
+    return Number.isFinite(ms) ? ms : 0;
+}
+
+/** c) Amtliche USGS-Warnstufen (nur US-Vulkane, aber maßgeblich). */
+async function loadUsgsAlerts() {
+    const upstream = await fetchWithTimeout(USGS_ELEVATED,
+        { headers: { Accept: "application/json" } }, 20_000);
+    if (!upstream.ok) throw new Error(`USGS antwortete mit ${upstream.status}`);
+
+    const rows = await upstream.json();
+    const byVnum = new Map();
+
+    for (const row of Array.isArray(rows) ? rows : []) {
+        const vnum = String(row?.vnum ?? "");
+        const color = String(row?.color_code ?? "").toLowerCase();
+        if (!vnum || !["green", "yellow", "orange", "red"].includes(color)) continue;
+
+        byVnum.set(vnum, {
+            vnum,
+            status: color,
+            alertLevel: row.alert_level ?? "",
+            observatory: row.obs_fullname ?? "",
+            synopsis: row.synopsis ?? "",
+            noticeUrl: row.notice_url ?? "",
+            sentAt: Date.parse(row.sent_date_cap ?? "") || null,
+            latitude: Number(row.latitude),
+            longitude: Number(row.longitude),
+            elevation: Number(row.elevation_meters) || 0,
+            name: row.volcano_name_appended ?? ""
+        });
+    }
+    return byVnum;
+}
+
+/**
+ * Führt Katalog, laufende Ausbrüche und USGS-Warnstufen zusammen.
+ * Vorrang: USGS-Warnstufe > laufender GVP-Ausbruch > Katalog-Grundzustand.
+ */
+function mergeVolcanoes(catalog, eruptions, alerts) {
+    const byVnum = new Map(catalog.map(v => [v.vnum, { ...v }]));
+    const now = Date.now();
+
+    // b) laufende Ausbrüche
+    for (const [vnum, eruption] of eruptions) {
+        const fresh = eruption.startedAt > 0 && now - eruption.startedAt < VOLCANO_FRESH_ERUPTION_MS;
+        const entry = byVnum.get(vnum) ?? volcanoStub(vnum, eruption);
+        if (!entry) continue;
+
+        entry.status = fresh ? "red" : "orange";
+        entry.statusSource = "gvp";
+        entry.eruptionStartedAt = eruption.startedAt || null;
+        entry.eruptionStartYear = eruption.startYear;
+        entry.vei = eruption.vei;
+        byVnum.set(vnum, entry);
+    }
+
+    // c) amtliche USGS-Warnstufen überschreiben alles
+    for (const [vnum, alert] of alerts) {
+        const entry = byVnum.get(vnum) ?? volcanoStub(vnum, alert);
+        if (!entry) continue;
+
+        entry.status = alert.status;
+        entry.statusSource = "usgs";
+        entry.alertLevel = alert.alertLevel;
+        entry.observatory = alert.observatory;
+        entry.synopsis = alert.synopsis;
+        entry.noticeUrl = alert.noticeUrl;
+        entry.alertSentAt = alert.sentAt;
+        byVnum.set(vnum, entry);
+    }
+
+    // Auffällige Vulkane zuerst – der Client kappt ggf. die Liste
+    const rank = { red: 0, orange: 1, yellow: 2, green: 3 };
+    return [...byVnum.values()].sort((a, b) =>
+        (rank[a.status] ?? 9) - (rank[b.status] ?? 9) || a.name.localeCompare(b.name, "de"));
+}
+
+/**
+ * Minimaleintrag für einen Vulkan, der nicht im gefilterten Katalog steht
+ * (z.B. letzter Ausbruch vor 1900, aber jetzt wieder aktiv).
+ * Ohne brauchbare Koordinaten lassen wir ihn weg.
+ */
+function volcanoStub(vnum, source) {
+    const lat = Number(source.latitude);
+    const lon = Number(source.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+    return {
+        id: `volc-${vnum}`,
+        vnum,
+        name: displayName(source.name) || `Vulkan ${vnum}`,
+        country: "",
+        region: "",
+        volcanoType: "",
+        elevation: Number(source.elevation) || 0,
+        lastEruptionYear: null,
+        latitude: lat,
+        longitude: lon,
+        altitude: Number(source.elevation) || 0,
+        status: "green",
+        statusSource: "catalog",
+        gvpUrl: `https://volcano.si.edu/volcano.cfm?vn=${vnum}`
+    };
+}
+
+/**
+ * Baut die fertige Nutzlast. Exportiert, damit
+ * scripts/build-volcano-fallback.mjs denselben Weg nutzt.
+ */
+export async function buildVolcanoPayload() {
+    // Der Katalog ist Pflicht, die beiden Statusquellen sind optional:
+    // fällt eine aus, zeigt die Karte lieber Vulkane ohne aktuelle
+    // Warnstufe als gar keine.
+    const catalog = await cachedFetch("volcanoes:catalog", VOLCANO_CATALOG_TTL_MS,
+        async () => ({ data: await loadVolcanoCatalog() })).then(r => r.data);
+
+    const [eruptionResult, alertResult] = await Promise.allSettled([
+        loadContinuingEruptions(),
+        loadUsgsAlerts()
+    ]);
+
+    const sources = [{ name: "Smithsonian GVP (Katalog)", count: catalog.length }];
+    const warnings = [];
+
+    const eruptions = eruptionResult.status === "fulfilled" ? eruptionResult.value : new Map();
+    if (eruptionResult.status === "fulfilled") {
+        sources.push({ name: "Smithsonian GVP (laufende Ausbrüche)", count: eruptions.size });
+    } else {
+        warnings.push(`Laufende Ausbrüche (GVP): ${eruptionResult.reason?.message ?? "Abruf fehlgeschlagen"}`);
+    }
+
+    const alerts = alertResult.status === "fulfilled" ? alertResult.value : new Map();
+    if (alertResult.status === "fulfilled") {
+        sources.push({ name: "USGS Volcano Hazards (Warnstufen)", count: alerts.size });
+    } else {
+        warnings.push(`USGS-Warnstufen: ${alertResult.reason?.message ?? "Abruf fehlgeschlagen"}`);
+    }
+
+    const volcanoes = mergeVolcanoes(catalog, eruptions, alerts);
+
+    return {
+        fetchedAt: Date.now(),
+        count: volcanoes.length,
+        minEruptionYear: VOLCANO_MIN_ERUPTION_YEAR,
+        sources,
+        ...(warnings.length ? { warnings } : {}),
+        volcanoes
+    };
+}
+
+export async function handleVolcanoes(res) {
+    try {
+        const result = await cachedFetch("volcanoes", VOLCANO_STATUS_TTL_MS, async () => ({
+            data: JSON.stringify(await buildVolcanoPayload()),
+            contentType: "application/json"
+        }));
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Vulkandaten nicht abrufbar: ${err.message}` });
+    }
 }
 
 /* ═══════════ Hilfsfunktion ═══════════ */
