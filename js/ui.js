@@ -260,16 +260,56 @@ const DETAIL_SCHEMAS = {
         fields: (o) => {
             const m = o.metadata;
             const rows = [
-                ["Status", VolcanoLayer.statusLabel(m.status)],
+                ["Status", VolcanoLayer.statusLabel(m.status)]
+            ];
+
+            // Woher die Einstufung stammt, ist hier wichtiger als die Farbe:
+            // eine amtliche USGS-Warnstufe wiegt mehr als "steht im Katalog"
+            const sourceLabel = VolcanoLayer.statusSourceLabel(m.statusSource);
+            if (sourceLabel) rows.push(["Einstufung laut", sourceLabel, true]);
+
+            if (m.alertLevel) rows.push(["USGS-Warnstufe", F.text(m.alertLevel)]);
+            if (m.observatory) rows.push(["Observatorium", F.text(m.observatory), true]);
+
+            if (m.eruptionStartedAt) {
+                rows.push(["Ausbruch seit",
+                    new Date(m.eruptionStartedAt).toLocaleDateString("de-DE"), true]);
+            } else if (m.eruptionStartYear) {
+                rows.push(["Ausbruch seit", String(m.eruptionStartYear), true]);
+            }
+            if (m.vei != null) rows.push(["Explosivität (VEI)", String(m.vei)]);
+
+            rows.push(
                 ["Typ", F.text(m.volcanoType)],
                 ["Land", F.text(m.country)],
-                ["Höhe", F.meters(m.elevation)],
-                ["Letzte Eruption", F.text(m.lastEruption), true],
-                ["Info", F.text(m.info), true],
+                ["Höhe", F.meters(m.elevation)]
+            );
+            if (m.region) rows.push(["Region", F.text(m.region), true]);
+
+            // Live-Daten liefern das Jahr, der Schnappschuss ggf. einen Text
+            rows.push(["Letzte Eruption",
+                F.text(m.lastEruptionYear ?? m.lastEruption), true]);
+
+            if (m.synopsis) rows.push(["Lagebild", F.text(m.synopsis), true]);
+            if (m.info) rows.push(["Info", F.text(m.info), true]);
+
+            rows.push(
                 ["Breite", F.coord(o.position.latitude)],
                 ["Länge", F.coord(o.position.longitude)]
-            ];
+            );
             return rows;
+        },
+        extraHtml: (o) => {
+            const m = o.metadata;
+            const links = [];
+            if (m.gvpUrl) links.push(`<a href="${m.gvpUrl}" target="_blank"`
+                + ` rel="noopener" style="color:#38bdf8">Smithsonian GVP ↗</a>`);
+            if (m.noticeUrl) links.push(`<a href="${m.noticeUrl}" target="_blank"`
+                + ` rel="noopener" style="color:#38bdf8">USGS-Meldung ↗</a>`);
+            if (!links.length) return "";
+
+            return `<div class="detail-field wide"><label>Quelle</label>
+                 <span>${links.join(" · ")}</span></div>`;
         }
     },
     fuelReserve: {
