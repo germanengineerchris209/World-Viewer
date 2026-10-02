@@ -154,6 +154,29 @@
                 <button id="draw-export" class="tool-btn" title="Als GeoJSON-Datei herunterladen">💾 Export</button>
                 <button id="draw-clear" class="tool-btn" title="Alle Zeichnungen löschen">🗑️ Leeren</button>
             </div>
+
+            <div class="draw-divider"></div>
+            <h3 class="section-subtitle">🧭 Route planen</h3>
+            <div class="button-row">
+                <select id="route-profile" class="tool-select" title="Verkehrsmittel wählen">
+                    <option value="foot">🚶 Fuß</option>
+                    <option value="bike">🚴 Rad</option>
+                    <option value="car" selected>🚗 Auto</option>
+                </select>
+                <button id="route-start" class="tool-btn" title="Start- und Zielpunkt auf dem Globus anklicken">
+                    🧭 Route planen
+                </button>
+            </div>
+            <p id="route-hint" class="draw-hint hidden"></p>
+            <div id="route-result" class="route-result hidden"></div>
+            <div class="button-row">
+                <button id="route-clear" class="tool-btn" title="Route und Marker entfernen">🗑️ Route löschen</button>
+            </div>
+            <p class="route-disclaimer">
+                ⚠️ Nutzt den öffentlichen OSRM-Demo-Server (router.project-osrm.org) der
+                FOSSGIS/Project-OSRM-Community – nur für Tests/geringes Volumen gedacht,
+                keine Verfügbarkeits- oder SLA-Garantie. Keine Turn-by-Turn-Navigation.
+            </p>
         </section>
 
         <!-- Ansicht -->

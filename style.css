@@ -337,6 +337,36 @@ body { display: flex; }
 }
 .df-remove:hover { color: var(--red); }
 
+.draw-divider {
+    height: 1px; margin: 10px 0; background: var(--glass-border);
+}
+
+.section-subtitle {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--text-dim); margin: 0 0 8px;
+}
+
+.tool-select {
+    flex: 1; background: var(--glass-bg-hover); color: var(--text);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border); border-radius: 8px;
+    padding: 0 6px; font-size: 12px; font-family: var(--sans);
+}
+
+.route-result {
+    font-size: 12px; font-family: var(--mono); padding: 6px 8px;
+    border-radius: 8px; margin-bottom: 8px; line-height: 1.4;
+}
+.route-result.route-loading { color: var(--text-dim); }
+.route-result.route-ok { color: var(--green); background: rgba(52, 211, 153, 0.1); }
+.route-result.route-error { color: var(--amber); background: rgba(251, 191, 36, 0.1); }
+
+.route-disclaimer {
+    font-size: 10px; color: var(--text-dim); line-height: 1.4;
+    padding: 4px 2px 0; margin: 0;
+}
+
 /* ── Statistik ── */
 
 .stat-row {
