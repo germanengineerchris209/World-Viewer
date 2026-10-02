@@ -42,6 +42,7 @@ import { AQILayer } from "./layers/AQILayer.js";
 import { WeatherLayer } from "./layers/WeatherLayer.js";
 import { HeatmapLayer } from "./layers/HeatmapLayer.js";
 import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
+import { EventLayer } from "./layers/EventLayer.js";
 
 async function main() {
     /* 1 ── 3D-Globus mit Satellitenansicht */
@@ -68,6 +69,7 @@ async function main() {
     layerManager.register(new AQILayer(worldViewer));
     layerManager.register(new WeatherLayer(worldViewer));
     layerManager.register(new FuelReserveLayer(worldViewer));
+    layerManager.register(new EventLayer(worldViewer));
     layerManager.register(new HeatmapLayer(worldViewer, layerManager));
 
     /* 3 ── UI, Suche, Timeline, KI */
