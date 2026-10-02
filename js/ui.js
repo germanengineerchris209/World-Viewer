@@ -18,6 +18,7 @@ import { findLinkedObjects } from "./linkAnalysis.js";
 import { buildDossierText, dossierFilename, downloadTextFile } from "./dossier.js";
 import { GraphView } from "./graphView.js";
 import { LAYER_CATEGORIES, categoryForLayer } from "./layerCategories.js";
+import { CameraViewshed } from "./cameraViewshed.js";
 
 /** localStorage-Key für den Auf-/Zu-Zustand der Layer-Kategorien (WEB-85) */
 const LAYER_CATEGORY_STATE_KEY = "wv-layer-category-open";
@@ -712,6 +713,7 @@ export class UI {
         this.labelsVisible = true;
         this.trailsVisible = false;
         this.assistant = null;         // wird von app.js gesetzt
+        this.cameraViewshed = new CameraViewshed(worldViewer);
 
         // Verhindert, dass ein spät eintreffendes Bild ins falsche Panel läuft
         this._mediaToken = 0;
@@ -1105,6 +1107,7 @@ export class UI {
         if (changed || !isRefresh) {
             this._loadMedia(object);
             this._renderLinks(object);
+            this.cameraViewshed.show(object);
         }
     }
 
@@ -1249,6 +1252,7 @@ export class UI {
         this._el.links.classList.add("hidden");
         this.closeGraphView();
         this.selectedObject = null;
+        this.cameraViewshed.hide();
         this._clearHighlight();
         this.worldViewer.stopFollowing();
         this.assistant?.notifySelectionChanged();
