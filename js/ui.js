@@ -31,7 +31,7 @@ const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
-    fuelReserve: "⛽", event: "📰"
+    fuelReserve: "⛽", weather: "🌦️", event: "📰"
 };
 
 /** Formatierungs-Helfer */
@@ -174,6 +174,28 @@ const DETAIL_SCHEMAS = {
                 ["Ozon (O₃)", m.ozone != null ? `${fmt.format(m.ozone)} µg/m³` : "–"],
                 ["Stickstoffdioxid (NO₂)", m.nitrogenDioxide != null ? `${fmt.format(m.nitrogenDioxide)} µg/m³` : "–"]
             );
+            if (m.measuredAt) rows.push(["Stand", new Date(m.measuredAt).toLocaleString("de-DE"), true]);
+            rows.push(
+                ["Land", F.text(m.country)],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        }
+    },
+    weather: {
+        badge: "Wetter",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Lage", F.text(m.weatherLabel)],
+                ["Temperatur", m.temperature != null ? `${Math.round(m.temperature)} °C` : "–"],
+                ["Niederschlag (1h)", m.precipitation != null ? `${fmt.format(m.precipitation)} mm` : "–"],
+                ["Wind", m.windSpeed != null ? `${Math.round(m.windSpeed)} km/h` : "–"],
+                ["Windrichtung", m.windDirection != null ? `${Math.round(m.windDirection)}°` : "–"],
+                ["Windböen", m.windGusts != null ? `${Math.round(m.windGusts)} km/h` : "–"]
+            ];
             if (m.measuredAt) rows.push(["Stand", new Date(m.measuredAt).toLocaleString("de-DE"), true]);
             rows.push(
                 ["Land", F.text(m.country)],

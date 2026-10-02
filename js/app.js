@@ -14,9 +14,11 @@ import { LayerManager } from "./layerManager.js";
 import { UI } from "./ui.js";
 import { Search } from "./search.js";
 import { Timeline } from "./timeline.js";
+import { HistoryReplay } from "./historyReplay.js";
 import { Assistant } from "./ai/assistant.js";
 import { Watchlist } from "./watchlist.js";
 import { WatchlistPanel } from "./watchlistPanel.js";
+import { AnomalyAlerts } from "./anomalyAlerts.js";
 import { DrawTools } from "./drawTools.js";
 import { DrawToolsPanel } from "./drawToolsPanel.js";
 
@@ -37,6 +39,7 @@ import { FireLayer } from "./layers/FireLayer.js";
 import { RadioLayer } from "./layers/RadioLayer.js";
 import { CableLayer } from "./layers/CableLayer.js";
 import { AQILayer } from "./layers/AQILayer.js";
+import { WeatherLayer } from "./layers/WeatherLayer.js";
 import { HeatmapLayer } from "./layers/HeatmapLayer.js";
 import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
 import { EventLayer } from "./layers/EventLayer.js";
@@ -64,6 +67,7 @@ async function main() {
     layerManager.register(new FireLayer(worldViewer));
     layerManager.register(new RadioLayer(worldViewer));
     layerManager.register(new AQILayer(worldViewer));
+    layerManager.register(new WeatherLayer(worldViewer));
     layerManager.register(new FuelReserveLayer(worldViewer));
     layerManager.register(new EventLayer(worldViewer));
     layerManager.register(new HeatmapLayer(worldViewer, layerManager));
@@ -87,7 +91,13 @@ async function main() {
     /* Beobachtungszonen: Geofence-Alarme auf Basis der bereits geladenen
        öffentlichen Live-Positionen (Flugzeuge, Schiffe, ...) */
     const watchlist = new Watchlist(worldViewer, layerManager);
-    new WatchlistPanel(watchlist, worldViewer, ui);
+
+    /* Anomalie-Alarme: Notfall-Squawk (7500/7600/7700) und auffällige
+       AIS-Muster (Stopp, Positionssprung) – zweite Alarmkategorie im
+       selben Panel, ebenfalls ohne neue Datenquelle (WEB-54) */
+    const anomalyAlerts = new AnomalyAlerts(layerManager);
+
+    new WatchlistPanel(watchlist, worldViewer, ui, anomalyAlerts);
 
     /* Zeichnen & Messen: Freihand/Grenzen/Punkte zeichnen, Distanzen messen */
     const drawTools = new DrawTools(worldViewer);
@@ -127,6 +137,10 @@ async function main() {
         ui.buildLayerToggles();
         ui.updateFlightStatus(aircraftLayer.getStatus());
     };
+
+    /* Zeitleisten-Replay: historische Erdbeben/Brände/Starts abspielen
+       (Play/Pause/Scrub), unabhängig vom Zeitraffer der Simulation oben */
+    const historyReplay = new HistoryReplay(worldViewer, layerManager, ui);
 
     /* Klick auf Objekte → Auswahl + Detailpanel */
     worldViewer.onObjectPicked = (entity) => {
@@ -179,6 +193,9 @@ async function main() {
         // Simulationszeit weiterschalten (0 wenn pausiert)
         const simDelta = timeline.tick(realDelta);
 
+        // Zeitleisten-Replay: historische Ereignisse nach Scrubber-Position einblenden
+        historyReplay.tick(realDelta);
+
         // Layer aktualisieren. Live-Daten bewegen sich in ECHTER Zeit,
         // die Simulation (Schiffe, Satelliten, Demo-Flugzeuge) im Zeitraffer.
         // Pause hält beides an.
@@ -208,9 +225,11 @@ async function main() {
             lastStatusUpdate = now;
         }
 
-        // Beobachtungszonen auf Ein-/Austritte prüfen (gedrosselt)
+        // Beobachtungszonen auf Ein-/Austritte sowie Notfall-Squawk/AIS-
+        // Auffälligkeiten prüfen (gedrosselt)
         if (now - lastWatchlistCheck > 2000) {
             watchlist.check();
+            anomalyAlerts.check();
             lastWatchlistCheck = now;
         }
 

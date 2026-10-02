@@ -203,6 +203,14 @@ window.WORLD_VIEWER_CONFIG = {
         maxEvents: 800
     },
 
+    // Zeitleisten-Replay: dieselben Quellen wie oben, nur über die
+    // "history"-Endpunkte (7-/30-Tage-Feeds statt nur "aktuell")
+    history: {
+        defaultRangeDays: 7,
+        fires: { apiUrl: "/api/fires/history", maxFires: 4000 },
+        launches: { apiUrl: "/api/launches/history" }
+    },
+
     radio: {
         // Radio Browser API – frei, kein Key. Die Mirrors rotieren per
         // DNS; "all.api.radio-browser.info" reicht als fester Einstieg.
@@ -219,6 +227,15 @@ window.WORLD_VIEWER_CONFIG = {
         // Listen). Aktualisiert sich stündlich, öfter abfragen bringt nichts.
         apiUrl: "https://air-quality-api.open-meteo.com/v1/air-quality",
         refreshSeconds: 1800
+    },
+
+    weather: {
+        // Open-Meteo Forecast API – dieselbe Quelle wie der AQI-Layer,
+        // frei, kein Key für nicht-kommerzielle Nutzung. Städteliste liegt
+        // in data/weather-locations.json, alle Koordinaten werden in EINER
+        // Anfrage abgefragt (kommaseparierte Listen).
+        apiUrl: "https://api.open-meteo.com/v1/forecast",
+        refreshSeconds: 900
     },
 
     heatmap: {

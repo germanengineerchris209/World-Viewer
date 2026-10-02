@@ -216,6 +216,20 @@ fragt die drei Satelliten nacheinander ab, nicht parallel.
 > (https://earthdata.nasa.gov/firms), part of NASA's Earth Observing
 > System Data and Information System (EOSDIS)."
 
+### 🕰️ Zeitleisten-Replay
+
+Spielt Erdbeben/Brände/Raketenstarts der letzten 7 oder 30 Tage zeitlich ab
+(Play/Pause/Scrub, einstellbare Geschwindigkeit) statt sie alle gleichzeitig
+zu zeigen. Nutzt ausschließlich dieselben, bereits eingebundenen Quellen –
+kein neuer Schlüssel nötig:
+
+- **Erdbeben**: USGS-Wochen-/Monatsfeed (`all_week.geojson` / `all_month.geojson`),
+  direkt im Browser, CORS-freigegeben.
+- **Brände**: `/api/fires/history?days=N` – dieselbe FIRMS-Flächenabfrage wie
+  oben, nur mit größerem `day_range` (API-Limit: maximal 10 Tage je Anfrage).
+- **Raketenstarts**: `/api/launches/history?days=N` – Launch Library 2,
+  Endpunkt `launches/previous/` (bereits erfolgte Starts) statt `launches/`.
+
 ### 📷 Kameras
 
 Zwei Arten:
