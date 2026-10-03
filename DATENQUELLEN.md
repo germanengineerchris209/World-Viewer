@@ -46,6 +46,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🌋 Erdbeben | USGS | letzte 24 Stunden |
 | 🗻 Vulkane | Smithsonian GVP / USGS Volcano Hazards Program | handkuratierte Auswahl, statisch |
 | 🚀 Raketenstarts | Launch Library 2 | 15 Abrufe/Stunde |
+| 🌀 Wirbelstürme | NOAA National Hurricane Center | nur Atlantik/Ost-/Zentralpazifik; sendet kein CORS → Server-Proxy für Übersicht + Vorhersagekegel |
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
 | Objektfotos | Wikipedia | |
@@ -214,6 +215,29 @@ fragt die drei Satelliten nacheinander ab, nicht parallel.
 > from NASA's Fire Information for Resource Management System (FIRMS)
 > (https://earthdata.nasa.gov/firms), part of NASA's Earth Observing
 > System Data and Information System (EOSDIS)."
+
+### 🌀 Tropische Wirbelstürme
+
+**NOAA National Hurricane Center**, öffentliche US-Regierungsdaten, kein
+Schlüssel nötig. Zuständig nur für Atlantik sowie Ost-/Zentralpazifik –
+andere Ozeanbecken (z.B. Westpazifik, JTWC) sind bewusst nicht Teil
+dieser Ebene.
+
+Endpunkte:
+- `nhc.noaa.gov/CurrentStorms.json` – Übersicht aktiver Systeme (Position,
+  Windstärke, Luftdruck, Zugrichtung), alle 20 Minuten abgerufen.
+- `nhc.noaa.gov/storm_graphics/api/<ID>_CONE.kmz` – Vorhersagekegel
+  ("Cone of Uncertainty") je System, als KMZ (gezipptes KML).
+
+NHC sendet keine CORS-Header, daher läuft beides über den eigenen Server
+(`/api/storms`, `/api/storms/cone`). Weil das Projekt bewusst ohne
+npm-Pakete auskommt, liest `server/kmz.mjs` das ZIP-Format selbst aus
+(Node-eigenes `zlib` für die Dekompression) statt eine Zip-Bibliothek
+einzubinden.
+
+Außerhalb der Hurrikansaison ist `activeStorms` meist leer – das ist der
+Normalfall. Die Sidebar zeigt dann "derzeit keine aktiven Systeme" statt
+einer stillschweigend leeren Ebene.
 
 ### 🕰️ Zeitleisten-Replay
 

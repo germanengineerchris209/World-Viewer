@@ -34,6 +34,7 @@ import { CameraLayer } from "./layers/CameraLayer.js";
 import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { EarthquakeLayer } from "./layers/EarthquakeLayer.js";
 import { VolcanoLayer } from "./layers/VolcanoLayer.js";
+import { CycloneLayer } from "./layers/CycloneLayer.js";
 import { LaunchLayer } from "./layers/LaunchLayer.js";
 import { FireLayer } from "./layers/FireLayer.js";
 import { RadioLayer } from "./layers/RadioLayer.js";
@@ -62,6 +63,7 @@ async function main() {
     layerManager.register(new CableLayer(worldViewer));
     layerManager.register(new EarthquakeLayer(worldViewer));
     layerManager.register(new VolcanoLayer(worldViewer));
+    layerManager.register(new CycloneLayer(worldViewer));
     layerManager.register(new LaunchLayer(worldViewer));
     layerManager.register(new FireLayer(worldViewer));
     layerManager.register(new RadioLayer(worldViewer));
