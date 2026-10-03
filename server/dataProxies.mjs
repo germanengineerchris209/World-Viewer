@@ -14,10 +14,14 @@
  *   • Launch Library hat ein sehr knappes Kontingent (15 Abrufe/Stunde)
  *   • Die Kamerakataloge (Caltrans, TfL, Austin) sind nicht CORS-freigegeben
  *
+ *   • Der NOAA National Hurricane Center sendet keine CORS-Header
+ *
  * Alle Handler teilen sich denselben Cache mit "Serve-Stale": Ist die
  * Quelle gerade nicht erreichbar, wird die letzte gute Antwort geliefert,
  * statt die Karte leerzuräumen.
  */
+
+import { readKmzAsKml, extractConePolygon } from "./kmz.mjs";
 
 const UA = "world-viewer/2.3 (+https://github.com/)";
 
@@ -646,6 +650,157 @@ async function loadAustinCameras() {
         if (cameras.length >= CCTV_MAX_PER_SOURCE) break;
     }
     return { source: "City of Austin", cameras };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   5. NOAA NHC – Tropische Wirbelstürme (Atlantik/Ost-/Zentralpazifik)
+   ═══════════════════════════════════════════════════════════
+
+   Quelle: National Hurricane Center, öffentliche US-Regierungsdaten,
+   kein Key nötig. Serverseitig nur wegen fehlender CORS-Header.
+
+   CurrentStorms.json nennt pro aktivem System auch eine KMZ-Datei mit
+   dem Vorhersagekegel ("Cone of Uncertainty"). KMZ = gezipptes KML;
+   /api/storms/cone lädt und entpackt das bei Bedarf (siehe kmz.mjs). */
+
+const NHC_CURRENT_STORMS = "https://www.nhc.noaa.gov/CurrentStorms.json";
+const STORMS_TTL_MS = 15 * 60 * 1000;
+const STORM_CONE_TTL_MS = 30 * 60 * 1000;
+
+/** NHC-Beckenkürzel aus der Sturm-ID (z.B. "al062026" → "AL"). */
+function basinFromStormId(id) {
+    const code = String(id ?? "").slice(0, 2).toUpperCase();
+    if (code === "AL") return "Atlantik";
+    if (code === "EP") return "Ost-/Zentralpazifik";
+    if (code === "CP") return "Zentralpazifik";
+    return "–";
+}
+
+const CLASSIFICATION_LABELS = {
+    TD: "Tropisches Tiefdruckgebiet",
+    TS: "Tropischer Sturm",
+    HU: "Hurrikan",
+    STD: "Subtropisches Tiefdruckgebiet",
+    STS: "Subtropischer Sturm",
+    PTC: "Möglicher tropischer Wirbelsturm",
+    EX: "Außertropisches System",
+    LO: "Tiefdruckgebiet"
+};
+
+/** Saffir-Simpson-Kategorie, nur für Hurrikane relevant. */
+function hurricaneCategory(classification, intensityKt) {
+    if (classification !== "HU" || !Number.isFinite(intensityKt)) return null;
+    if (intensityKt >= 137) return 5;
+    if (intensityKt >= 113) return 4;
+    if (intensityKt >= 96) return 3;
+    if (intensityKt >= 83) return 2;
+    if (intensityKt >= 64) return 1;
+    return null;
+}
+
+export async function handleStorms(res) {
+    try {
+        const result = await cachedFetch("storms", STORMS_TTL_MS, async () => {
+            const upstream = await fetchWithTimeout(NHC_CURRENT_STORMS, {
+                headers: { Accept: "application/json" }
+            }, 20_000);
+            if (!upstream.ok) throw new Error(`NHC antwortete mit ${upstream.status}`);
+
+            const json = await upstream.json();
+            const storms = normalizeStorms(json?.activeStorms ?? []);
+            return {
+                data: JSON.stringify({ fetchedAt: Date.now(), count: storms.length, storms }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Sturmdaten nicht abrufbar: ${err.message}` });
+    }
+}
+
+function normalizeStorms(activeStorms) {
+    const storms = [];
+    for (const s of activeStorms) {
+        const lat = Number(s.latitudeNumeric);
+        const lon = Number(s.longitudeNumeric);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+        const classification = String(s.classification ?? "").toUpperCase();
+        const intensityKt = Number(s.intensity);
+
+        storms.push({
+            id: String(s.id),
+            name: s.name ?? "Unbenannt",
+            basin: basinFromStormId(s.id),
+            classification,
+            classificationLabel: CLASSIFICATION_LABELS[classification] ?? classification ?? "–",
+            category: hurricaneCategory(classification, intensityKt),
+            intensityKt: Number.isFinite(intensityKt) ? intensityKt : null,
+            pressureMb: Number.isFinite(Number(s.pressure)) ? Number(s.pressure) : null,
+            movementDir: Number.isFinite(Number(s.movementDir)) ? Number(s.movementDir) : null,
+            movementSpeedKt: Number.isFinite(Number(s.movementSpeed)) ? Number(s.movementSpeed) : null,
+            lastUpdate: s.lastUpdate ?? null,
+            advisoryNum: s.publicAdvisory?.advNum ?? s.forecastAdvisory?.advNum ?? "",
+            publicAdvisoryUrl: s.publicAdvisory?.url ?? "",
+            coneUrl: s.trackCone?.kmzFile ?? null,
+            latitude: lat,
+            longitude: lon
+        });
+    }
+    return storms;
+}
+
+/** Nur NHC-eigene KMZ-Adressen zulassen (kein offener Proxy). */
+function isTrustedNhcConeUrl(raw) {
+    try {
+        const url = new URL(raw);
+        return url.protocol === "https:"
+            && url.hostname === "www.nhc.noaa.gov"
+            && url.pathname.startsWith("/storm_graphics/api/")
+            && url.pathname.toLowerCase().endsWith(".kmz");
+    } catch {
+        return false;
+    }
+}
+
+export async function handleStormCone(res, coneUrl) {
+    if (!isTrustedNhcConeUrl(coneUrl)) {
+        sendJson(res, 400, { error: "Ungültige oder nicht erlaubte Kegel-URL" });
+        return;
+    }
+
+    try {
+        const result = await cachedFetch(`storm-cone:${coneUrl}`, STORM_CONE_TTL_MS, async () => {
+            const upstream = await fetchWithTimeout(coneUrl, {}, 20_000);
+            if (!upstream.ok) throw new Error(`NHC antwortete mit ${upstream.status}`);
+
+            const buffer = Buffer.from(await upstream.arrayBuffer());
+            const kml = readKmzAsKml(buffer);
+            const coordinates = extractConePolygon(kml);
+            if (!coordinates) throw new Error("Kegel-KML enthält kein Polygon");
+
+            return {
+                data: JSON.stringify({ coordinates }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Vorhersagekegel nicht abrufbar: ${err.message}` });
+    }
 }
 
 /* ═══════════ Hilfsfunktion ═══════════ */

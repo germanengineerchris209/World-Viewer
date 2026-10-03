@@ -190,4 +190,11 @@ export class BaseLayer {
     }
 
     get count() { return this.objects.length; }
+
+    /**
+     * Optionaler Hinweistext unter dem Layer-Schalter in der Sidebar
+     * (z.B. "derzeit keine aktiven Systeme" bei saisonal leeren Layern).
+     * @returns {string|null}
+     */
+    statusText() { return null; }
 }

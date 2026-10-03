@@ -227,6 +227,11 @@ body { display: flex; }
     background: rgba(255,255,255,0.06); border-radius: 10px; padding: 1px 8px;
 }
 
+.layer-status {
+    margin: -2px 0 4px 44px; font-size: 11px; color: var(--text-dim);
+    font-style: italic;
+}
+
 /* ── Buttons ── */
 
 .button-row { display: flex; gap: 8px; margin-bottom: 8px; }
