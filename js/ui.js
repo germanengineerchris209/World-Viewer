@@ -469,6 +469,11 @@ export class UI {
             flightSource: document.getElementById("flight-source"),
             flightHint: document.getElementById("flight-hint"),
             flightRefresh: document.getElementById("flight-refresh"),
+            swKp: document.getElementById("sw-kp"),
+            swGscale: document.getElementById("sw-gscale"),
+            swWind: document.getElementById("sw-wind"),
+            swBz: document.getElementById("sw-bz"),
+            swHint: document.getElementById("sw-hint"),
             cockpitRow: document.getElementById("detail-cockpit-row"),
             cockpitBtn: document.getElementById("detail-cockpit"),
             cockpitHud: document.getElementById("cockpit-hud"),
@@ -660,6 +665,31 @@ export class UI {
         if (counter) counter.textContent = status.count;
 
         this.updateStats();
+    }
+
+    /* ─────────── Weltraumwetter (Kp-Index/Sonnenwind) ─────────── */
+
+    /**
+     * Zeigt Kp-Index und Sonnenwind-Kennwerte in der Sidebar an.
+     * @param {object} status  von SpaceWeatherLayer.getStatus()
+     */
+    updateSpaceWeatherStatus(status) {
+        const { swKp, swGscale, swWind, swBz, swHint } = this._el;
+        if (!swKp) return;
+
+        swKp.textContent = status.kp != null ? status.kp.toFixed(1) : "–";
+        swGscale.textContent = status.gScale ?? "–";
+        swGscale.className = "flight-badge "
+            + (status.kp >= 5 ? "error" : status.kp >= 4 ? "demo" : "live");
+        swWind.textContent = status.windSpeed != null ? `${Math.round(status.windSpeed)} km/s` : "–";
+        swBz.textContent = status.bz != null ? `${status.bz.toFixed(1)} nT` : "–";
+
+        swHint.textContent = status.error
+            ? status.error
+            : (status.lastFetchAt
+                ? `Quelle: NOAA SWPC · aktualisiert vor `
+                  + `${Math.round((Date.now() - status.lastFetchAt) / 1000)} s`
+                : "–");
     }
 
     /* ─────────── Detailpanel ─────────── */

@@ -44,6 +44,7 @@ import { AQILayer } from "./layers/AQILayer.js";
 import { WeatherLayer } from "./layers/WeatherLayer.js";
 import { HeatmapLayer } from "./layers/HeatmapLayer.js";
 import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
+import { SpaceWeatherLayer } from "./layers/SpaceWeatherLayer.js";
 
 async function main() {
     /* 1 ── 3D-Globus mit Satellitenansicht */
@@ -72,6 +73,8 @@ async function main() {
     layerManager.register(new WeatherLayer(worldViewer));
     layerManager.register(new FuelReserveLayer(worldViewer));
     layerManager.register(new HeatmapLayer(worldViewer, layerManager));
+    const spaceWeatherLayer = new SpaceWeatherLayer(worldViewer);
+    layerManager.register(spaceWeatherLayer);
 
     /* 3 ── UI, Suche, Timeline, KI */
     const ui = new UI(worldViewer, layerManager);
@@ -81,10 +84,14 @@ async function main() {
     // Statusanzeige der Flugdaten aktuell halten
     aircraftLayer.onStatusChange((status) => ui.updateFlightStatus(status));
 
+    // Kp-Index/Sonnenwind-Kennzahlen in der Sidebar aktuell halten (WEB-68)
+    spaceWeatherLayer.onStatusChange((status) => ui.updateSpaceWeatherStatus(status));
+
     await layerManager.loadAll();
     await applyShareLinkFromUrl(worldViewer, layerManager);
     ui.buildLayerToggles();
     ui.updateFlightStatus(aircraftLayer.getStatus());
+    ui.updateSpaceWeatherStatus(spaceWeatherLayer.getStatus());
     ui.buildShareUrl = () => buildShareUrl(worldViewer, layerManager);
 
     new Search(worldViewer, layerManager, ui);
@@ -139,6 +146,7 @@ async function main() {
         await layerManager.loadAll();
         ui.buildLayerToggles();
         ui.updateFlightStatus(aircraftLayer.getStatus());
+        ui.updateSpaceWeatherStatus(spaceWeatherLayer.getStatus());
     };
 
     /* Zeitleisten-Replay: historische Erdbeben/Brände/Starts abspielen

@@ -255,6 +255,12 @@ window.WORLD_VIEWER_CONFIG = {
         gridCells: 24             // Gitterauflösung (Zellen je Achse)
     },
 
+    spaceWeather: {
+        // NOAA Space Weather Prediction Center – öffentliche US-Regierungsdaten
+        // (public domain), kein Key, CORS gesetzt (per curl verifiziert, WEB-68).
+        refreshSeconds: 600
+    },
+
 
     /* ═══════════ Kameras ═══════════ */
 
