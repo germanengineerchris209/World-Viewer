@@ -24,7 +24,7 @@ const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
-    fuelReserve: "⛽", weather: "🌦️"
+    fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀"
 };
 
 /** Formatierungs-Helfer */
@@ -390,6 +390,38 @@ const DETAIL_SCHEMAS = {
             ];
         }
     },
+    cyclone: {
+        badge: "Tropischer Wirbelsturm",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Kategorie", m.category
+                    ? `Hurrikan Kat. ${m.category}` : F.text(m.classificationLabel)],
+                ["Windstärke", m.intensityKt != null
+                    ? `${m.intensityKt} kn (${Math.round(m.intensityKt * 1.852)} km/h)` : "–"],
+                ["Luftdruck", m.pressureMb != null ? `${m.pressureMb} hPa` : "–"],
+                ["Becken", F.text(m.basin)]
+            ];
+            if (m.movementDir != null) {
+                rows.push(["Zugrichtung", `${F.deg(m.movementDir)}`
+                    + (m.movementSpeedKt != null ? ` · ${m.movementSpeedKt} kn` : "")]);
+            }
+            if (m.advisoryNum) rows.push(["Advisory", `Nr. ${m.advisoryNum}`]);
+            if (m.lastUpdate) rows.push(["Letztes Update",
+                new Date(m.lastUpdate).toLocaleString("de-DE"), true]);
+            rows.push(
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        },
+        extraHtml: (o) => o.metadata.publicAdvisoryUrl
+            ? `<div class="detail-field wide"><label>Quelle</label>
+                 <span><a href="${o.metadata.publicAdvisoryUrl}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">NHC-Bulletin öffnen ↗</a></span></div>`
+            : ""
+    },
     // Fallback für unbekannte Typen
     default: {
         badge: "Objekt-Details",
@@ -468,6 +500,9 @@ export class UI {
     buildLayerToggles() {
         this._el.layerList.innerHTML = "";
         for (const layer of this.layerManager.getAll()) {
+            const item = document.createElement("div");
+            item.className = "layer-item";
+
             const label = document.createElement("label");
             label.className = "layer-toggle";
             label.innerHTML = `
@@ -481,18 +516,46 @@ export class UI {
                 e.target.checked ? layer.show() : layer.hide();
                 this.updateStats();
             });
-            this._el.layerList.appendChild(label);
+            item.appendChild(label);
+
+            // Hinweistext für saisonal leere Layer (z.B. Wirbelstürme
+            // außerhalb der Hurrikansaison), statt einer stillen leeren Ebene
+            const statusText = layer.statusText?.();
+            if (statusText) {
+                const status = document.createElement("p");
+                status.className = "layer-status";
+                status.textContent = statusText;
+                item.appendChild(status);
+            }
+
+            this._el.layerList.appendChild(item);
         }
         this.updateStats();
     }
 
-    /** Zähler der Layer-Schalter aktuell halten (z.B. bei Live-Daten wie AIS). */
+    /** Zähler und Statustexte der Layer-Schalter aktuell halten (z.B. bei Live-Daten). */
     refreshLayerCounts() {
         for (const layer of this.layerManager.getAll()) {
-            const counter = this._el.layerList
+            const item = this._el.layerList
                 ?.querySelector(`.layer-toggle input[data-layer="${layer.id}"]`)
-                ?.closest(".layer-toggle")?.querySelector(".layer-count");
+                ?.closest(".layer-item");
+            if (!item) continue;
+
+            const counter = item.querySelector(".layer-count");
             if (counter) counter.textContent = layer.count;
+
+            const statusText = layer.statusText?.();
+            let status = item.querySelector(".layer-status");
+            if (statusText) {
+                if (!status) {
+                    status = document.createElement("p");
+                    status.className = "layer-status";
+                    item.appendChild(status);
+                }
+                status.textContent = statusText;
+            } else if (status) {
+                status.remove();
+            }
         }
     }
 
