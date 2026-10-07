@@ -197,6 +197,14 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 900
     },
 
+    cyclones: {
+        // Aktive tropische Wirbelstürme, NOAA National Hurricane Center.
+        // Zuständig nur für Atlantik/Ost-/Zentralpazifik. Außerhalb der
+        // Hurrikansaison (meist) leer – das zeigt die Sidebar klar an.
+        apiUrl: "/api/storms",
+        refreshSeconds: 1200    // 20 Min., siehe NHC-Aktualisierungsrhythmus
+    },
+
     fires: {
         apiUrl: "/api/fires",
         refreshSeconds: 900,
