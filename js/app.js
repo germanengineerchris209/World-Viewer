@@ -21,6 +21,7 @@ import { WatchlistPanel } from "./watchlistPanel.js";
 import { AnomalyAlerts } from "./anomalyAlerts.js";
 import { DrawTools } from "./drawTools.js";
 import { DrawToolsPanel } from "./drawToolsPanel.js";
+import { RouteTool } from "./routeTool.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -97,9 +98,11 @@ async function main() {
 
     new WatchlistPanel(watchlist, worldViewer, ui, anomalyAlerts);
 
-    /* Zeichnen & Messen: Freihand/Grenzen/Punkte zeichnen, Distanzen messen */
+    /* Zeichnen & Messen: Freihand/Grenzen/Punkte zeichnen, Distanzen messen;
+       Route Fuß/Rad/Auto über den öffentlichen OSRM-Demo-Server (WEB-71) */
     const drawTools = new DrawTools(worldViewer);
-    new DrawToolsPanel(drawTools, ui);
+    const routeTool = new RouteTool(worldViewer);
+    new DrawToolsPanel(drawTools, routeTool, ui);
 
     /* Cockpit-Ansicht: mit der Kamera im Flugzeug mitfliegen */
     const cockpit = new CockpitView(worldViewer, ui);
