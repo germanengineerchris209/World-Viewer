@@ -44,7 +44,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | ✈️ Flugzeuge (Alternative) | adsb.lol | regional um einen Punkt |
 | 🛰️ Satelliten (echte Bahnen) | CelesTrak + SGP4 | |
 | 🌋 Erdbeben | USGS | letzte 24 Stunden |
-| 🗻 Vulkane | Smithsonian GVP / USGS Volcano Hazards Program | handkuratierte Auswahl, statisch |
+| 🗻 Vulkane | Smithsonian GVP (Weltkatalog + laufende Ausbrüche), USGS Volcano Hazards Program (amtliche Warnstufen) | 438 seit 1900 aktive Vulkane, Ampel live über `/api/volcanoes`; GVP sendet kein CORS → Server-Proxy. Rückfallebene: `data/volcanoes.json` (erzeugt via `npm run build:volcanoes`) |
 | 🚀 Raketenstarts | Launch Library 2 | 15 Abrufe/Stunde |
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
