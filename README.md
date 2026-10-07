@@ -163,7 +163,7 @@ Straßenebene, sanfte Kameraflüge, 2D/3D, Tag-Nacht-Beleuchtung, Koordinatenanz
 
 **Layer (einzeln schaltbar)**
 ✈️ Aircraft · 🚢 Ships · 🛰️ Satellites · 📷 Cameras · 🏗️ Infrastructure ·
-🌋 Erdbeben · 🗻 Vulkane · 🚀 Raketenstarts · 🔥 Brände
+🌋 Erdbeben · 🗻 Vulkane · 🚀 Raketenstarts · ☄️ Asteroiden · 🔥 Brände
 
 **Echte Bahndaten statt Kreisbahn**
 Satelliten laufen auf echten Bahnen: TLE-Daten von CelesTrak, gerechnet

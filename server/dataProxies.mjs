@@ -15,6 +15,7 @@
  *   • Die Kamerakataloge (Caltrans, TfL, Austin) sind nicht CORS-freigegeben
  *   • Der GeoServer des Smithsonian GVP sendet keine CORS-Header
  *   • Der NOAA National Hurricane Center sendet keine CORS-Header
+ *   • NASA NeoWs (Asteroiden) braucht einen Key, der nicht im Browser landen soll
  *
  * Alle Handler teilen sich denselben Cache mit "Serve-Stale": Ist die
  * Quelle gerade nicht erreichbar, wird die letzte gute Antwort geliefert,
@@ -277,6 +278,82 @@ export async function handleLaunchesHistory(res, days) {
     } catch (err) {
         sendJson(res, 502, { error: `Vergangene Starts nicht abrufbar: ${err.message}` });
     }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   2c. NASA NeoWs – Asteroiden mit Erdannäherung (WEB-75)
+   ═══════════════════════════════════════════════════════════ */
+
+const ASTEROID_TTL_MS = 6 * 60 * 60 * 1000;   // DEMO_KEY: nur 30 Abrufe/Stunde
+
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+
+export async function handleAsteroids(res) {
+    try {
+        const result = await cachedFetch("asteroids", ASTEROID_TTL_MS, async () => {
+            const start = new Date();
+            const end = new Date(start.getTime() + 6 * 86_400_000); // Feed erlaubt max. 7 Tage
+
+            const url = new URL("https://api.nasa.gov/neo/rest/v1/feed");
+            url.searchParams.set("start_date", isoDate(start));
+            url.searchParams.set("end_date", isoDate(end));
+            url.searchParams.set("api_key", process.env.NASA_API_KEY || "DEMO_KEY");
+
+            const upstream = await fetchWithTimeout(url, { headers: { Accept: "application/json" } }, 20_000);
+
+            if (!upstream.ok) {
+                throw new Error(upstream.status === 429
+                    ? "Kontingent erschöpft (NASA DEMO_KEY: 30 Abrufe/Stunde)"
+                    : `NASA NeoWs antwortete mit ${upstream.status}`);
+            }
+
+            const json = await upstream.json();
+            return { data: JSON.stringify(normalizeAsteroids(json)), contentType: "application/json" };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Asteroiden nicht abrufbar: ${err.message}` });
+    }
+}
+
+/** Wandelt die NeoWs-Feed-Antwort in unser schlankes Format. */
+function normalizeAsteroids(json) {
+    const byDate = json?.near_earth_objects ?? {};
+    const asteroids = [];
+
+    for (const neos of Object.values(byDate)) {
+        for (const neo of neos) {
+            const approach = neo.close_approach_data?.[0];
+            if (!approach) continue;
+
+            const diameterM = neo.estimated_diameter?.meters;
+
+            asteroids.push({
+                id: String(neo.id),
+                name: String(neo.name ?? "").replace(/[()]/g, ""),
+                hazardous: !!neo.is_potentially_hazardous_asteroid,
+                diameterMinM: diameterM?.estimated_diameter_min ?? null,
+                diameterMaxM: diameterM?.estimated_diameter_max ?? null,
+                absoluteMagnitude: neo.absolute_magnitude_h ?? null,
+                missDistanceKm: Number(approach.miss_distance?.kilometers) || null,
+                missDistanceLunar: Number(approach.miss_distance?.lunar) || null,
+                relativeVelocityKmh: Number(approach.relative_velocity?.kilometers_per_hour) || null,
+                closeApproachDate: approach.close_approach_date_full ?? approach.close_approach_date ?? null,
+                orbitingBody: approach.orbiting_body ?? null,
+                jplUrl: neo.nasa_jpl_url ?? null
+            });
+        }
+    }
+
+    // Nächste Annäherung zuerst
+    asteroids.sort((a, b) => (a.missDistanceKm ?? Infinity) - (b.missDistanceKm ?? Infinity));
+    return { asteroids };
 }
 
 /* ═══════════════════════════════════════════════════════════

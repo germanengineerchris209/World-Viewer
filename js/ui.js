@@ -23,7 +23,7 @@ const fmt = new Intl.NumberFormat("de-DE");
 const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
-    launch: "🚀", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
+    launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
     fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀"
 };
 
@@ -369,6 +369,35 @@ const DETAIL_SCHEMAS = {
                 ["Länge", F.coord(o.position.longitude)]
             );
             return rows;
+        }
+    },
+    asteroid: {
+        badge: "Erdnaher Asteroid",
+        title: (o) => o.metadata.name ?? o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Einstufung", m.hazardous ? "⚠️ Potenziell gefährlich" : "Unbedenklich"],
+                ["Durchmesser", (m.diameterMinM != null && m.diameterMaxM != null)
+                    ? `${fmt.format(Math.round(m.diameterMinM))}–${fmt.format(Math.round(m.diameterMaxM))} m`
+                    : "–"],
+                ["Annäherungsdistanz", F.km(m.missDistanceKm)
+                    + (m.missDistanceLunar != null ? ` (${fmt.format(Math.round(m.missDistanceLunar))} × Mondabstand)` : "")],
+                ["Relativgeschwindigkeit", F.kmh(m.relativeVelocityKmh)],
+                ["Vorbeiflug an", F.text(m.orbitingBody)]
+            ];
+            if (m.closeApproachDate) rows.push(["Zeitpunkt", m.closeApproachDate, true]);
+            if (m.absoluteMagnitude != null) rows.push(["Absolute Helligkeit (H)", String(m.absoluteMagnitude)]);
+            return rows;
+        },
+        extraHtml: (o) => {
+            const m = o.metadata;
+            if (!m.jplUrl) return "";
+            return `<div class="detail-field wide"><label>Quelle</label>
+                 <span><a href="${m.jplUrl}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">NASA JPL Small-Body Database ↗</a></span></div>
+                 <div class="detail-field wide"><label>Hinweis</label>
+                 <span>Position stilisiert (Richtung unbekannt) – nur die Distanz ist real.</span></div>`;
         }
     },
     fire: {
