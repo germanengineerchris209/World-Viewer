@@ -380,6 +380,65 @@ body { display: flex; }
 }
 .stat-row span:last-child { font-family: var(--mono); color: var(--text); }
 
+/* ── Deep-Space-Missionen (WEB-79) ── */
+
+#deepspace-map { padding: 2px 0 6px; }
+
+.ds-svg { width: 100%; height: auto; display: block; }
+
+/* Referenzbahnen (Erde/Jupiter/Neptun/Heliopause) und Sonne */
+.ds-orbit {
+    fill: none; stroke: rgba(255, 255, 255, 0.13);
+    stroke-width: 1; stroke-dasharray: 2 3;
+}
+.ds-orbit-label {
+    fill: var(--text-dim); font-size: 7px; font-family: var(--mono);
+    text-anchor: middle;
+}
+.ds-sun { fill: var(--amber); filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.8)); }
+
+.ds-probe { cursor: pointer; }
+.ds-probe line { stroke-width: 1; opacity: 0.35; }
+.ds-probe circle { transition: r 0.15s ease; }
+.ds-probe:hover circle,
+.ds-probe:focus-visible circle { r: 6; }
+.ds-probe.active line { opacity: 0.85; stroke-width: 1.5; }
+.ds-probe.active circle { filter: drop-shadow(0 0 5px currentColor); }
+
+/* Missionsliste */
+.ds-item {
+    padding: 5px 6px; border-radius: 8px; cursor: pointer;
+    border: 1px solid transparent;
+}
+.ds-item:hover { background: var(--bg-hover); }
+.ds-item.active { background: var(--accent-dim); border-color: var(--border); }
+
+.ds-item-head { display: flex; align-items: center; gap: 7px; }
+.ds-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto;
+}
+.ds-name { font-size: 12px; color: var(--text); }
+
+.ds-item-values {
+    display: flex; justify-content: space-between; gap: 6px;
+    padding-left: 15px; font-family: var(--mono);
+    font-size: 11px; color: var(--text-dim);
+}
+.ds-light { white-space: nowrap; }
+
+.ds-details {
+    margin-top: 6px; padding-top: 6px;
+    border-top: 1px solid var(--border);
+}
+.ds-details .stat-row { font-size: 11px; padding: 2px 0; }
+
+.ds-note {
+    font-size: 11px; line-height: 1.4; color: var(--text-dim);
+    margin: 6px 0 2px;
+}
+
+.ds-empty { font-size: 11px; color: var(--text-dim); padding: 6px 2px; }
+
 #sidebar-footer {
     margin-top: auto; padding: 12px 14px;
     font-family: var(--mono); font-size: 11px; color: var(--text-dim);

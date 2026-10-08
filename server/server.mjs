@@ -62,6 +62,7 @@ import {
     handleFires, handleFiresHistory, handleCctvCatalog, handleEvents,
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids, TLE_GROUPS
 } from "./dataProxies.mjs";
+import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -508,6 +509,10 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleAsteroids(res);
 
+            case "/api/deepspace":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleDeepSpace(res);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
@@ -517,6 +522,7 @@ export function createServer() {
                     events: true,
                     volcanoes: true,
                     asteroids: true,
+                    deepspace: true,
                     storms: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
