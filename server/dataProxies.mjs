@@ -1194,6 +1194,133 @@ export async function handleStormCone(res, coneUrl) {
     }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   7. GDELT GEO 2.0 – globale Ereignis-Lage (Nachrichten-Layer)
+   ═══════════════════════════════════════════════════════════
+
+   GDELT durchsucht weltweite Nachrichtenmedien und geokodiert
+   erwähnte Orte automatisch, komplett frei nutzbar, kein Key
+   (https://blog.gdeltproject.org/gdelt-geo-2-0-api-debuts/).
+   Läuft über den Server, weil die API keine CORS-Header setzt.
+
+   Vier Themen-Suchen statt einer, damit Marker nach Ereignisthema
+   gruppiert werden können (Konflikt/Protest/Katastrophe/Krise) –
+   nacheinander abgefragt, nicht parallel, um das gemeinsame
+   Kontingent zu schonen. Schlägt ein Thema fehl, fließen einfach
+   die übrigen ein statt den ganzen Layer zu leeren. */
+
+const GDELT_GEO_BASE = "https://api.gdeltproject.org/api/v2/geo/geo";
+const GDELT_TTL_MS = 14 * 60 * 1000;   // knapp unter GDELTs eigenem 15-Minuten-Takt
+const GDELT_TIMESPAN_MIN = 360;        // 6 Stunden Rückblick
+const GDELT_MAX_POINTS = 250;          // je Thema
+
+const GDELT_THEMES = [
+    {
+        id: "conflict", label: "Konflikt",
+        query: "(war OR conflict OR airstrike OR shelling OR militants OR insurgency OR clashes OR ceasefire)"
+    },
+    {
+        id: "protest", label: "Protest",
+        query: "(protest OR riot OR demonstration OR unrest OR strike OR uprising)"
+    },
+    {
+        id: "disaster", label: "Katastrophe",
+        query: "(earthquake OR flood OR wildfire OR hurricane OR typhoon OR landslide OR tsunami)"
+    },
+    {
+        id: "crisis", label: "Krise",
+        query: "(\"humanitarian crisis\" OR famine OR \"refugee crisis\" OR outbreak OR epidemic OR evacuation OR \"state of emergency\")"
+    }
+];
+
+export async function handleEvents(res) {
+    const collected = [];
+    const cacheStatuses = [];
+    let anySuccess = false;
+
+    for (const theme of GDELT_THEMES) {
+        try {
+            const result = await cachedFetch(`gdelt-${theme.id}`, GDELT_TTL_MS, async () => {
+                const url = `${GDELT_GEO_BASE}?query=${encodeURIComponent(theme.query)}`
+                    + `&format=geojson&timespan=${GDELT_TIMESPAN_MIN}`
+                    + `&maxpoints=${GDELT_MAX_POINTS}&sortby=date`;
+                const upstream = await fetchWithTimeout(url, {}, 15_000);
+                if (!upstream.ok) throw new Error(`GDELT antwortete mit ${upstream.status}`);
+
+                const geojson = await upstream.json();
+                const events = parseGdeltTheme(geojson, theme);
+                return { data: JSON.stringify(events), contentType: "application/json" };
+            });
+
+            collected.push(...JSON.parse(result.data));
+            cacheStatuses.push(`${theme.id}:${result.cacheStatus}`);
+            anySuccess = true;
+        } catch (err) {
+            console.warn(`[gdelt] Thema "${theme.id}" nicht verfügbar: ${err.message}`);
+        }
+    }
+
+    if (!anySuccess) {
+        sendJson(res, 502, {
+            error: "GDELT GEO 2.0 API derzeit nicht erreichbar (Wartung, Rate-Limit oder Ausfall)."
+        });
+        return;
+    }
+
+    res.writeHead(200, {
+        "content-type": "application/json; charset=utf-8",
+        "x-cache": cacheStatuses.join(",")
+    });
+    res.end(JSON.stringify({ fetchedAt: Date.now(), count: collected.length, events: collected }));
+}
+
+/** Wandelt die GeoJSON-Antwort eines Themas in unser schlankes Format. */
+function parseGdeltTheme(geojson, theme) {
+    const features = Array.isArray(geojson?.features) ? geojson.features : [];
+    const events = [];
+
+    for (const feature of features) {
+        const [lon, lat] = feature.geometry?.coordinates ?? [];
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+        const props = feature.properties ?? {};
+        const article = parseGdeltHtml(props.html);
+
+        events.push({
+            id: `gdelt-${theme.id}-${events.length}-${lat.toFixed(2)}-${lon.toFixed(2)}`,
+            theme: theme.id,
+            themeLabel: theme.label,
+            name: props.name ?? "",
+            latitude: lat,
+            longitude: lon,
+            count: Number(props.count) || 0,
+            articleTitle: article.title,
+            articleUrl: article.url,
+            articleDomain: article.domain
+        });
+    }
+    return events;
+}
+
+/**
+ * Extrahiert den ersten Artikel-Link aus dem HTML-Schnipsel, den GDELT
+ * pro Ort mitliefert (bis zu 5 passende Artikel als <a>-Tags).
+ */
+function parseGdeltHtml(html) {
+    if (typeof html !== "string" || !html) return { title: "", url: "", domain: "" };
+
+    const match = html.match(/<a[^>]+href="([^"]+)"[^>]*>([^<]*)<\/a>/i);
+    if (!match) return { title: "", url: "", domain: "" };
+
+    const url = match[1];
+    const title = match[2].trim();
+    let domain = "";
+    try { domain = new URL(url).hostname.replace(/^www\./, ""); }
+    catch { /* ungültige URL ignorieren */ }
+
+    return { title, url, domain };
+}
+
 /* ═══════════ Hilfsfunktion ═══════════ */
 
 function sendJson(res, status, data) {

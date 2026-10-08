@@ -218,6 +218,15 @@ window.WORLD_VIEWER_CONFIG = {
         maxFires: 1500          // weltweit können es zehntausende sein
     },
 
+    events: {
+        // GDELT Project GEO 2.0 API – frei, kein Key. Server-Proxy, weil
+        // GDELT keine CORS-Header sendet. GDELT selbst aktualisiert seine
+        // Kartendaten alle 15 Minuten, öfter abfragen bringt nichts.
+        apiUrl: "/api/events",
+        refreshSeconds: 900,
+        maxEvents: 800
+    },
+
     // Zeitleisten-Replay: dieselben Quellen wie oben, nur über die
     // "history"-Endpunkte (7-/30-Tage-Feeds statt nur "aktuell")
     history: {

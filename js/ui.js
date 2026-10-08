@@ -20,11 +20,18 @@ import { GraphView } from "./graphView.js";
 
 const fmt = new Intl.NumberFormat("de-DE");
 
+/** Roh-Text aus nicht vertrauenswürdigen Quellen HTML-sicher machen. */
+function escapeHtml(text) {
+    return String(text ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+}
+
 const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
-    fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀"
+    fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰"
 };
 
 /** Formatierungs-Helfer */
@@ -417,6 +424,38 @@ const DETAIL_SCHEMAS = {
                 ["Breite", F.coord(o.position.latitude)],
                 ["Länge", F.coord(o.position.longitude)]
             ];
+        }
+    },
+    event: {
+        badge: "Ereignis",
+        title: (o) => o.metadata.themeLabel ?? "Ereignis",
+        fields: (o) => {
+            const m = o.metadata;
+            return [
+                ["Thema", F.text(m.themeLabel)],
+                ["Ort", F.text(m.name || o.name), true],
+                ["Erwähnungen", m.count != null ? `${fmt.format(m.count)}` : "–"],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            ];
+        },
+        extraHtml: (o) => {
+            const m = o.metadata;
+            // Titel/URL stammen von beliebigen, weltweiten Nachrichtenseiten
+            // (GDELT-Crawler) – anders als bei den handverlesenen Quellen der
+            // übrigen Layer ist das kein vertrauenswürdiger Absender, daher
+            // hier escapen und nur http(s)-Links zulassen.
+            let safeUrl = "";
+            try {
+                const parsed = new URL(m.articleUrl);
+                if (parsed.protocol === "http:" || parsed.protocol === "https:") safeUrl = parsed.href;
+            } catch { /* keine/ungültige URL */ }
+            if (!safeUrl) return "";
+
+            const label = escapeHtml(m.articleTitle || m.articleDomain || "Quelle öffnen");
+            return `<div class="detail-field wide"><label>Quelle</label>
+                 <span><a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">${label} ↗</a></span></div>`;
         }
     },
     cyclone: {

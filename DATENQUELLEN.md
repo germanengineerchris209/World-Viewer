@@ -54,6 +54,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | Ortsnamen | OpenStreetMap/Nominatim | |
 | 🌫️ Luftqualität (AQI) | Open-Meteo Air Quality API | Großstädte, handkuratiert |
 | ⛽ Kraftstoffreserven | modelliert nach IEA-Bevorratungsregeln / nationalen Mindestbevorratungsgesetzen | 20 größte Volkswirtschaften, statische Modellwerte, keine Live-Meldung |
+| 📰 Ereignisse | GDELT Project GEO 2.0 API | geokodierte Weltnachrichten, Aktualisierung alle 15 Min. |
 
 ### 🟡 Kostenloser Schlüssel nötig
 
@@ -346,6 +347,32 @@ neuseeländischen MSO). Jeder Datensatz trägt ein `info`-Feld mit diesem
 Hinweis. Kein Live-Feed, keine amtliche Echtzeitmeldung einzelner
 Tanklager – für reale Entscheidungen bitte die offiziellen nationalen
 Stellen (z.B. IEA Oil Stocks Reporting System) konsultieren.
+
+### 📰 Globale Ereignis-Lage
+
+**GDELT Project GEO 2.0 API** (`api.gdeltproject.org/api/v2/geo/geo`) –
+öffentlich, ohne Anmeldung, ohne Schlüssel. GDELT durchsucht
+Nachrichtenmedien weltweit (65 maschinell übersetzte Sprachen) und
+geokodiert erwähnte Orte automatisch. Die App fragt vier Themen-Suchen
+ab (Konflikt, Protest, Katastrophe, Krise) und zeigt sie farblich
+unterschieden als Marker, Klick öffnet eine Kurzbeschreibung samt Link
+zum Originalartikel.
+
+Keine CORS-Header, daher Server-Proxy (`/api/events`), der die vier
+Themen **nacheinander** abfragt (gemeinsames Kontingent) und 14 Minuten
+cacht, knapp unter GDELTs eigenem 15-Minuten-Update-Takt.
+
+> **Wichtig zur Datenqualität:** GDELT ist ein akademisches Projekt,
+> keine kuratierte Lagebild-Plattform. Laut eigener Dokumentation kommt
+> es "fast immer" zu Fehlern – Ortsnamen-Verwechslungen, Fehlübersetzungen,
+> falsch zugeordnete Bildunterschriften. Der Layer eignet sich für einen
+> groben Überblick, nicht für belastbare Einzelfall-Bewertungen.
+>
+> **Verfügbarkeit:** Die GEO-2.0-Route wurde 2021 angekündigt, ist aber
+> nicht Teil von GDELTs Kern-API-Garantien. Antwortet sie mit Fehlern
+> oder 404, blendet der Layer sich sauber aus (letzter guter Stand bzw.
+> leer) statt die App zu stören – siehe `server/dataProxies.mjs`,
+> `handleEvents()`.
 
 ### 🗺️ Karten und Gelände
 

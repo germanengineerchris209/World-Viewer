@@ -14,6 +14,7 @@
  *      /api/fires             Aktive Brände (NASA FIRMS, Key nötig)
  *      /api/fires/history     Historische Brände für das Zeitleisten-Replay
  *      /api/cctv              Katalog öffentlicher Verkehrskameras
+ *      /api/events            Globale Ereignis-Lage (GDELT GEO 2.0)
  *      /api/volcanoes         Vulkane weltweit mit Aktivitätsampel
  *      /api/storms            Aktive tropische Wirbelstürme (NOAA NHC)
  *      /api/storms/cone       Vorhersagekegel eines Sturms (KMZ → Polygon)
@@ -58,8 +59,8 @@ import { fetchFlights, parseBounds } from "./flightProviders.mjs";
 import { handleCameraProxy, buildAllowlist, getAllowlist } from "./cameraProxy.mjs";
 import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
-    handleFires, handleFiresHistory, handleCctvCatalog, handleVolcanoes,
-    handleStorms, handleStormCone, handleAsteroids, TLE_GROUPS
+    handleFires, handleFiresHistory, handleCctvCatalog, handleEvents,
+    handleVolcanoes, handleStorms, handleStormCone, handleAsteroids, TLE_GROUPS
 } from "./dataProxies.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
 
@@ -487,6 +488,10 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleCctvCatalog(res);
 
+            case "/api/events":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleEvents(res);
+
             case "/api/volcanoes":
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleVolcanoes(res);
@@ -509,6 +514,7 @@ export function createServer() {
                     celestrak: true,
                     launches: true,
                     cctv: true,
+                    events: true,
                     volcanoes: true,
                     asteroids: true,
                     storms: true,
@@ -575,6 +581,7 @@ if (isMain) {
             : "  ℹ️  Brände (NASA FIRMS): kein FIRMS_MAP_KEY – Layer bleibt leer\n"
             + "     Kostenlos: https://firms.modaps.eosdis.nasa.gov/api/map_key/");
         console.log("  📹 Verkehrskameras (TfL, Caltrans, Austin): bereit");
+        console.log("  📰 Ereignisse (GDELT GEO 2.0): bereit");
 
         console.log(AISSTREAM_API_KEY
             ? "  🚢 Schiffsdaten (AISStream): Key erkannt, verbinde per WebSocket …"
