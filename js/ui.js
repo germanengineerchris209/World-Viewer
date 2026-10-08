@@ -30,8 +30,8 @@ function escapeHtml(text) {
 const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
-    launch: "🚀", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
-    fuelReserve: "⛽", weather: "🌦️", event: "📰"
+    launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
+    fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰"
 };
 
 /** Formatierungs-Helfer */
@@ -267,16 +267,56 @@ const DETAIL_SCHEMAS = {
         fields: (o) => {
             const m = o.metadata;
             const rows = [
-                ["Status", VolcanoLayer.statusLabel(m.status)],
+                ["Status", VolcanoLayer.statusLabel(m.status)]
+            ];
+
+            // Woher die Einstufung stammt, ist hier wichtiger als die Farbe:
+            // eine amtliche USGS-Warnstufe wiegt mehr als "steht im Katalog"
+            const sourceLabel = VolcanoLayer.statusSourceLabel(m.statusSource);
+            if (sourceLabel) rows.push(["Einstufung laut", sourceLabel, true]);
+
+            if (m.alertLevel) rows.push(["USGS-Warnstufe", F.text(m.alertLevel)]);
+            if (m.observatory) rows.push(["Observatorium", F.text(m.observatory), true]);
+
+            if (m.eruptionStartedAt) {
+                rows.push(["Ausbruch seit",
+                    new Date(m.eruptionStartedAt).toLocaleDateString("de-DE"), true]);
+            } else if (m.eruptionStartYear) {
+                rows.push(["Ausbruch seit", String(m.eruptionStartYear), true]);
+            }
+            if (m.vei != null) rows.push(["Explosivität (VEI)", String(m.vei)]);
+
+            rows.push(
                 ["Typ", F.text(m.volcanoType)],
                 ["Land", F.text(m.country)],
-                ["Höhe", F.meters(m.elevation)],
-                ["Letzte Eruption", F.text(m.lastEruption), true],
-                ["Info", F.text(m.info), true],
+                ["Höhe", F.meters(m.elevation)]
+            );
+            if (m.region) rows.push(["Region", F.text(m.region), true]);
+
+            // Live-Daten liefern das Jahr, der Schnappschuss ggf. einen Text
+            rows.push(["Letzte Eruption",
+                F.text(m.lastEruptionYear ?? m.lastEruption), true]);
+
+            if (m.synopsis) rows.push(["Lagebild", F.text(m.synopsis), true]);
+            if (m.info) rows.push(["Info", F.text(m.info), true]);
+
+            rows.push(
                 ["Breite", F.coord(o.position.latitude)],
                 ["Länge", F.coord(o.position.longitude)]
-            ];
+            );
             return rows;
+        },
+        extraHtml: (o) => {
+            const m = o.metadata;
+            const links = [];
+            if (m.gvpUrl) links.push(`<a href="${m.gvpUrl}" target="_blank"`
+                + ` rel="noopener" style="color:#38bdf8">Smithsonian GVP ↗</a>`);
+            if (m.noticeUrl) links.push(`<a href="${m.noticeUrl}" target="_blank"`
+                + ` rel="noopener" style="color:#38bdf8">USGS-Meldung ↗</a>`);
+            if (!links.length) return "";
+
+            return `<div class="detail-field wide"><label>Quelle</label>
+                 <span>${links.join(" · ")}</span></div>`;
         }
     },
     fuelReserve: {
@@ -338,6 +378,35 @@ const DETAIL_SCHEMAS = {
             return rows;
         }
     },
+    asteroid: {
+        badge: "Erdnaher Asteroid",
+        title: (o) => o.metadata.name ?? o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Einstufung", m.hazardous ? "⚠️ Potenziell gefährlich" : "Unbedenklich"],
+                ["Durchmesser", (m.diameterMinM != null && m.diameterMaxM != null)
+                    ? `${fmt.format(Math.round(m.diameterMinM))}–${fmt.format(Math.round(m.diameterMaxM))} m`
+                    : "–"],
+                ["Annäherungsdistanz", F.km(m.missDistanceKm)
+                    + (m.missDistanceLunar != null ? ` (${fmt.format(Math.round(m.missDistanceLunar))} × Mondabstand)` : "")],
+                ["Relativgeschwindigkeit", F.kmh(m.relativeVelocityKmh)],
+                ["Vorbeiflug an", F.text(m.orbitingBody)]
+            ];
+            if (m.closeApproachDate) rows.push(["Zeitpunkt", m.closeApproachDate, true]);
+            if (m.absoluteMagnitude != null) rows.push(["Absolute Helligkeit (H)", String(m.absoluteMagnitude)]);
+            return rows;
+        },
+        extraHtml: (o) => {
+            const m = o.metadata;
+            if (!m.jplUrl) return "";
+            return `<div class="detail-field wide"><label>Quelle</label>
+                 <span><a href="${m.jplUrl}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">NASA JPL Small-Body Database ↗</a></span></div>
+                 <div class="detail-field wide"><label>Hinweis</label>
+                 <span>Position stilisiert (Richtung unbekannt) – nur die Distanz ist real.</span></div>`;
+        }
+    },
     fire: {
         badge: "Brandherd",
         title: () => "Aktiver Brand",
@@ -389,6 +458,38 @@ const DETAIL_SCHEMAS = {
                     style="color:#38bdf8">${label} ↗</a></span></div>`;
         }
     },
+    cyclone: {
+        badge: "Tropischer Wirbelsturm",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Kategorie", m.category
+                    ? `Hurrikan Kat. ${m.category}` : F.text(m.classificationLabel)],
+                ["Windstärke", m.intensityKt != null
+                    ? `${m.intensityKt} kn (${Math.round(m.intensityKt * 1.852)} km/h)` : "–"],
+                ["Luftdruck", m.pressureMb != null ? `${m.pressureMb} hPa` : "–"],
+                ["Becken", F.text(m.basin)]
+            ];
+            if (m.movementDir != null) {
+                rows.push(["Zugrichtung", `${F.deg(m.movementDir)}`
+                    + (m.movementSpeedKt != null ? ` · ${m.movementSpeedKt} kn` : "")]);
+            }
+            if (m.advisoryNum) rows.push(["Advisory", `Nr. ${m.advisoryNum}`]);
+            if (m.lastUpdate) rows.push(["Letztes Update",
+                new Date(m.lastUpdate).toLocaleString("de-DE"), true]);
+            rows.push(
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        },
+        extraHtml: (o) => o.metadata.publicAdvisoryUrl
+            ? `<div class="detail-field wide"><label>Quelle</label>
+                 <span><a href="${o.metadata.publicAdvisoryUrl}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">NHC-Bulletin öffnen ↗</a></span></div>`
+            : ""
+    },
     // Fallback für unbekannte Typen
     default: {
         badge: "Objekt-Details",
@@ -436,6 +537,11 @@ export class UI {
             flightSource: document.getElementById("flight-source"),
             flightHint: document.getElementById("flight-hint"),
             flightRefresh: document.getElementById("flight-refresh"),
+            swKp: document.getElementById("sw-kp"),
+            swGscale: document.getElementById("sw-gscale"),
+            swWind: document.getElementById("sw-wind"),
+            swBz: document.getElementById("sw-bz"),
+            swHint: document.getElementById("sw-hint"),
             cockpitRow: document.getElementById("detail-cockpit-row"),
             cockpitBtn: document.getElementById("detail-cockpit"),
             cockpitHud: document.getElementById("cockpit-hud"),
@@ -467,6 +573,9 @@ export class UI {
     buildLayerToggles() {
         this._el.layerList.innerHTML = "";
         for (const layer of this.layerManager.getAll()) {
+            const item = document.createElement("div");
+            item.className = "layer-item";
+
             const label = document.createElement("label");
             label.className = "layer-toggle";
             label.innerHTML = `
@@ -480,18 +589,46 @@ export class UI {
                 e.target.checked ? layer.show() : layer.hide();
                 this.updateStats();
             });
-            this._el.layerList.appendChild(label);
+            item.appendChild(label);
+
+            // Hinweistext für saisonal leere Layer (z.B. Wirbelstürme
+            // außerhalb der Hurrikansaison), statt einer stillen leeren Ebene
+            const statusText = layer.statusText?.();
+            if (statusText) {
+                const status = document.createElement("p");
+                status.className = "layer-status";
+                status.textContent = statusText;
+                item.appendChild(status);
+            }
+
+            this._el.layerList.appendChild(item);
         }
         this.updateStats();
     }
 
-    /** Zähler der Layer-Schalter aktuell halten (z.B. bei Live-Daten wie AIS). */
+    /** Zähler und Statustexte der Layer-Schalter aktuell halten (z.B. bei Live-Daten). */
     refreshLayerCounts() {
         for (const layer of this.layerManager.getAll()) {
-            const counter = this._el.layerList
+            const item = this._el.layerList
                 ?.querySelector(`.layer-toggle input[data-layer="${layer.id}"]`)
-                ?.closest(".layer-toggle")?.querySelector(".layer-count");
+                ?.closest(".layer-item");
+            if (!item) continue;
+
+            const counter = item.querySelector(".layer-count");
             if (counter) counter.textContent = layer.count;
+
+            const statusText = layer.statusText?.();
+            let status = item.querySelector(".layer-status");
+            if (statusText) {
+                if (!status) {
+                    status = document.createElement("p");
+                    status.className = "layer-status";
+                    item.appendChild(status);
+                }
+                status.textContent = statusText;
+            } else if (status) {
+                status.remove();
+            }
         }
     }
 
@@ -596,6 +733,31 @@ export class UI {
         if (counter) counter.textContent = status.count;
 
         this.updateStats();
+    }
+
+    /* ─────────── Weltraumwetter (Kp-Index/Sonnenwind) ─────────── */
+
+    /**
+     * Zeigt Kp-Index und Sonnenwind-Kennwerte in der Sidebar an.
+     * @param {object} status  von SpaceWeatherLayer.getStatus()
+     */
+    updateSpaceWeatherStatus(status) {
+        const { swKp, swGscale, swWind, swBz, swHint } = this._el;
+        if (!swKp) return;
+
+        swKp.textContent = status.kp != null ? status.kp.toFixed(1) : "–";
+        swGscale.textContent = status.gScale ?? "–";
+        swGscale.className = "flight-badge "
+            + (status.kp >= 5 ? "error" : status.kp >= 4 ? "demo" : "live");
+        swWind.textContent = status.windSpeed != null ? `${Math.round(status.windSpeed)} km/s` : "–";
+        swBz.textContent = status.bz != null ? `${status.bz.toFixed(1)} nT` : "–";
+
+        swHint.textContent = status.error
+            ? status.error
+            : (status.lastFetchAt
+                ? `Quelle: NOAA SWPC · aktualisiert vor `
+                  + `${Math.round((Date.now() - status.lastFetchAt) / 1000)} s`
+                : "–");
     }
 
     /* ─────────── Detailpanel ─────────── */

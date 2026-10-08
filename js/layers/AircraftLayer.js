@@ -46,7 +46,7 @@ export class AircraftLayer extends BaseLayer {
 
         /** "live" | "demo" | "unknown" */
         this.mode = "unknown";
-        this.statusText = "wird geprüft …";
+        this._statusMessage = "wird geprüft …";
         this.lastFetchAt = 0;
         this.fetchPending = false;
         this.outOfRange = false;     // true = zu weit herausgezoomt
@@ -83,11 +83,11 @@ export class AircraftLayer extends BaseLayer {
         this.mode = await this.source.checkAvailability();
 
         if (this.mode === "live") {
-            this.statusText = this.source.sourceName;
+            this._statusMessage = this.source.sourceName;
             await this.refreshLive();
             this.startPolling();
         } else {
-            this.statusText = "Demo-Daten";
+            this._statusMessage = "Demo-Daten";
             await this._loadDemo();
         }
         this._notify();

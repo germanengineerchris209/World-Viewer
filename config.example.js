@@ -183,9 +183,33 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 300
     },
 
+    volcanoes: {
+        // Ampel aus Smithsonian GVP + amtlichen USGS-Warnstufen.
+        // Warnstufen werden im Tagesrhythmus herausgegeben, häufigeres
+        // Abrufen bringt nichts. Ohne laufenden Server greift der Layer
+        // auf data/volcanoes.json zurück.
+        refreshSeconds: 3600,
+        maxVolcanoes: 600       // aktive Vulkane werden zuerst gezeichnet
+    },
+
     launches: {
         apiUrl: "/api/launches",
         refreshSeconds: 900
+    },
+
+    asteroids: {
+        // Erdnahe Asteroiden der nächsten 7 Tage, NASA NeoWs. Läuft ohne
+        // eigenen Key mit DEMO_KEY (serverseitig, siehe .env.example).
+        apiUrl: "/api/asteroids",
+        refreshSeconds: 3600    // NeoWs-Feed ändert sich nur täglich
+    },
+
+    cyclones: {
+        // Aktive tropische Wirbelstürme, NOAA National Hurricane Center.
+        // Zuständig nur für Atlantik/Ost-/Zentralpazifik. Außerhalb der
+        // Hurrikansaison (meist) leer – das zeigt die Sidebar klar an.
+        apiUrl: "/api/storms",
+        refreshSeconds: 1200    // 20 Min., siehe NHC-Aktualisierungsrhythmus
     },
 
     fires: {
@@ -245,6 +269,12 @@ window.WORLD_VIEWER_CONFIG = {
         sampleIntervalSeconds: 15, // wie oft Positionen ins Fenster übernommen werden
         rebuildSeconds: 5,        // wie oft das Gitter neu gezeichnet wird
         gridCells: 24             // Gitterauflösung (Zellen je Achse)
+    },
+
+    spaceWeather: {
+        // NOAA Space Weather Prediction Center – öffentliche US-Regierungsdaten
+        // (public domain), kein Key, CORS gesetzt (per curl verifiziert, WEB-68).
+        refreshSeconds: 600
     },
 
 

@@ -10,7 +10,8 @@
   },
   "scripts": {
     "start": "node server/server.mjs",
-    "doctor": "node server/doctor.mjs"
+    "doctor": "node server/doctor.mjs",
+    "build:volcanoes": "node scripts/build-volcano-fallback.mjs"
   },
   "dependencies": {}
 }

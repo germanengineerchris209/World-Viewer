@@ -44,8 +44,10 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | ✈️ Flugzeuge (Alternative) | adsb.lol | regional um einen Punkt |
 | 🛰️ Satelliten (echte Bahnen) | CelesTrak + SGP4 | |
 | 🌋 Erdbeben | USGS | letzte 24 Stunden |
-| 🗻 Vulkane | Smithsonian GVP / USGS Volcano Hazards Program | handkuratierte Auswahl, statisch |
+| 🗻 Vulkane | Smithsonian GVP (Weltkatalog + laufende Ausbrüche), USGS Volcano Hazards Program (amtliche Warnstufen) | 438 seit 1900 aktive Vulkane, Ampel live über `/api/volcanoes`; GVP sendet kein CORS → Server-Proxy. Rückfallebene: `data/volcanoes.json` (erzeugt via `npm run build:volcanoes`) |
 | 🚀 Raketenstarts | Launch Library 2 | 15 Abrufe/Stunde |
+| ☄️ Asteroiden (Erdannäherungen, 7 Tage) | NASA NeoWs | läuft mit `DEMO_KEY`, 30 Abrufe/Stunde (weltweit geteilt) |
+| 🌀 Wirbelstürme | NOAA National Hurricane Center | nur Atlantik/Ost-/Zentralpazifik; sendet kein CORS → Server-Proxy für Übersicht + Vorhersagekegel |
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
 | Objektfotos | Wikipedia | |
@@ -63,6 +65,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🚢 Schiffe (echte AIS-Daten) | AISStream | <https://aisstream.io> → Account → API Keys |
 | ✈️ Mehr Flug-Kontingent | OpenSky-Konto | <https://opensky-network.org> → OAuth2-Client |
 | 🚀 Mehr Start-Kontingent | Launch Library 2 | <https://ll.thespacedevs.com/docs/> |
+| ☄️ Mehr Asteroiden-Kontingent | NASA api.nasa.gov | <https://api.nasa.gov> → sofort per E-Mail (1000 Abrufe/Stunde) |
 | 📷 Mehr TfL-Kontingent | TfL Open Data | <https://api-portal.tfl.gov.uk> |
 
 ### 🔴 Kostenpflichtig, rein optional
@@ -97,6 +100,7 @@ OPENSKY_CLIENT_ID=...      # mehr Flug-Kontingent
 OPENSKY_CLIENT_SECRET=...
 LL2_API_TOKEN=...          # mehr Start-Kontingent
 TFL_APP_KEY=...            # mehr Kamera-Kontingent
+NASA_API_KEY=...           # mehr Asteroiden-Kontingent (sonst DEMO_KEY)
 ```
 
 Eine Umgebungsvariable hat Vorrang vor der Datei – zum Ausprobieren
@@ -201,6 +205,25 @@ Endpunkt: `ll.thespacedevs.com/2.3.0/launches/?net__gte=…&mode=detailed`
 
 > Namensnennung erwünscht: "Launch Library 2 — The Space Devs".
 
+### ☄️ Asteroiden
+
+**NASA NeoWs** ("Near Earth Object Web Service"), rollendes 7-Tage-Fenster
+(NeoWs erlaubt pro Abruf maximal 7 Tage Zeitraum). Läuft ohne eigenen
+Schlüssel mit `DEMO_KEY` – der ist aber weltweit geteilt und knapp
+(30 Abrufe/Stunde, 50/Tag), deshalb cacht der Server 6 Stunden.
+
+Endpunkt: `api.nasa.gov/neo/rest/v1/feed?start_date=…&end_date=…&api_key=…`
+
+Jeder Asteroid liefert die reale Annäherungsdistanz (km, Monddistanzen),
+Durchmesser, Relativgeschwindigkeit und die Einstufung "potenziell
+gefährlich" – aber **keine Richtung**. Die Position auf dem Globus ist
+deshalb stilisiert (stabile Pseudo-Zufallsrichtung je Asteroid-ID,
+Höhe gestaucht-logarithmisch nach relativer Nähe), die echten Werte
+stehen im Detailpanel und verlinken auf die NASA JPL Small-Body Database.
+
+Eigener Schlüssel (kostenlos, sofort per E-Mail, 1000 Abrufe/Stunde):
+<https://api.nasa.gov> → `NASA_API_KEY` in `.env`.
+
 ### 🔥 Aktive Brände
 
 **NASA FIRMS**, VIIRS-Daten von NOAA-20, NOAA-21 und Suomi-NPP,
@@ -215,6 +238,29 @@ fragt die drei Satelliten nacheinander ab, nicht parallel.
 > from NASA's Fire Information for Resource Management System (FIRMS)
 > (https://earthdata.nasa.gov/firms), part of NASA's Earth Observing
 > System Data and Information System (EOSDIS)."
+
+### 🌀 Tropische Wirbelstürme
+
+**NOAA National Hurricane Center**, öffentliche US-Regierungsdaten, kein
+Schlüssel nötig. Zuständig nur für Atlantik sowie Ost-/Zentralpazifik –
+andere Ozeanbecken (z.B. Westpazifik, JTWC) sind bewusst nicht Teil
+dieser Ebene.
+
+Endpunkte:
+- `nhc.noaa.gov/CurrentStorms.json` – Übersicht aktiver Systeme (Position,
+  Windstärke, Luftdruck, Zugrichtung), alle 20 Minuten abgerufen.
+- `nhc.noaa.gov/storm_graphics/api/<ID>_CONE.kmz` – Vorhersagekegel
+  ("Cone of Uncertainty") je System, als KMZ (gezipptes KML).
+
+NHC sendet keine CORS-Header, daher läuft beides über den eigenen Server
+(`/api/storms`, `/api/storms/cone`). Weil das Projekt bewusst ohne
+npm-Pakete auskommt, liest `server/kmz.mjs` das ZIP-Format selbst aus
+(Node-eigenes `zlib` für die Dekompression) statt eine Zip-Bibliothek
+einzubinden.
+
+Außerhalb der Hurrikansaison ist `activeStorms` meist leer – das ist der
+Normalfall. Die Sidebar zeigt dann "derzeit keine aktiven Systeme" statt
+einer stillschweigend leeren Ebene.
 
 ### 🕰️ Zeitleisten-Replay
 

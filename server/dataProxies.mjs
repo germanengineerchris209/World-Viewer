@@ -13,11 +13,17 @@
  *   • NASA FIRMS braucht einen geheimen Key
  *   • Launch Library hat ein sehr knappes Kontingent (15 Abrufe/Stunde)
  *   • Die Kamerakataloge (Caltrans, TfL, Austin) sind nicht CORS-freigegeben
+ *   • Der GeoServer des Smithsonian GVP sendet keine CORS-Header
+ *   • Der NOAA National Hurricane Center sendet keine CORS-Header
+ *   • NASA NeoWs (Asteroiden) braucht einen Key, der nicht im Browser landen soll
  *
  * Alle Handler teilen sich denselben Cache mit "Serve-Stale": Ist die
  * Quelle gerade nicht erreichbar, wird die letzte gute Antwort geliefert,
  * statt die Karte leerzuräumen.
  */
+
+import { countryDe, typeDe, displayName } from "./volcanoLabels.mjs";
+import { readKmzAsKml, extractConePolygon } from "./kmz.mjs";
 
 const UA = "world-viewer/2.3 (+https://github.com/)";
 
@@ -272,6 +278,82 @@ export async function handleLaunchesHistory(res, days) {
     } catch (err) {
         sendJson(res, 502, { error: `Vergangene Starts nicht abrufbar: ${err.message}` });
     }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   2c. NASA NeoWs – Asteroiden mit Erdannäherung (WEB-75)
+   ═══════════════════════════════════════════════════════════ */
+
+const ASTEROID_TTL_MS = 6 * 60 * 60 * 1000;   // DEMO_KEY: nur 30 Abrufe/Stunde
+
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+
+export async function handleAsteroids(res) {
+    try {
+        const result = await cachedFetch("asteroids", ASTEROID_TTL_MS, async () => {
+            const start = new Date();
+            const end = new Date(start.getTime() + 6 * 86_400_000); // Feed erlaubt max. 7 Tage
+
+            const url = new URL("https://api.nasa.gov/neo/rest/v1/feed");
+            url.searchParams.set("start_date", isoDate(start));
+            url.searchParams.set("end_date", isoDate(end));
+            url.searchParams.set("api_key", process.env.NASA_API_KEY || "DEMO_KEY");
+
+            const upstream = await fetchWithTimeout(url, { headers: { Accept: "application/json" } }, 20_000);
+
+            if (!upstream.ok) {
+                throw new Error(upstream.status === 429
+                    ? "Kontingent erschöpft (NASA DEMO_KEY: 30 Abrufe/Stunde)"
+                    : `NASA NeoWs antwortete mit ${upstream.status}`);
+            }
+
+            const json = await upstream.json();
+            return { data: JSON.stringify(normalizeAsteroids(json)), contentType: "application/json" };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Asteroiden nicht abrufbar: ${err.message}` });
+    }
+}
+
+/** Wandelt die NeoWs-Feed-Antwort in unser schlankes Format. */
+function normalizeAsteroids(json) {
+    const byDate = json?.near_earth_objects ?? {};
+    const asteroids = [];
+
+    for (const neos of Object.values(byDate)) {
+        for (const neo of neos) {
+            const approach = neo.close_approach_data?.[0];
+            if (!approach) continue;
+
+            const diameterM = neo.estimated_diameter?.meters;
+
+            asteroids.push({
+                id: String(neo.id),
+                name: String(neo.name ?? "").replace(/[()]/g, ""),
+                hazardous: !!neo.is_potentially_hazardous_asteroid,
+                diameterMinM: diameterM?.estimated_diameter_min ?? null,
+                diameterMaxM: diameterM?.estimated_diameter_max ?? null,
+                absoluteMagnitude: neo.absolute_magnitude_h ?? null,
+                missDistanceKm: Number(approach.miss_distance?.kilometers) || null,
+                missDistanceLunar: Number(approach.miss_distance?.lunar) || null,
+                relativeVelocityKmh: Number(approach.relative_velocity?.kilometers_per_hour) || null,
+                closeApproachDate: approach.close_approach_date_full ?? approach.close_approach_date ?? null,
+                orbitingBody: approach.orbiting_body ?? null,
+                jplUrl: neo.nasa_jpl_url ?? null
+            });
+        }
+    }
+
+    // Nächste Annäherung zuerst
+    asteroids.sort((a, b) => (a.missDistanceKm ?? Infinity) - (b.missDistanceKm ?? Infinity));
+    return { asteroids };
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -649,7 +731,471 @@ async function loadAustinCameras() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   5. GDELT GEO 2.0 – globale Ereignis-Lage (Nachrichten-Layer)
+   5. Vulkane – Smithsonian GVP + USGS Volcano Hazards Program
+   ═══════════════════════════════════════════════════════════
+
+   Drei Quellen werden zu einer Ampel zusammengeführt:
+
+   a) GVP "Holocene Volcanoes" – der weltweite Katalog (1214 Vulkane).
+      Wir nehmen alle mit einem Ausbruch seit 1900 als Grundgesamtheit
+      der "aktiven/überwachten" Vulkane. Ändert sich fast nie → 24 h TTL.
+
+   b) GVP "Eruptions since 1960" mit ContinuingEruption='True' – die
+      global laufenden Ausbrüche. Deckt auch Länder ohne eigenes
+      Observatorium ab.
+
+   c) USGS HANS "getCapElevated" – amtliche Warnstufen mit offiziellem
+      Aviation Color Code. Gilt nur für US-Vulkane, ist dort aber die
+      verlässlichste Quelle und hat daher Vorrang.
+
+   Warum serverseitig? Das GVP-GeoServer sendet KEINE CORS-Header, der
+   Browser darf ihn also nicht direkt abfragen. (USGS sendet welche –
+   siehe den Direktabruf-Fallback in js/layers/VolcanoLayer.js.)
+
+   Reine Naturphänomene, kein Personenbezug, kein API-Schlüssel. */
+
+const GVP_WFS = "https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows";
+const USGS_ELEVATED = "https://volcanoes.usgs.gov/hans-public/api/volcano/getCapElevated";
+
+const VOLCANO_CATALOG_TTL_MS = 24 * 60 * 60 * 1000;   // Katalog ist quasi statisch
+const VOLCANO_STATUS_TTL_MS = 15 * 60 * 1000;         // Warnstufen ändern sich täglich
+
+// Nur Vulkane mit Ausbruch ab diesem Jahr gelten als "aktiv/überwacht".
+// 1900 ergibt 438 von 1214 – genug für eine Weltkarte, ohne sie zuzumüllen.
+const VOLCANO_MIN_ERUPTION_YEAR = 1900;
+
+// Ein laufender Ausbruch, der innerhalb dieser Frist begann, zählt als
+// "Ausbruch im Gange" (rot). Ältere Dauerausbrüche wie Stromboli (seit
+// 1934) sind zwar aktiv, aber kein akutes Ereignis → orange.
+const VOLCANO_FRESH_ERUPTION_MS = 365 * 86_400_000;
+
+/** GVP-WFS-Abfrage als GeoJSON. */
+async function fetchGvp(typeName, { properties, cqlFilter } = {}) {
+    const url = new URL(GVP_WFS);
+    url.searchParams.set("service", "WFS");
+    url.searchParams.set("version", "1.0.0");
+    url.searchParams.set("request", "GetFeature");
+    url.searchParams.set("typeName", `GVP-VOTW:${typeName}`);
+    url.searchParams.set("outputFormat", "application/json");
+    if (properties) url.searchParams.set("propertyName", properties.join(","));
+    if (cqlFilter) url.searchParams.set("CQL_FILTER", cqlFilter);
+
+    const upstream = await fetchWithTimeout(url, { headers: { Accept: "application/json" } }, 45_000);
+    if (!upstream.ok) throw new Error(`GVP antwortete mit ${upstream.status}`);
+
+    // Der GeoServer meldet Fehler als XML-ServiceExceptionReport mit
+    // Status 200 – ohne diese Prüfung landet eine Fehlerseite im Cache
+    const text = await upstream.text();
+    if (text.trimStart().startsWith("<")) {
+        throw new Error(`GVP meldet einen Fehler für ${typeName}`);
+    }
+
+    const json = JSON.parse(text);
+    if (!Array.isArray(json?.features)) throw new Error("GVP-Antwort ohne features");
+    return json.features;
+}
+
+/** a) Weltweiter Katalog, auf die seit 1900 aktiven Vulkane reduziert. */
+async function loadVolcanoCatalog() {
+    const features = await fetchGvp("Smithsonian_VOTW_Holocene_Volcanoes", {
+        properties: [
+            "Volcano_Number", "Volcano_Name", "Country", "Region",
+            "Primary_Volcano_Type", "Elevation", "Latitude", "Longitude",
+            "Last_Eruption_Year", "Tectonic_Setting"
+        ]
+    });
+
+    const volcanoes = [];
+    for (const feature of features) {
+        const p = feature.properties ?? {};
+        const lastEruptionYear = Number(p.Last_Eruption_Year);
+        if (!Number.isFinite(lastEruptionYear) || lastEruptionYear < VOLCANO_MIN_ERUPTION_YEAR) continue;
+
+        const lat = Number(p.Latitude);
+        const lon = Number(p.Longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+        const vnum = String(p.Volcano_Number);
+        volcanoes.push({
+            id: `volc-${vnum}`,
+            vnum,
+            name: displayName(p.Volcano_Name),
+            country: countryDe(p.Country),
+            region: p.Region ?? "",
+            volcanoType: typeDe(p.Primary_Volcano_Type),
+            elevation: Number(p.Elevation) || 0,
+            tectonicSetting: p.Tectonic_Setting ?? "",
+            lastEruptionYear,
+            latitude: lat,
+            longitude: lon,
+            altitude: Number(p.Elevation) || 0,
+            // Grundzustand: im Katalog, aber ohne aktuelles Ereignis
+            status: "green",
+            statusSource: "catalog",
+            gvpUrl: `https://volcano.si.edu/volcano.cfm?vn=${vnum}`
+        });
+    }
+    if (!volcanoes.length) throw new Error("GVP-Katalog lieferte keine Vulkane");
+    return volcanoes;
+}
+
+/** b) Weltweit laufende Ausbrüche (GVP). */
+async function loadContinuingEruptions() {
+    const features = await fetchGvp("E3WebApp_Eruptions1960", {
+        cqlFilter: "ContinuingEruption='True'"
+    });
+
+    // Pro Vulkan den jüngsten laufenden Ausbruch behalten
+    const byVnum = new Map();
+    for (const feature of features) {
+        const p = feature.properties ?? {};
+        const vnum = String(p.VolcanoNumber ?? "");
+        if (!vnum) continue;
+
+        const startedAt = parseGvpDate(p.StartDate);
+        const previous = byVnum.get(vnum);
+        if (previous && previous.startedAt >= startedAt) continue;
+
+        byVnum.set(vnum, {
+            vnum,
+            name: displayName(p.VolcanoName),
+            startedAt,
+            startYear: Number(p.StartDateYear) || null,
+            vei: Number.isFinite(Number(p.ExplosivityIndexMax)) ? Number(p.ExplosivityIndexMax) : null,
+            latitude: Number(p.LatitudeDecimal),
+            longitude: Number(p.LongitudeDecimal)
+        });
+    }
+    return byVnum;
+}
+
+/** GVP liefert Datumsangaben als "JJJJMMTT"-String. */
+function parseGvpDate(raw) {
+    const text = String(raw ?? "").trim();
+    const match = /^(\d{4})(\d{2})(\d{2})$/.exec(text);
+    if (!match) return 0;
+    const ms = Date.parse(`${match[1]}-${match[2]}-${match[3]}T00:00:00Z`);
+    return Number.isFinite(ms) ? ms : 0;
+}
+
+/** c) Amtliche USGS-Warnstufen (nur US-Vulkane, aber maßgeblich). */
+async function loadUsgsAlerts() {
+    const upstream = await fetchWithTimeout(USGS_ELEVATED,
+        { headers: { Accept: "application/json" } }, 20_000);
+    if (!upstream.ok) throw new Error(`USGS antwortete mit ${upstream.status}`);
+
+    const rows = await upstream.json();
+    const byVnum = new Map();
+
+    for (const row of Array.isArray(rows) ? rows : []) {
+        const vnum = String(row?.vnum ?? "");
+        const color = String(row?.color_code ?? "").toLowerCase();
+        if (!vnum || !["green", "yellow", "orange", "red"].includes(color)) continue;
+
+        byVnum.set(vnum, {
+            vnum,
+            status: color,
+            alertLevel: row.alert_level ?? "",
+            observatory: row.obs_fullname ?? "",
+            synopsis: row.synopsis ?? "",
+            noticeUrl: row.notice_url ?? "",
+            sentAt: Date.parse(row.sent_date_cap ?? "") || null,
+            latitude: Number(row.latitude),
+            longitude: Number(row.longitude),
+            elevation: Number(row.elevation_meters) || 0,
+            name: row.volcano_name_appended ?? ""
+        });
+    }
+    return byVnum;
+}
+
+/**
+ * Führt Katalog, laufende Ausbrüche und USGS-Warnstufen zusammen.
+ * Vorrang: USGS-Warnstufe > laufender GVP-Ausbruch > Katalog-Grundzustand.
+ */
+function mergeVolcanoes(catalog, eruptions, alerts) {
+    const byVnum = new Map(catalog.map(v => [v.vnum, { ...v }]));
+    const now = Date.now();
+
+    // b) laufende Ausbrüche
+    for (const [vnum, eruption] of eruptions) {
+        const fresh = eruption.startedAt > 0 && now - eruption.startedAt < VOLCANO_FRESH_ERUPTION_MS;
+        const entry = byVnum.get(vnum) ?? volcanoStub(vnum, eruption);
+        if (!entry) continue;
+
+        entry.status = fresh ? "red" : "orange";
+        entry.statusSource = "gvp";
+        entry.eruptionStartedAt = eruption.startedAt || null;
+        entry.eruptionStartYear = eruption.startYear;
+        entry.vei = eruption.vei;
+        byVnum.set(vnum, entry);
+    }
+
+    // c) amtliche USGS-Warnstufen überschreiben alles
+    for (const [vnum, alert] of alerts) {
+        const entry = byVnum.get(vnum) ?? volcanoStub(vnum, alert);
+        if (!entry) continue;
+
+        entry.status = alert.status;
+        entry.statusSource = "usgs";
+        entry.alertLevel = alert.alertLevel;
+        entry.observatory = alert.observatory;
+        entry.synopsis = alert.synopsis;
+        entry.noticeUrl = alert.noticeUrl;
+        entry.alertSentAt = alert.sentAt;
+        byVnum.set(vnum, entry);
+    }
+
+    // Auffällige Vulkane zuerst – der Client kappt ggf. die Liste
+    const rank = { red: 0, orange: 1, yellow: 2, green: 3 };
+    return [...byVnum.values()].sort((a, b) =>
+        (rank[a.status] ?? 9) - (rank[b.status] ?? 9) || a.name.localeCompare(b.name, "de"));
+}
+
+/**
+ * Minimaleintrag für einen Vulkan, der nicht im gefilterten Katalog steht
+ * (z.B. letzter Ausbruch vor 1900, aber jetzt wieder aktiv).
+ * Ohne brauchbare Koordinaten lassen wir ihn weg.
+ */
+function volcanoStub(vnum, source) {
+    const lat = Number(source.latitude);
+    const lon = Number(source.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+    return {
+        id: `volc-${vnum}`,
+        vnum,
+        name: displayName(source.name) || `Vulkan ${vnum}`,
+        country: "",
+        region: "",
+        volcanoType: "",
+        elevation: Number(source.elevation) || 0,
+        lastEruptionYear: null,
+        latitude: lat,
+        longitude: lon,
+        altitude: Number(source.elevation) || 0,
+        status: "green",
+        statusSource: "catalog",
+        gvpUrl: `https://volcano.si.edu/volcano.cfm?vn=${vnum}`
+    };
+}
+
+/**
+ * Baut die fertige Nutzlast. Exportiert, damit
+ * scripts/build-volcano-fallback.mjs denselben Weg nutzt.
+ */
+export async function buildVolcanoPayload() {
+    // Der Katalog ist Pflicht, die beiden Statusquellen sind optional:
+    // fällt eine aus, zeigt die Karte lieber Vulkane ohne aktuelle
+    // Warnstufe als gar keine.
+    const catalog = await cachedFetch("volcanoes:catalog", VOLCANO_CATALOG_TTL_MS,
+        async () => ({ data: await loadVolcanoCatalog() })).then(r => r.data);
+
+    const [eruptionResult, alertResult] = await Promise.allSettled([
+        loadContinuingEruptions(),
+        loadUsgsAlerts()
+    ]);
+
+    const sources = [{ name: "Smithsonian GVP (Katalog)", count: catalog.length }];
+    const warnings = [];
+
+    const eruptions = eruptionResult.status === "fulfilled" ? eruptionResult.value : new Map();
+    if (eruptionResult.status === "fulfilled") {
+        sources.push({ name: "Smithsonian GVP (laufende Ausbrüche)", count: eruptions.size });
+    } else {
+        warnings.push(`Laufende Ausbrüche (GVP): ${eruptionResult.reason?.message ?? "Abruf fehlgeschlagen"}`);
+    }
+
+    const alerts = alertResult.status === "fulfilled" ? alertResult.value : new Map();
+    if (alertResult.status === "fulfilled") {
+        sources.push({ name: "USGS Volcano Hazards (Warnstufen)", count: alerts.size });
+    } else {
+        warnings.push(`USGS-Warnstufen: ${alertResult.reason?.message ?? "Abruf fehlgeschlagen"}`);
+    }
+
+    const volcanoes = mergeVolcanoes(catalog, eruptions, alerts);
+
+    return {
+        fetchedAt: Date.now(),
+        count: volcanoes.length,
+        minEruptionYear: VOLCANO_MIN_ERUPTION_YEAR,
+        sources,
+        ...(warnings.length ? { warnings } : {}),
+        volcanoes
+    };
+}
+
+export async function handleVolcanoes(res) {
+    try {
+        const result = await cachedFetch("volcanoes", VOLCANO_STATUS_TTL_MS, async () => ({
+            data: JSON.stringify(await buildVolcanoPayload()),
+            contentType: "application/json"
+        }));
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Vulkandaten nicht abrufbar: ${err.message}` });
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   6. NOAA NHC – Tropische Wirbelstürme (Atlantik/Ost-/Zentralpazifik)
+   ═══════════════════════════════════════════════════════════
+
+   Quelle: National Hurricane Center, öffentliche US-Regierungsdaten,
+   kein Key nötig. Serverseitig nur wegen fehlender CORS-Header.
+
+   CurrentStorms.json nennt pro aktivem System auch eine KMZ-Datei mit
+   dem Vorhersagekegel ("Cone of Uncertainty"). KMZ = gezipptes KML;
+   /api/storms/cone lädt und entpackt das bei Bedarf (siehe kmz.mjs). */
+
+const NHC_CURRENT_STORMS = "https://www.nhc.noaa.gov/CurrentStorms.json";
+const STORMS_TTL_MS = 15 * 60 * 1000;
+const STORM_CONE_TTL_MS = 30 * 60 * 1000;
+
+/** NHC-Beckenkürzel aus der Sturm-ID (z.B. "al062026" → "AL"). */
+function basinFromStormId(id) {
+    const code = String(id ?? "").slice(0, 2).toUpperCase();
+    if (code === "AL") return "Atlantik";
+    if (code === "EP") return "Ost-/Zentralpazifik";
+    if (code === "CP") return "Zentralpazifik";
+    return "–";
+}
+
+const CLASSIFICATION_LABELS = {
+    TD: "Tropisches Tiefdruckgebiet",
+    TS: "Tropischer Sturm",
+    HU: "Hurrikan",
+    STD: "Subtropisches Tiefdruckgebiet",
+    STS: "Subtropischer Sturm",
+    PTC: "Möglicher tropischer Wirbelsturm",
+    EX: "Außertropisches System",
+    LO: "Tiefdruckgebiet"
+};
+
+/** Saffir-Simpson-Kategorie, nur für Hurrikane relevant. */
+function hurricaneCategory(classification, intensityKt) {
+    if (classification !== "HU" || !Number.isFinite(intensityKt)) return null;
+    if (intensityKt >= 137) return 5;
+    if (intensityKt >= 113) return 4;
+    if (intensityKt >= 96) return 3;
+    if (intensityKt >= 83) return 2;
+    if (intensityKt >= 64) return 1;
+    return null;
+}
+
+export async function handleStorms(res) {
+    try {
+        const result = await cachedFetch("storms", STORMS_TTL_MS, async () => {
+            const upstream = await fetchWithTimeout(NHC_CURRENT_STORMS, {
+                headers: { Accept: "application/json" }
+            }, 20_000);
+            if (!upstream.ok) throw new Error(`NHC antwortete mit ${upstream.status}`);
+
+            const json = await upstream.json();
+            const storms = normalizeStorms(json?.activeStorms ?? []);
+            return {
+                data: JSON.stringify({ fetchedAt: Date.now(), count: storms.length, storms }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Sturmdaten nicht abrufbar: ${err.message}` });
+    }
+}
+
+function normalizeStorms(activeStorms) {
+    const storms = [];
+    for (const s of activeStorms) {
+        const lat = Number(s.latitudeNumeric);
+        const lon = Number(s.longitudeNumeric);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+        const classification = String(s.classification ?? "").toUpperCase();
+        const intensityKt = Number(s.intensity);
+
+        storms.push({
+            id: String(s.id),
+            name: s.name ?? "Unbenannt",
+            basin: basinFromStormId(s.id),
+            classification,
+            classificationLabel: CLASSIFICATION_LABELS[classification] ?? classification ?? "–",
+            category: hurricaneCategory(classification, intensityKt),
+            intensityKt: Number.isFinite(intensityKt) ? intensityKt : null,
+            pressureMb: Number.isFinite(Number(s.pressure)) ? Number(s.pressure) : null,
+            movementDir: Number.isFinite(Number(s.movementDir)) ? Number(s.movementDir) : null,
+            movementSpeedKt: Number.isFinite(Number(s.movementSpeed)) ? Number(s.movementSpeed) : null,
+            lastUpdate: s.lastUpdate ?? null,
+            advisoryNum: s.publicAdvisory?.advNum ?? s.forecastAdvisory?.advNum ?? "",
+            publicAdvisoryUrl: s.publicAdvisory?.url ?? "",
+            coneUrl: s.trackCone?.kmzFile ?? null,
+            latitude: lat,
+            longitude: lon
+        });
+    }
+    return storms;
+}
+
+/** Nur NHC-eigene KMZ-Adressen zulassen (kein offener Proxy). */
+function isTrustedNhcConeUrl(raw) {
+    try {
+        const url = new URL(raw);
+        return url.protocol === "https:"
+            && url.hostname === "www.nhc.noaa.gov"
+            && url.pathname.startsWith("/storm_graphics/api/")
+            && url.pathname.toLowerCase().endsWith(".kmz");
+    } catch {
+        return false;
+    }
+}
+
+export async function handleStormCone(res, coneUrl) {
+    if (!isTrustedNhcConeUrl(coneUrl)) {
+        sendJson(res, 400, { error: "Ungültige oder nicht erlaubte Kegel-URL" });
+        return;
+    }
+
+    try {
+        const result = await cachedFetch(`storm-cone:${coneUrl}`, STORM_CONE_TTL_MS, async () => {
+            const upstream = await fetchWithTimeout(coneUrl, {}, 20_000);
+            if (!upstream.ok) throw new Error(`NHC antwortete mit ${upstream.status}`);
+
+            const buffer = Buffer.from(await upstream.arrayBuffer());
+            const kml = readKmzAsKml(buffer);
+            const coordinates = extractConePolygon(kml);
+            if (!coordinates) throw new Error("Kegel-KML enthält kein Polygon");
+
+            return {
+                data: JSON.stringify({ coordinates }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Vorhersagekegel nicht abrufbar: ${err.message}` });
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   7. GDELT GEO 2.0 – globale Ereignis-Lage (Nachrichten-Layer)
    ═══════════════════════════════════════════════════════════
 
    GDELT durchsucht weltweite Nachrichtenmedien und geokodiert

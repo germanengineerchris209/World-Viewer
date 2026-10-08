@@ -21,6 +21,7 @@ import { WatchlistPanel } from "./watchlistPanel.js";
 import { AnomalyAlerts } from "./anomalyAlerts.js";
 import { DrawTools } from "./drawTools.js";
 import { DrawToolsPanel } from "./drawToolsPanel.js";
+import { RouteTool } from "./routeTool.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -34,7 +35,9 @@ import { CameraLayer } from "./layers/CameraLayer.js";
 import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { EarthquakeLayer } from "./layers/EarthquakeLayer.js";
 import { VolcanoLayer } from "./layers/VolcanoLayer.js";
+import { CycloneLayer } from "./layers/CycloneLayer.js";
 import { LaunchLayer } from "./layers/LaunchLayer.js";
+import { AsteroidLayer } from "./layers/AsteroidLayer.js";
 import { FireLayer } from "./layers/FireLayer.js";
 import { RadioLayer } from "./layers/RadioLayer.js";
 import { CableLayer } from "./layers/CableLayer.js";
@@ -43,6 +46,7 @@ import { WeatherLayer } from "./layers/WeatherLayer.js";
 import { HeatmapLayer } from "./layers/HeatmapLayer.js";
 import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
 import { EventLayer } from "./layers/EventLayer.js";
+import { SpaceWeatherLayer } from "./layers/SpaceWeatherLayer.js";
 
 async function main() {
     /* 1 ── 3D-Globus mit Satellitenansicht */
@@ -63,7 +67,9 @@ async function main() {
     layerManager.register(new CableLayer(worldViewer));
     layerManager.register(new EarthquakeLayer(worldViewer));
     layerManager.register(new VolcanoLayer(worldViewer));
+    layerManager.register(new CycloneLayer(worldViewer));
     layerManager.register(new LaunchLayer(worldViewer));
+    layerManager.register(new AsteroidLayer(worldViewer));
     layerManager.register(new FireLayer(worldViewer));
     layerManager.register(new RadioLayer(worldViewer));
     layerManager.register(new AQILayer(worldViewer));
@@ -71,6 +77,8 @@ async function main() {
     layerManager.register(new FuelReserveLayer(worldViewer));
     layerManager.register(new EventLayer(worldViewer));
     layerManager.register(new HeatmapLayer(worldViewer, layerManager));
+    const spaceWeatherLayer = new SpaceWeatherLayer(worldViewer);
+    layerManager.register(spaceWeatherLayer);
 
     /* 3 ── UI, Suche, Timeline, KI */
     const ui = new UI(worldViewer, layerManager);
@@ -80,10 +88,14 @@ async function main() {
     // Statusanzeige der Flugdaten aktuell halten
     aircraftLayer.onStatusChange((status) => ui.updateFlightStatus(status));
 
+    // Kp-Index/Sonnenwind-Kennzahlen in der Sidebar aktuell halten (WEB-68)
+    spaceWeatherLayer.onStatusChange((status) => ui.updateSpaceWeatherStatus(status));
+
     await layerManager.loadAll();
     await applyShareLinkFromUrl(worldViewer, layerManager);
     ui.buildLayerToggles();
     ui.updateFlightStatus(aircraftLayer.getStatus());
+    ui.updateSpaceWeatherStatus(spaceWeatherLayer.getStatus());
     ui.buildShareUrl = () => buildShareUrl(worldViewer, layerManager);
 
     new Search(worldViewer, layerManager, ui);
@@ -99,9 +111,11 @@ async function main() {
 
     new WatchlistPanel(watchlist, worldViewer, ui, anomalyAlerts);
 
-    /* Zeichnen & Messen: Freihand/Grenzen/Punkte zeichnen, Distanzen messen */
+    /* Zeichnen & Messen: Freihand/Grenzen/Punkte zeichnen, Distanzen messen;
+       Route Fuß/Rad/Auto über den öffentlichen OSRM-Demo-Server (WEB-71) */
     const drawTools = new DrawTools(worldViewer);
-    new DrawToolsPanel(drawTools, ui);
+    const routeTool = new RouteTool(worldViewer);
+    new DrawToolsPanel(drawTools, routeTool, ui);
 
     /* Cockpit-Ansicht: mit der Kamera im Flugzeug mitfliegen */
     const cockpit = new CockpitView(worldViewer, ui);
@@ -136,6 +150,7 @@ async function main() {
         await layerManager.loadAll();
         ui.buildLayerToggles();
         ui.updateFlightStatus(aircraftLayer.getStatus());
+        ui.updateSpaceWeatherStatus(spaceWeatherLayer.getStatus());
     };
 
     /* Zeitleisten-Replay: historische Erdbeben/Brände/Starts abspielen
