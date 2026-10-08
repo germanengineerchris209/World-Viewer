@@ -197,6 +197,13 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 900
     },
 
+    asteroids: {
+        // Erdnahe Asteroiden der nächsten 7 Tage, NASA NeoWs. Läuft ohne
+        // eigenen Key mit DEMO_KEY (serverseitig, siehe .env.example).
+        apiUrl: "/api/asteroids",
+        refreshSeconds: 3600    // NeoWs-Feed ändert sich nur täglich
+    },
+
     cyclones: {
         // Aktive tropische Wirbelstürme, NOAA National Hurricane Center.
         // Zuständig nur für Atlantik/Ost-/Zentralpazifik. Außerhalb der
