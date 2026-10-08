@@ -430,9 +430,16 @@ const DETAIL_SCHEMAS = {
                     : "keine (offene Bahn)"],
                 ["Exzentrizität", m.e != null ? m.e.toFixed(4) : "–"],
                 ["Perihelabstand (q)", m.q != null ? `${m.q.toFixed(3)} AE` : "–"],
-                ["Große Halbachse (a)", m.a != null ? `${fmt.format(m.a)} AE` : "–"],
-                ["Bahnneigung (i)", F.deg(m.i)]
+                // Bahnneigung auf zwei Stellen – bei Bahnelementen ist das
+                // gerundete Grad von F.deg() zu grob
+                ["Bahnneigung (i)", m.i != null ? `${m.i.toFixed(2)}°` : "–"]
             ];
+
+            // Bei offenen Bahnen ist a in der SBDB negativ und als
+            // "Halbachse" nicht sinnvoll lesbar – dann lieber weglassen
+            if (m.a != null && m.e != null && m.e < 1) {
+                rows.push(["Große Halbachse (a)", `${m.a.toFixed(3)} AE`]);
+            }
 
             if (m.nextPerihelionMs) {
                 rows.push(["Nächster Periheldurchgang",
