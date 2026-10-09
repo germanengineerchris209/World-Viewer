@@ -48,6 +48,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🚀 Raketenstarts | Launch Library 2 | 15 Abrufe/Stunde |
 | ☄️ Asteroiden (Erdannäherungen, 7 Tage) | NASA NeoWs | läuft mit `DEMO_KEY`, 30 Abrufe/Stunde (weltweit geteilt) |
 | 🌠 Kometen | NASA JPL Small-Body Database | kein Schlüssel; Bahnelemente, Positionen rechnet der Browser |
+| 🛰️ Deep-Space-Missionen (Voyager 1/2, New Horizons, JWST, Parker Solar Probe, Juno) | NASA JPL Horizons | echte Ephemeriden, kein Schlüssel; liefert Klartextblöcke → Server-Proxy parst sie, cacht 6 h |
 | 🌀 Wirbelstürme | NOAA National Hurricane Center | nur Atlantik/Ost-/Zentralpazifik; sendet kein CORS → Server-Proxy für Übersicht + Vorhersagekegel |
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
@@ -224,6 +225,49 @@ stehen im Detailpanel und verlinken auf die NASA JPL Small-Body Database.
 
 Eigener Schlüssel (kostenlos, sofort per E-Mail, 1000 Abrufe/Stunde):
 <https://api.nasa.gov> → `NASA_API_KEY` in `.env`.
+
+### 🛰️ Deep-Space-Missionen
+
+**NASA JPL Horizons** liefert echte Ephemeriden (Positions- und
+Geschwindigkeitsvektoren) für jeden Körper im Sonnensystem, inklusive der
+aktiven Raumsonden – ohne Schlüssel und ohne Kontingentgrenze.
+
+Endpunkt: `ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND='-31'&EPHEM_TYPE='VECTORS'&CENTER='500@10'&…`
+
+Abgefragt werden sechs Sonden über ihre NAIF-Körper-IDs – Voyager 1
+(`-31`), Voyager 2 (`-32`), New Horizons (`-98`), James-Webb-Weltraumteleskop
+(`-170`), Parker Solar Probe (`-96`), Juno (`-61`) – plus die Erde (`399`)
+als Bezugspunkt. Alle sieben Anfragen nutzen dasselbe Zeitraster, damit
+die Vektordifferenz Sonde − Erde physikalisch sinnvoll ist (daraus folgen
+Entfernung zur Erde und Signallaufzeit).
+
+Zwei Besonderheiten:
+
+* Die Antwort ist **kein sauberes JSON**, sondern ein JSON-Umschlag mit
+  einem Klartext-Ephemeridenblock zwischen den Marken `$$SOE` und `$$EOE`.
+  Den parst `server/deepSpace.mjs`; CORS-Header sendet Horizons ohnehin
+  keine, ein Server-Proxy ist also doppelt nötig.
+* Horizons **drosselt parallele Zugriffe** mit HTTP 503 (bei sieben
+  gleichzeitigen Anfragen kamen fünf davon zurück). Der Server fragt die
+  Ziele deshalb nacheinander mit kleinem Abstand ab und wiederholt
+  gedrosselte Anfragen. Gecacht wird 6 Stunden – abgerufen wird dabei ein
+  12-Stunden-Fenster im Stundenraster, aus dem je Anfrage der
+  zeitnächste Stützpunkt gewählt wird. So bleibt die Anzeige auch gegen
+  Ende der Cache-Laufzeit aktuell, was vor allem für die Parker Solar
+  Probe zählt (im Perihel über 190 km/s).
+
+**Darstellung:** bewusst *kein* Globus-Layer. Voyager 1 steht rund 172 AE
+entfernt (etwa 25,8 Mrd. km) – zwischen Erdoberfläche und 172 AE liegen
+zwölf Größenordnungen, jeder Globusmaßstab wird damit sinnlos. Die
+logarithmische Stauchung des Asteroiden-Layers trägt hier nicht mehr,
+weil NEOs in Mondentfernungen bleiben. Stattdessen gibt es eine eigene
+kompakte Sidebar-Ansicht ("Wo ist Voyager gerade?") mit Entfernung zu
+Sonne und Erde, einfacher und doppelter Signallaufzeit und Bahntempo –
+dazu eine schematische Draufsicht auf die Ekliptik, in der die **Richtung
+echt** (ekliptikale Länge aus den Vektoren) und der **Radius
+logarithmisch gestaucht** ist. Referenzkreise für Erde, Jupiter, Neptun
+und die Heliopause machen die Einordnung lesbar, ohne Maßstabstreue zu
+behaupten.
 
 ### 🌠 Kometen
 

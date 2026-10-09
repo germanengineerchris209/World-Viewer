@@ -97,6 +97,24 @@
             </div>
         </section>
 
+        <!-- Deep-Space-Missionen: echte Ephemeriden aktiver Raumsonden aus
+             NASA/JPL Horizons. Eigene kompakte Ansicht statt Globus-Layer –
+             bei 172 AE (Voyager 1) wäre jeder Globusmaßstab sinnlos,
+             siehe js/deepSpace.js (WEB-79) -->
+        <section id="deepspace-section" class="sidebar-section">
+            <h2 class="section-title">🛰️ Deep-Space-Missionen</h2>
+            <div id="deepspace-map"></div>
+            <div id="deepspace-list"></div>
+            <div class="button-row">
+                <button id="deepspace-refresh" class="tool-btn"
+                        title="Ephemeriden neu abrufen">↻ Aktualisieren</button>
+            </div>
+            <!-- draw-hint statt flight-status-line: Letztere kürzt einzeilig
+                 mit Ellipse ab, hier müssen Epoche, Maßstabshinweis und die
+                 Quellenangabe aber umbrechen und sichtbar bleiben -->
+            <p id="deepspace-hint" class="draw-hint">Lade Ephemeriden …</p>
+        </section>
+
         <!-- Beobachtungszonen (Geofence-Alarme) -->
         <section class="sidebar-section">
             <h2 class="section-title">Beobachtung</h2>

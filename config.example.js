@@ -213,6 +213,16 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 86400   // einmal täglich genügt
     },
 
+    deepSpace: {
+        // Aktive Raumsonden (Voyager 1/2, New Horizons, JWST, Parker Solar
+        // Probe, Juno) aus NASA/JPL Horizons – echte Ephemeriden, kein Key
+        // nötig. Der Server cacht 6 h und holt ein 12-Stunden-Fenster im
+        // Stundenraster, damit die Anzeige zwischen den Abrufen aktuell
+        // bleibt; halbstündliches Nachladen genügt deshalb (WEB-79).
+        apiUrl: "/api/deepspace",
+        refreshSeconds: 1800
+    },
+
     cyclones: {
         // Aktive tropische Wirbelstürme, NOAA National Hurricane Center.
         // Zuständig nur für Atlantik/Ost-/Zentralpazifik. Außerhalb der

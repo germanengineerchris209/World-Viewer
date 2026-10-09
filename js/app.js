@@ -22,6 +22,7 @@ import { AnomalyAlerts } from "./anomalyAlerts.js";
 import { DrawTools } from "./drawTools.js";
 import { DrawToolsPanel } from "./drawToolsPanel.js";
 import { RouteTool } from "./routeTool.js";
+import { DeepSpacePanel } from "./deepSpace.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -158,6 +159,12 @@ async function main() {
     /* Zeitleisten-Replay: historische Erdbeben/Brände/Starts abspielen
        (Play/Pause/Scrub), unabhängig vom Zeitraffer der Simulation oben */
     const historyReplay = new HistoryReplay(worldViewer, layerManager, ui);
+
+    /* Deep-Space-Missionen (Voyager, New Horizons, JWST, Parker Solar Probe,
+       Juno): echte Ephemeriden aus NASA/JPL Horizons. Kein Globus-Layer,
+       sondern eine eigene kompakte Ansicht in der Sidebar – die Distanzen
+       (bis 172 AE) sprengen jeden Globusmaßstab (WEB-79) */
+    new DeepSpacePanel().start();
 
     /* Klick auf Objekte → Auswahl + Detailpanel */
     worldViewer.onObjectPicked = (entity) => {

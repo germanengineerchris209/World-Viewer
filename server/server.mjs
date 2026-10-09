@@ -20,6 +20,7 @@
  *      /api/storms/cone       Vorhersagekegel eines Sturms (KMZ → Polygon)
  *      /api/asteroids         Erdnahe Asteroiden der nächsten 7 Tage (NASA NeoWs)
  *      /api/comets            Kometen mit Bahnelementen (NASA JPL SBDB)
+ *      /api/deepspace         Aktive Raumsonden (NASA JPL Horizons)
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -64,6 +65,7 @@ import {
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
     handleComets, TLE_GROUPS
 } from "./dataProxies.mjs";
+import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -514,6 +516,10 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleComets(res);
 
+            case "/api/deepspace":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleDeepSpace(res);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
@@ -524,6 +530,7 @@ export function createServer() {
                     volcanoes: true,
                     asteroids: true,
                     comets: true,
+                    deepspace: true,
                     storms: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
