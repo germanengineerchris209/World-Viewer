@@ -31,7 +31,7 @@ const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
-    fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰"
+    fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠"
 };
 
 /** Formatierungs-Helfer */
@@ -405,6 +405,70 @@ const DETAIL_SCHEMAS = {
                     style="color:#38bdf8">NASA JPL Small-Body Database ↗</a></span></div>
                  <div class="detail-field wide"><label>Hinweis</label>
                  <span>Position stilisiert (Richtung unbekannt) – nur die Distanz ist real.</span></div>`;
+        }
+    },
+    comet: {
+        badge: "Komet",
+        title: (o) => o.metadata.name ?? o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const au = (v) => v != null
+                ? `${v.toFixed(3)} AE (${fmt.format(Math.round(v * 149_597_871))} km)` : "–";
+
+            const rows = [
+                ["Bahntyp", F.text(m.orbitClassLabel)],
+                ["Entfernung von der Erde", au(m.distanceAU)],
+                ["Entfernung von der Sonne", au(m.heliocentricAU)],
+                ["Geschätzte Helligkeit", m.currentMagnitude != null
+                    ? `${m.currentMagnitude.toFixed(1)} mag${m.currentMagnitude <= 6
+                        ? " (mit dem bloßen Auge sichtbar)" : m.currentMagnitude <= 10
+                            ? " (Fernglas)" : " (Teleskop)"}`
+                    : "unbekannt"],
+                ["Winkelabstand zur Sonne", F.deg(m.elongationDeg)],
+                ["Umlaufzeit", m.periodYears != null
+                    ? `${fmt.format(Number(m.periodYears.toFixed(m.periodYears < 100 ? 2 : 0)))} Jahre`
+                    : "keine (offene Bahn)"],
+                ["Exzentrizität", m.e != null ? m.e.toFixed(4) : "–"],
+                ["Perihelabstand (q)", m.q != null ? `${m.q.toFixed(3)} AE` : "–"],
+                // Bahnneigung auf zwei Stellen – bei Bahnelementen ist das
+                // gerundete Grad von F.deg() zu grob
+                ["Bahnneigung (i)", m.i != null ? `${m.i.toFixed(2)}°` : "–"]
+            ];
+
+            // Bei offenen Bahnen ist a in der SBDB negativ und als
+            // "Halbachse" nicht sinnvoll lesbar – dann lieber weglassen
+            if (m.a != null && m.e != null && m.e < 1) {
+                rows.push(["Große Halbachse (a)", `${m.a.toFixed(3)} AE`]);
+            }
+
+            if (m.nextPerihelionMs) {
+                rows.push(["Nächster Periheldurchgang",
+                    new Date(m.nextPerihelionMs).toLocaleDateString("de-DE",
+                        { year: "numeric", month: "long", day: "numeric" }), true]);
+            }
+            if (m.declinationDeg != null && m.rightAscensionDeg != null) {
+                rows.push(["Am Himmel (RA/Dek)",
+                    `${(m.rightAscensionDeg / 15).toFixed(2)} h / ${m.declinationDeg.toFixed(2)}°`, true]);
+            }
+            if (m.diameterKm != null) rows.push(["Kerndurchmesser", `${m.diameterKm} km`]);
+            return rows;
+        },
+        extraHtml: (o) => {
+            const m = o.metadata;
+            const epoch = m.epochMs
+                ? new Date(m.epochMs).toLocaleDateString("de-DE",
+                    { year: "numeric", month: "long" })
+                : null;
+
+            return `<div class="detail-field wide"><label>Quelle</label>
+                 <span><a href="${m.jplUrl}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">NASA JPL Small-Body Database ↗</a></span></div>
+                 <div class="detail-field wide"><label>Hinweis</label>
+                 <span>Der Punkt auf dem Globus ist der Zenitpunkt – dort steht der
+                 Komet gerade senkrecht über der Erde. Die Richtung ist echt, die
+                 Höhe über dem Globus ist gestaucht (echte Entfernung siehe oben).
+                 Gerechnet wird mit einem Zweikörper-Modell ohne Planetenstörungen${epoch
+                    ? `, die Bahnelemente stammen von ${epoch}` : ""}.</span></div>`;
         }
     },
     fire: {

@@ -19,6 +19,8 @@
  *      /api/storms            Aktive tropische Wirbelstürme (NOAA NHC)
  *      /api/storms/cone       Vorhersagekegel eines Sturms (KMZ → Polygon)
  *      /api/asteroids         Erdnahe Asteroiden der nächsten 7 Tage (NASA NeoWs)
+ *      /api/comets            Kometen mit Bahnelementen (NASA JPL SBDB)
+ *      /api/deepspace         Aktive Raumsonden (NASA JPL Horizons)
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -60,7 +62,8 @@ import { handleCameraProxy, buildAllowlist, getAllowlist } from "./cameraProxy.m
 import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
     handleFires, handleFiresHistory, handleCctvCatalog, handleEvents,
-    handleVolcanoes, handleStorms, handleStormCone, handleAsteroids, TLE_GROUPS
+    handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
+    handleComets, TLE_GROUPS
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
@@ -509,6 +512,10 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleAsteroids(res);
 
+            case "/api/comets":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleComets(res);
+
             case "/api/deepspace":
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleDeepSpace(res);
@@ -522,6 +529,7 @@ export function createServer() {
                     events: true,
                     volcanoes: true,
                     asteroids: true,
+                    comets: true,
                     deepspace: true,
                     storms: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
@@ -582,6 +590,7 @@ if (isMain) {
         console.log(process.env.NASA_API_KEY
             ? "  ☄️  Asteroiden (NASA NeoWs): eigener Schlüssel erkannt"
             : "  ☄️  Asteroiden (NASA NeoWs): bereit (DEMO_KEY, 30 Abrufe/Stunde)");
+        console.log("  🌠 Kometen (JPL SBDB): bereit (ohne Schlüssel)");
         console.log(process.env.FIRMS_MAP_KEY
             ? "  🔥 Brände (NASA FIRMS): bereit"
             : "  ℹ️  Brände (NASA FIRMS): kein FIRMS_MAP_KEY – Layer bleibt leer\n"
