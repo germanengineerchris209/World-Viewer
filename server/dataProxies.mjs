@@ -16,6 +16,8 @@
  *   • Der GeoServer des Smithsonian GVP sendet keine CORS-Header
  *   • Der NOAA National Hurricane Center sendet keine CORS-Header
  *   • NASA NeoWs (Asteroiden) braucht einen Key, der nicht im Browser landen soll
+ *   • Der Kometenkatalog der JPL SBDB ist ~600 kB für 4000 Objekte – der
+ *     Server filtert daraus die lohnenden heraus
  *
  * Alle Handler teilen sich denselben Cache mit "Serve-Stale": Ist die
  * Quelle gerade nicht erreichbar, wird die letzte gute Antwort geliefert,
@@ -24,6 +26,7 @@
 
 import { countryDe, typeDe, displayName } from "./volcanoLabels.mjs";
 import { readKmzAsKml, extractConePolygon } from "./kmz.mjs";
+import { cometPosition, julianDateFromMs } from "../js/cometOrbits.js";
 
 const UA = "world-viewer/2.3 (+https://github.com/)";
 
@@ -354,6 +357,178 @@ function normalizeAsteroids(json) {
     // Nächste Annäherung zuerst
     asteroids.sort((a, b) => (a.missDistanceKm ?? Infinity) - (b.missDistanceKm ?? Infinity));
     return { asteroids };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   2d. NASA JPL SBDB – Kometen mit Bahnelementen (WEB-77)
+   ═══════════════════════════════════════════════════════════ */
+
+// Bahnelemente ändern sich kaum, der Katalog ist ~600 kB – einmal am Tag genügt
+const COMET_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Felder der SBDB-Abfrage (Reihenfolge ist für die Antwort irrelevant). */
+const COMET_FIELDS = [
+    "full_name", "pdes", "name", "epoch",
+    "e", "a", "i", "om", "w", "q", "per_y", "tp",
+    "M1", "K1", "diameter", "class"
+].join(",");
+
+/** So viele Kometen gehen maximal an den Browser (die hellsten zuerst). */
+const COMET_LIMIT = 60;
+
+/** Perihel weiter draußen als das → für die Darstellung uninteressant. */
+const COMET_MAX_PERIHELION_AU = 6;
+
+/** Umlaufzeit darüber → kehrt nicht in überschaubarer Zeit zurück. */
+const COMET_MAX_PERIOD_YEARS = 200;
+
+/** Fenster um den Periheldurchgang, in dem auch aperiodische Kometen zählen. */
+const COMET_APPARITION_WINDOW_DAYS = 2 * 365.25;
+
+export async function handleComets(res) {
+    try {
+        const result = await cachedFetch("comets", COMET_TTL_MS, async () => {
+            const url = new URL("https://ssd-api.jpl.nasa.gov/sbdb_query.api");
+            url.searchParams.set("fields", COMET_FIELDS);
+            // sb-kind=c umfasst alle Kometenklassen. Das naheliegende
+            // sb-class=COM wäre zu eng: COM ist nur EINE Bahnklasse und
+            // enthält weder 1P/Halley (HTC) noch die Jupiterfamilie (JFc).
+            url.searchParams.set("sb-kind", "c");
+
+            const upstream = await fetchWithTimeout(url, {
+                headers: { Accept: "application/json", "User-Agent": UA }
+            }, 30_000);
+
+            if (!upstream.ok) {
+                throw new Error(`JPL SBDB antwortete mit ${upstream.status}`);
+            }
+
+            const json = await upstream.json();
+            return { data: JSON.stringify(normalizeComets(json)), contentType: "application/json" };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Kometen nicht abrufbar: ${err.message}` });
+    }
+}
+
+/**
+ * Wandelt die SBDB-Tabellenantwort in eine Liste von Bahnelementen um
+ * und wählt die derzeit interessantesten Kometen aus.
+ *
+ * Die Positionen rechnet der Browser selbst aus den Elementen – nur für
+ * die Auswahl der hellsten Objekte braucht es hier schon eine Position.
+ */
+function normalizeComets(json) {
+    const fields = json?.fields ?? [];
+    const rows = json?.data ?? [];
+    if (!fields.length || !rows.length) throw new Error("SBDB-Antwort ohne Daten");
+
+    const col = {};
+    fields.forEach((name, index) => { col[name] = index; });
+
+    const nowJd = julianDateFromMs(Date.now());
+    const candidates = [];
+
+    for (const row of rows) {
+        const pick = (name) => {
+            const index = col[name];
+            return index == null ? null : row[index];
+        };
+        const number = (name) => {
+            const value = Number(pick(name));
+            return Number.isFinite(value) ? value : null;
+        };
+        // Die SBDB benutzt bei mehreren Feldern 0 als "unbekannt" –
+        // etwa per_y bei hyperbolischen Bahnen (dort gibt es keine
+        // Umlaufzeit), diameter bei unvermessenen Kernen oder M1 bei
+        // über 2000 Einträgen (ein Komet mit M1=0 wäre spektakulär hell).
+        const positive = (name) => {
+            const value = number(name);
+            return (value != null && value > 0) ? value : null;
+        };
+
+        const fullName = String(pick("full_name") ?? "").trim();
+        const pdes = String(pick("pdes") ?? "").trim();
+
+        // Bruchstücke (73P-A, 73P-AB …) würden den Globus zuspammen;
+        // der Hauptkörper ist separat enthalten.
+        if (/-[A-Z]{1,2}$/.test(pdes)) continue;
+
+        // D-Designation = verloren oder zerfallen (5D/Brorsen, D/1978 R1).
+        // Eine Live-Position dafür wäre eine Behauptung ins Blaue.
+        if (/^\d*D$/.test(pdes) || /^(\d+D|D)\//.test(fullName)) continue;
+
+        const elements = {
+            e: number("e"),
+            a: number("a"),
+            i: number("i"),
+            om: number("om"),
+            w: number("w"),
+            q: number("q"),
+            tp: number("tp"),
+            periodYears: positive("per_y")
+        };
+
+        // Ohne diese Elemente lässt sich keine Bahn rechnen
+        if (elements.e == null || elements.i == null || elements.om == null
+            || elements.w == null || elements.tp == null) continue;
+        if (elements.a == null && elements.q == null) continue;
+
+        const q = elements.q ?? (elements.e < 1 && elements.a != null
+            ? elements.a * (1 - elements.e) : null);
+        if (q == null || q > COMET_MAX_PERIHELION_AU) continue;
+
+        // Entweder kurzperiodisch (kehrt regelmäßig wieder) oder gerade
+        // in Sonnennähe (die einmaligen Besucher)
+        const shortPeriod = elements.e < 1 && elements.periodYears != null
+            && elements.periodYears <= COMET_MAX_PERIOD_YEARS;
+        const nearApparition = Math.abs(nowJd - elements.tp) <= COMET_APPARITION_WINDOW_DAYS;
+        if (!shortPeriod && !nearApparition) continue;
+
+        const position = cometPosition(elements, nowJd);
+        if (!position) continue;
+
+        // M1 = absolute Gesamthelligkeit, K1 = Aktivitätsexponent
+        const m1 = positive("M1");
+        const k1 = number("K1");
+        const magnitude = (m1 != null)
+            ? m1 + 5 * Math.log10(position.distanceAU)
+                + (k1 ?? 10) * Math.log10(position.heliocentricAU)
+            : null;
+
+        candidates.push({
+            id: pdes || fullName,
+            name: fullName || pdes,
+            designation: pdes || null,
+            properName: String(pick("name") ?? "").trim() || null,
+            orbitClass: String(pick("class") ?? "").trim() || null,
+            epoch: number("epoch"),
+            ...elements,
+            q,
+            absoluteMagnitude: m1,
+            magnitudeSlope: k1,
+            diameterKm: positive("diameter"),
+            estimatedMagnitude: magnitude != null ? Number(magnitude.toFixed(1)) : null
+        });
+    }
+
+    // Die hellsten zuerst; Kometen ohne Helligkeitsangabe hinten anstellen
+    candidates.sort((a, b) =>
+        (a.estimatedMagnitude ?? Infinity) - (b.estimatedMagnitude ?? Infinity));
+
+    return {
+        comets: candidates.slice(0, COMET_LIMIT),
+        totalMatched: candidates.length,
+        computedAtJd: nowJd,
+        source: "NASA/JPL Small-Body Database (SBDB) Query API"
+    };
 }
 
 /* ═══════════════════════════════════════════════════════════

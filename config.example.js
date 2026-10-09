@@ -204,6 +204,15 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 3600    // NeoWs-Feed ändert sich nur täglich
     },
 
+    comets: {
+        // Kometen mit Bahnelementen, NASA JPL Small-Body Database.
+        // Braucht keinen Schlüssel. Der Browser rechnet die Positionen
+        // laufend aus den Bahnelementen – der Abruf liefert nur die
+        // Elemente, die sich kaum ändern.
+        apiUrl: "/api/comets",
+        refreshSeconds: 86400   // einmal täglich genügt
+    },
+
     cyclones: {
         // Aktive tropische Wirbelstürme, NOAA National Hurricane Center.
         // Zuständig nur für Atlantik/Ost-/Zentralpazifik. Außerhalb der

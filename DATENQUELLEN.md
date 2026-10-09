@@ -47,6 +47,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🗻 Vulkane | Smithsonian GVP (Weltkatalog + laufende Ausbrüche), USGS Volcano Hazards Program (amtliche Warnstufen) | 438 seit 1900 aktive Vulkane, Ampel live über `/api/volcanoes`; GVP sendet kein CORS → Server-Proxy. Rückfallebene: `data/volcanoes.json` (erzeugt via `npm run build:volcanoes`) |
 | 🚀 Raketenstarts | Launch Library 2 | 15 Abrufe/Stunde |
 | ☄️ Asteroiden (Erdannäherungen, 7 Tage) | NASA NeoWs | läuft mit `DEMO_KEY`, 30 Abrufe/Stunde (weltweit geteilt) |
+| 🌠 Kometen | NASA JPL Small-Body Database | kein Schlüssel; Bahnelemente, Positionen rechnet der Browser |
 | 🌀 Wirbelstürme | NOAA National Hurricane Center | nur Atlantik/Ost-/Zentralpazifik; sendet kein CORS → Server-Proxy für Übersicht + Vorhersagekegel |
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
@@ -223,6 +224,38 @@ stehen im Detailpanel und verlinken auf die NASA JPL Small-Body Database.
 
 Eigener Schlüssel (kostenlos, sofort per E-Mail, 1000 Abrufe/Stunde):
 <https://api.nasa.gov> → `NASA_API_KEY` in `.env`.
+
+### 🌠 Kometen
+
+**NASA JPL Small-Body Database (SBDB) Query API**, ohne Schlüssel.
+
+Endpunkt: `ssd-api.jpl.nasa.gov/sbdb_query.api?fields=…&sb-kind=c`
+
+Wichtig ist `sb-kind=c` (alle Kometenarten, 4080 Objekte). Das
+naheliegendere `sb-class=COM` liefert nur **eine** Bahnklasse: 735
+langperiodische Kometen mit mindestens 207 Jahren Umlaufzeit – ohne
+1P/Halley (Klasse HTC) und ohne die gesamte Jupiterfamilie (JFc).
+
+Der Server (`/api/comets`, Cache 24 h) filtert den Katalog auf die
+derzeit lohnenden Objekte – Perihel innerhalb 6 AE und entweder
+kurzperiodisch (≤ 200 Jahre) oder gerade in Sonnennähe – und schickt die
+60 hellsten als Bahnelemente an den Browser. Übergangen werden dabei
+Bruchstücke (`73P-A`, `73P-AB` …, der Hauptkörper bleibt) und verlorene
+oder zerfallene Kometen (D-Designation wie `5D/Brorsen`). Achtung: die
+SBDB benutzt bei `M1`, `per_y` und `diameter` eine 0 als "unbekannt",
+nicht als Messwert.
+
+Die **Positionen rechnet der Browser** laufend aus den Bahnelementen
+(`js/cometOrbits.js`): Kepler-Gleichung für Ellipse, Parabel und
+Hyperbel, dann heliozentrische Ekliptik → geozentrisch → RA/Dek →
+Subpunkt. Angezeigt wird also der Zenitpunkt – anders als bei den
+Asteroiden ist die **Richtung echt**, nur die Entfernung ist für die
+Darstellung logarithmisch gestaucht (echte Werte im Detailpanel).
+
+Es ist ein Zweikörper-Modell ohne Planetenstörungen. `node
+scripts/check-comet-orbits.mjs` vergleicht die Rechnung gegen JPL
+Horizons; die Abweichung liegt derzeit zwischen 0,06° (153P) und 1,3°
+(67P, dessen Bahnelemente von 2015 stammen).
 
 ### 🔥 Aktive Brände
 
