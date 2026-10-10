@@ -1504,6 +1504,152 @@ function parseGdeltHtml(html) {
     return { title, url, domain };
 }
 
+/* ═══════════════════════════════════════════════════════════
+   8. Allsky-Kameras – Ganzhimmelkameras weltweit (WEB-80)
+   ═══════════════════════════════════════════════════════════ */
+
+/*
+ * Ergänzung zu Abschnitt 4: Allsky-Kameras blicken mit Fisheye-Objektiv
+ * senkrecht nach oben und zeigen den gesamten Himmel.
+ *
+ * Die Betreiber der verbreiteten Allsky-Software melden ihre Kameras
+ * freiwillig an die öffentliche Allsky-Karte. Die Karte liefert kein JSON
+ * aus, sondern bettet den Datensatz als Array in die Seite ein – wir holen
+ * ihn uns also aus dem HTML. Bricht das, bleibt der Layer bei den
+ * handverlesenen Kameras aus data/allsky-cameras.json.
+ */
+
+const ALLSKY_TTL_MS = 6 * 60 * 60 * 1000;   // Katalog ändert sich träge
+const ALLSKY_MAP_URL = "https://www.thomasjacquin.com/allsky-map/";
+const ALLSKY_MAX = Number(process.env.ALLSKY_MAX ?? 500);
+
+export async function handleAllskyCatalog(res) {
+    try {
+        const result = await cachedFetch("allsky", ALLSKY_TTL_MS, async () => {
+            const cameras = await loadAllskyMap();
+            if (!cameras.length) throw new Error("Allsky-Karte lieferte keine Kameras");
+
+            return {
+                data: JSON.stringify({
+                    fetchedAt: Date.now(),
+                    count: cameras.length,
+                    source: "Allsky-Karte (thomasjacquin.com)",
+                    attribution: "Allsky-Karte · von den Kamerabetreibern gemeldet",
+                    cameras
+                }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "public, max-age=3600",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Allsky-Katalog nicht abrufbar: ${err.message}` });
+    }
+}
+
+/** Holt die Allsky-Karte und schält den eingebetteten Datensatz heraus. */
+async function loadAllskyMap() {
+    const upstream = await fetchWithTimeout(ALLSKY_MAP_URL, {
+        headers: { Accept: "text/html" }
+    }, 25_000);
+    if (!upstream.ok) throw new Error(`Allsky-Karte antwortete mit ${upstream.status}`);
+
+    const html = await upstream.text();
+    const entries = JSON.parse(extractJsonArray(html, '"image_url"'));
+
+    const cameras = [];
+    const seenUrls = new Set();
+
+    for (const entry of entries) {
+        const imageUrl = String(entry.image_url ?? "").trim();
+        if (!imageUrl.startsWith("http")) continue;
+
+        // Mehrfach gemeldete Kameras teilen sich dieselbe Bild-URL
+        if (seenUrls.has(imageUrl)) continue;
+
+        const latitude = Number(entry.latitude);
+        const longitude = Number(entry.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) continue;
+        if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) continue;
+        // 0/0 ist der Default nicht eingetragener Standorte
+        if (latitude === 0 && longitude === 0) continue;
+
+        seenUrls.add(imageUrl);
+
+        const location = decodeEntities(String(entry.location ?? "").trim());
+        const owner = decodeEntities(String(entry.owner ?? "").trim());
+
+        cameras.push({
+            id: `allsky-map-${entry.id}`,
+            name: location || owner || "Allsky-Kamera",
+            location,
+            owner,
+            latitude,
+            longitude,
+            imageUrl,
+            websiteUrl: String(entry.website_url ?? "").trim(),
+            camera: decodeEntities(String(entry.camera ?? "").trim()),
+            lens: decodeEntities(String(entry.lens ?? "").trim())
+        });
+
+        if (cameras.length >= ALLSKY_MAX) break;
+    }
+    return cameras;
+}
+
+/**
+ * Schneidet das JSON-Array heraus, in dem `needle` vorkommt.
+ *
+ * Gezählt wird über die Klammertiefe – Zeichenketten werden dabei
+ * übersprungen, weil die Kameradatensätze selbst JSON als Text enthalten
+ * (das Einstellungsfeld) und sonst die Klammerbilanz verfälschen würden.
+ */
+function extractJsonArray(html, needle) {
+    const hit = html.indexOf(needle);
+    if (hit < 0) throw new Error("Datensatz nicht im HTML gefunden");
+
+    const start = html.lastIndexOf("[", hit);
+    if (start < 0) throw new Error("Array-Anfang nicht gefunden");
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let i = start; i < html.length; i++) {
+        const ch = html[i];
+
+        if (inString) {
+            if (escaped) escaped = false;
+            else if (ch === "\\") escaped = true;
+            else if (ch === '"') inString = false;
+            continue;
+        }
+
+        if (ch === '"') inString = true;
+        else if (ch === "[") depth++;
+        else if (ch === "]" && --depth === 0) return html.slice(start, i + 1);
+    }
+    throw new Error("Array wird im HTML nicht geschlossen");
+}
+
+/** Die Allsky-Karte liefert Namen teils HTML-kodiert ("Paul&#x27s"). */
+function decodeEntities(text) {
+    return text
+        .replace(/&#x27;?/g, "'")
+        .replace(/&#(\d+);?/g, (_m, code) => String.fromCodePoint(Number(code)))
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&");
+}
+
 /* ═══════════ Hilfsfunktion ═══════════ */
 
 function sendJson(res, status, data) {
