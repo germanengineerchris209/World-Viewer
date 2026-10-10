@@ -29,7 +29,33 @@ const CLASS_STYLE = {
     nav:      { color: "#4fd8ff", size: 6, label: true,  name: "Navigation" },
     geo:      { color: "#c89bff", size: 5, label: true,  name: "Geostationär" },
     comms:    { color: "#54697f", size: 3, label: false, name: "Kommunikation" },
+    debris:   { color: "#ff6b57", size: 2, label: false, name: "Weltraumschrott" },
     other:    { color: "#8b93a7", size: 4, label: false, name: "Satellit" }
+};
+
+/**
+ * CelesTrak-Gruppen, die Trümmerfelder liefern – mit dem Ereignis,
+ * aus dem der Schrott stammt. Die Zuordnung läuft über die GRUPPE und
+ * nicht über den Namen: CelesTrak liefert in diesen Gruppen auch den
+ * zerstörten Satelliten selbst mit (z.B. "FENGYUN 1C" ohne "DEB").
+ */
+const DEBRIS_EVENTS = {
+    "cosmos-1408-debris": {
+        origin: "Kosmos 1408 – ASAT-Test Russland, 15.11.2021",
+        wikipedia: "Kosmos 1408"
+    },
+    "fengyun-1c-debris": {
+        origin: "Fengyun-1C – ASAT-Test China, 11.01.2007",
+        wikipedia: "Fengyun-1C"
+    },
+    "iridium-33-debris": {
+        origin: "Iridium 33 – Kollision mit Kosmos 2251, 10.02.2009",
+        wikipedia: "Satellitenkollision am 10. Februar 2009"
+    },
+    "cosmos-2251-debris": {
+        origin: "Kosmos 2251 – Kollision mit Iridium 33, 10.02.2009",
+        wikipedia: "Satellitenkollision am 10. Februar 2009"
+    }
 };
 
 /** satellite.js einmalig nachladen. */
@@ -101,7 +127,11 @@ export class SatelliteLayer extends BaseLayer {
      */
     async _loadFromCelestrak() {
         const cfg = CFG();
-        const groups = cfg.groups ?? ["stations", "visual", "gps-ops", "galileo", "geo"];
+        const groups = cfg.groups ?? [
+            "stations", "visual", "gps-ops", "galileo", "geo",
+            "cosmos-1408-debris", "fengyun-1c-debris",
+            "iridium-33-debris", "cosmos-2251-debris"
+        ];
         const maxPerGroup = cfg.maxPerGroup ?? 60;
         const seen = new Set();
         let count = 0;
@@ -147,7 +177,7 @@ export class SatelliteLayer extends BaseLayer {
                         satType: classifyName(entry.name, group),
                         group,
                         operator: operatorFor(entry.name, group),
-                        wikipedia: wikipediaFor(entry.name),
+                        wikipedia: wikipediaFor(entry.name, group),
                         live: true
                     }, "satellite");
 
@@ -377,6 +407,9 @@ function parseTle(text) {
 /** Kategorie aus Name und Gruppe ableiten. */
 function classifyName(name, group) {
     const n = name.toUpperCase();
+    // Zuerst prüfen: sonst würde "IRIDIUM 33 DEB" als Kommunikations-
+    // satellit und "COSMOS 1408 DEB" als GLONASS-Objekt gelten
+    if (DEBRIS_EVENTS[group]) return "Weltraumschrott";
     if (group === "stations" || /ISS|TIANGONG|CSS /.test(n)) return "Raumstation";
     if (group === "geo") return "Geostationär";
     if (/NAVSTAR|GPS|GALILEO|GLONASS|BEIDOU/.test(n)) return "Navigation";
@@ -392,12 +425,15 @@ function classKey(satType) {
         case "Navigation": return "nav";
         case "Kommunikation": return "comms";
         case "Sichtbar": return "visual";
+        case "Weltraumschrott": return "debris";
         default: return "other";
     }
 }
 
 function operatorFor(name, group) {
     const n = name.toUpperCase();
+    // Schrott hat keinen Betreiber – stattdessen das Ursprungsereignis
+    if (DEBRIS_EVENTS[group]) return DEBRIS_EVENTS[group].origin;
     if (/ISS/.test(n)) return "NASA / Roskosmos / ESA / JAXA / CSA";
     if (/TIANGONG|CSS/.test(n)) return "CNSA";
     if (/STARLINK/.test(n)) return "SpaceX";
@@ -410,8 +446,9 @@ function operatorFor(name, group) {
     return "";
 }
 
-function wikipediaFor(name) {
+function wikipediaFor(name, group) {
     const n = name.toUpperCase();
+    if (DEBRIS_EVENTS[group]) return DEBRIS_EVENTS[group].wikipedia;
     if (/ISS \(ZARYA\)|^ISS/.test(n)) return "Internationale Raumstation";
     if (/TIANGONG|CSS \(TIANHE\)/.test(n)) return "Chinesische Raumstation";
     if (/HST|HUBBLE/.test(n)) return "Hubble-Weltraumteleskop";
