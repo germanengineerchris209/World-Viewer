@@ -103,7 +103,15 @@ export const TLE_GROUPS = [
     { tag: "glonass",  path: "glo-ops",  label: "GLONASS" },
     { tag: "galileo",  path: "galileo",  label: "Galileo" },
     { tag: "geo",      path: "geo",      label: "Geostationär" },
-    { tag: "starlink", path: "starlink", label: "Starlink" }
+    { tag: "starlink", path: "starlink", label: "Starlink" },
+
+    // Trümmerfelder. Bewusst NACH den aktiven Satelliten, damit beim
+    // Dedupe immer das aktive Objekt gewinnt (z.B. FENGYUN 1C selbst,
+    // das in seiner eigenen Schrott-Gruppe mitgeliefert wird).
+    { tag: "debris-1408",  path: "cosmos-1408-debris", label: "Schrott: Kosmos 1408 (ASAT-Test 2021)" },
+    { tag: "debris-fy1c",  path: "fengyun-1c-debris",  label: "Schrott: Fengyun-1C (ASAT-Test 2007)" },
+    { tag: "debris-ir33",  path: "iridium-33-debris",  label: "Schrott: Iridium 33 (Kollision 2009)" },
+    { tag: "debris-2251",  path: "cosmos-2251-debris", label: "Schrott: Kosmos 2251 (Kollision 2009)" }
 ];
 
 const TLE_TTL_MS = 6 * 60 * 60 * 1000;   // Bahndaten ändern sich langsam

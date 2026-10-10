@@ -173,7 +173,14 @@ window.WORLD_VIEWER_CONFIG = {
         mode: "auto",
         // Welche CelesTrak-Gruppen geladen werden.
         // "starlink" ist möglich, bringt aber tausende Objekte.
-        groups: ["stations", "visual", "gps-ops", "galileo", "geo"],
+        // Die "*-debris"-Gruppen sind Trümmerfelder aus ASAT-Tests und
+        // Kollisionen – rötlich und kleiner dargestellt, ohne Label.
+        // Zum Ausblenden einfach aus der Liste entfernen.
+        groups: [
+            "stations", "visual", "gps-ops", "galileo", "geo",
+            "cosmos-1408-debris", "fengyun-1c-debris",
+            "iridium-33-debris", "cosmos-2251-debris"
+        ],
         // Obergrenze je Gruppe – hält die Karte lesbar
         maxPerGroup: 60
     },
