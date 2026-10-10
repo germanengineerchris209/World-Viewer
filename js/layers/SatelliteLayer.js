@@ -29,7 +29,7 @@ const CLASS_STYLE = {
     nav:      { color: "#4fd8ff", size: 6, label: true,  name: "Navigation" },
     geo:      { color: "#c89bff", size: 5, label: true,  name: "Geostationär" },
     comms:    { color: "#54697f", size: 3, label: false, name: "Kommunikation" },
-    debris:   { color: "#ff6b57", size: 2, label: false, name: "Weltraumschrott" },
+    debris:   { color: "#ff6b57", size: 3, label: false, name: "Weltraumschrott", outline: 0 },
     other:    { color: "#8b93a7", size: 4, label: false, name: "Satellit" }
 };
 
@@ -278,7 +278,9 @@ export class SatelliteLayer extends BaseLayer {
                 pixelSize: isISS ? 12 : style.size,
                 color: Cesium.Color.fromCssColorString(isISS ? "#ff4444" : style.color),
                 outlineColor: Cesium.Color.WHITE,
-                outlineWidth: isISS ? 2 : 1,
+                // Bei sehr kleinen Punkten frisst ein 1px-Rand die Füllfarbe
+                // auf – Schrott sähe sonst weiß statt rot aus
+                outlineWidth: isISS ? 2 : (style.outline ?? 1),
                 scaleByDistance: new Cesium.NearFarScalar(1e6, 1.5, 2e7, 0.6),
                 disableDepthTestDistance: Number.POSITIVE_INFINITY
             },
