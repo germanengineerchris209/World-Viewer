@@ -323,6 +323,21 @@ window.WORLD_VIEWER_CONFIG = {
     },
 
 
+    /* ═══════════ Allsky-Kameras ═══════════ */
+
+    allsky: {
+        // Allsky-Kameras zeigen mit einem Fisheye-Objektiv den kompletten
+        // Himmel von Horizont zu Horizont. Die bekannten Standorte stehen
+        // in data/allsky-cameras.json und laden immer.
+        //
+        // Zusätzlich melden mehrere hundert Betreiber ihre Kameras an die
+        // öffentliche Allsky-Karte; die holt der Server nach. Auf false
+        // setzen, wenn nur die gepflegten Standorte erscheinen sollen.
+        usePublicCatalog: true,
+        catalogUrl: "/api/allsky"
+    },
+
+
     /* ═══════════ Objektbilder ═══════════ */
 
     images: {

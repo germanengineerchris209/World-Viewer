@@ -14,6 +14,7 @@
  *      /api/fires             Aktive Brände (NASA FIRMS, Key nötig)
  *      /api/fires/history     Historische Brände für das Zeitleisten-Replay
  *      /api/cctv              Katalog öffentlicher Verkehrskameras
+ *      /api/allsky            Allsky-Kameras (Ganzhimmel) weltweit
  *      /api/events            Globale Ereignis-Lage (GDELT GEO 2.0)
  *      /api/volcanoes         Vulkane weltweit mit Aktivitätsampel
  *      /api/storms            Aktive tropische Wirbelstürme (NOAA NHC)
@@ -61,7 +62,7 @@ import { fetchFlights, parseBounds } from "./flightProviders.mjs";
 import { handleCameraProxy, buildAllowlist, getAllowlist } from "./cameraProxy.mjs";
 import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
-    handleFires, handleFiresHistory, handleCctvCatalog, handleEvents,
+    handleFires, handleFiresHistory, handleCctvCatalog, handleAllskyCatalog, handleEvents,
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
     handleComets, TLE_GROUPS
 } from "./dataProxies.mjs";
@@ -114,17 +115,32 @@ const ALLOWED_MODELS = new Set([
     "claude-haiku-4-5-20251001"
 ]);
 
-/* Erlaubnisliste für den Kamera-Proxy aus data/cameras.json aufbauen */
+/*
+ * Erlaubnisliste für den Kamera-Proxy aus den eigenen Datensätzen aufbauen:
+ * data/cameras.json und data/allsky-cameras.json (WEB-80).
+ *
+ * Bewusst nur aus gepflegten Dateien – die über /api/cctv und /api/allsky
+ * geladenen Fremdkataloge erweitern die Liste nicht, damit niemand dem
+ * Proxy von außen neue Ziel-Hosts unterschieben kann.
+ *
+ * buildAllowlist() setzt die Liste jedes Mal neu, deshalb beide Dateien
+ * in einem Aufruf übergeben.
+ */
+const ALLOWLIST_FILES = ["cameras.json", "allsky-cameras.json"];
+
 function initCameraAllowlist() {
-    try {
-        const file = path.join(ROOT, "data", "cameras.json");
-        const cameras = JSON.parse(fs.readFileSync(file, "utf8"));
-        const hosts = buildAllowlist(cameras, process.env.CAMERA_HOSTS ?? "");
-        return hosts;
-    } catch (err) {
-        console.warn("[camera] cameras.json konnte nicht gelesen werden:", err.message);
-        return buildAllowlist([], process.env.CAMERA_HOSTS ?? "");
+    const cameras = [];
+
+    for (const name of ALLOWLIST_FILES) {
+        try {
+            const file = path.join(ROOT, "data", name);
+            const entries = JSON.parse(fs.readFileSync(file, "utf8"));
+            if (Array.isArray(entries)) cameras.push(...entries);
+        } catch (err) {
+            console.warn(`[camera] ${name} konnte nicht gelesen werden:`, err.message);
+        }
     }
+    return buildAllowlist(cameras, process.env.CAMERA_HOSTS ?? "");
 }
 
 const MIME = {
@@ -491,6 +507,10 @@ export function createServer() {
             case "/api/cctv":
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleCctvCatalog(res);
+
+            case "/api/allsky":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleAllskyCatalog(res);
 
             case "/api/events":
                 if (req.method !== "GET") return res.writeHead(405).end();
