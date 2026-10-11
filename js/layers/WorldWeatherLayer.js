@@ -9,11 +9,9 @@
  * Abgrenzung zu den bestehenden Wetter-Layern:
  *   - WeatherLayer.js (WEB-56): Wind/Niederschlag an 40 kuratierten Städten,
  *     also punktuelle Details dort, wo Menschen wohnen.
- *   - RadarLayer.js (WEB-67): Niederschlagsradar als Kachel-Overlay, nur
- *     Regen/Schnee und nur die letzten ~2 Stunden.
  *   - dieser Layer: flächendeckendes Live-Bild der GANZEN Welt – ein
  *     Gradnetz-Raster, dessen Zellen nach der aktuellen Temperatur gefärbt
- *     sind (Standard 10°, also 576 Zellen), inklusive Ozeanen.
+ *     sind (Standard 15°, also 264 Zellen), inklusive Ozeanen.
  *
  * Alle Zellen werden in EINER Anfrage geholt: `latitude`/`longitude`
  * akzeptieren kommaseparierte Listen, die Antwort ist ein Array in
@@ -127,8 +125,8 @@ export class WorldWeatherLayer extends BaseLayer {
         // Open-Meteo rechnet seine Modelldaten stündlich neu, und auf einem
         // 15°-Raster ändert sich ohnehin nichts im Minutentakt – stündlich
         // neu abfragen hält den Koordinaten-Verbrauch im Fair-Use-Rahmen
-        // (siehe DEFAULT_STEP_DEG). Punktgenaue Minutenwerte liefern weiter
-        // WeatherLayer.js (Städte) und RadarLayer.js (Niederschlag).
+        // (siehe DEFAULT_STEP_DEG). Punktgenaue Minutenwerte liefert weiter
+        // WeatherLayer.js an seinen Städten.
         const seconds = CFG().refreshSeconds ?? 3600;
         this._timer = setInterval(() => this.refresh(), seconds * 1000);
     }
