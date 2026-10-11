@@ -33,6 +33,7 @@ import { AircraftLayer } from "./layers/AircraftLayer.js";
 import { ShipLayer } from "./layers/ShipLayer.js";
 import { SatelliteLayer } from "./layers/SatelliteLayer.js";
 import { CameraLayer } from "./layers/CameraLayer.js";
+import { AllskyLayer } from "./layers/AllskyLayer.js";
 import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { EarthquakeLayer } from "./layers/EarthquakeLayer.js";
 import { VolcanoLayer } from "./layers/VolcanoLayer.js";
@@ -65,6 +66,7 @@ async function main() {
     layerManager.register(shipLayer);
     layerManager.register(satelliteLayer);
     layerManager.register(new CameraLayer(worldViewer));
+    layerManager.register(new AllskyLayer(worldViewer));
     layerManager.register(new InfrastructureLayer(worldViewer));
     layerManager.register(new CableLayer(worldViewer));
     layerManager.register(new EarthquakeLayer(worldViewer));

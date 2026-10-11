@@ -1,0 +1,402 @@
+[
+    {
+        "id": "allsky-rotheul",
+        "name": "Sternwarte Rotheul",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Rotheul, Föritztal, Thüringen, Deutschland",
+        "operator": "Henry Bolgehn",
+        "hardware": "Allskycam 2.0 · 180°-Fisheye unter geheizter Acrylkuppel",
+        "streamSource": "sternwarte-rotheul.de",
+        "note": "Tags alle 30 s, nachts alle 20 s ein neues Bild. Im Morgengrauen entstehen daraus Zeitraffer, Startrails und ein Keogramm.",
+        "wikipedia": "Föritztal",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://allskycam-rotheul.de/image.jpg",
+            "refreshSeconds": 30,
+            "pageUrl": "https://sternwarte-rotheul.de/allskycam-der-sternwarte-rotheul/"
+        },
+        "latitude": 50.2852,
+        "longitude": 11.2354,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-lasilla",
+        "name": "ESO La Silla",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "La-Silla-Observatorium, Atacama-Wüste, Chile",
+        "operator": "Dänisches 1,54-m-Teleskop · Astronomisches Institut der AV ČR",
+        "hardware": "Ganzhimmelkamera am Dänischen 1,54-m-Teleskop",
+        "streamSource": "ESO · asu.cas.cz",
+        "note": "Einer der dunkelsten Himmel der Welt auf 2400 m Höhe – nachts steht die Milchstraße senkrecht im Bild.",
+        "wikipedia": "La-Silla-Observatorium",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://allsky-dk154.asu.cas.cz/AllSkyCurrentImage.JPG",
+            "refreshSeconds": 60,
+            "pageUrl": "https://www.eso.org/public/outreach/webcams/"
+        },
+        "latitude": -29.2543,
+        "longitude": -70.7346,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-maunakea",
+        "name": "Subaru-Asahi StarCam",
+        "cameraType": "Himmels-Livestream",
+        "status": "online",
+        "location": "Subaru-Teleskop, Mauna Kea, Hawaii, USA",
+        "operator": "NAOJ Subaru-Teleskop & Asahi Shimbun",
+        "hardware": "Wetterfeste HD-Kamera auf 4200 m Höhe",
+        "streamSource": "Asahi Astro LIVE (YouTube)",
+        "note": "Seit 2021 durchgehender Livestream vom Gipfel des Mauna Kea. Der Stream läuft rund um die Uhr; spektakulär ist die hawaiianische Nacht (UTC-10).",
+        "wikipedia": "Subaru-Teleskop",
+        "stream": {
+            "label": "Livestream",
+            "type": "youtube",
+            "channelId": "UCiN7OwV8g8dMm_E0xphBVig",
+            "pageUrl": "https://www.youtube.com/@astroasahi/live"
+        },
+        "latitude": 19.8255,
+        "longitude": -155.4761,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-hannover",
+        "name": "Volkssternwarte Hannover",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Lindener Berg, Hannover, Deutschland",
+        "operator": "Volkssternwarte Hannover e.V.",
+        "streamSource": "sternwarte-hannover.de",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://sternwarte-hannover.de/allsky/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://sternwarte-hannover.de/allsky-live/"
+        },
+        "latitude": 52.36245,
+        "longitude": 9.70556,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-kirchheim",
+        "name": "Volkssternwarte Kirchheim",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Kirchheim, Thüringen, Deutschland",
+        "operator": "Volkssternwarte Kirchheim e.V.",
+        "streamSource": "sternwarte-kirchheim.de",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://www.sternwarte-kirchheim.de/Allsky/image.jpg",
+            "refreshSeconds": 120,
+            "pageUrl": "https://www.sternwarte-kirchheim.de/"
+        },
+        "latitude": 50.8405,
+        "longitude": 10.952,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-konkoly",
+        "name": "Konkoly-Observatorium",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Budapest, Ungarn",
+        "operator": "Konkoly-Observatorium (HUN-REN CSFK)",
+        "streamSource": "konkoly.hu",
+        "note": "Forschungssternwarte der Ungarischen Akademie der Wissenschaften, gegründet 1871.",
+        "wikipedia": "Konkoly-Observatorium",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://ccdsh.konkoly.hu/current/tmp/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://konkoly.hu/"
+        },
+        "latitude": 47.499687,
+        "longitude": 18.96112,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-perth",
+        "name": "Perth Observatory",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Bickley, Western Australia, Australien",
+        "operator": "Perth Observatory Volunteer Group",
+        "streamSource": "perthallsky.net",
+        "note": "Älteste Sternwarte Australiens in Betrieb – Blick auf den Südhimmel mit den Magellanschen Wolken.",
+        "wikipedia": "Perth Observatory",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://perthallsky.net/current/tmp/image.jpg",
+            "refreshSeconds": 120,
+            "pageUrl": "https://perthallsky.net/"
+        },
+        "latitude": -32.00758,
+        "longitude": 116.13555,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-boyden",
+        "name": "Boyden Observatory",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Bloemfontein, Freistaat, Südafrika",
+        "operator": "Henk van Rooyen · University of the Free State",
+        "streamSource": "vanrooyen.co.za",
+        "note": "Historische Sternwarte, 1927 von der Harvard-Universität nach Südafrika verlegt.",
+        "wikipedia": "Boyden Observatory",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "http://www.vanrooyen.co.za/huis/allsky/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "http://www.vanrooyen.co.za/huis/allsky/"
+        },
+        "latitude": -29.0382,
+        "longitude": 26.4035,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-tahtikallio",
+        "name": "Tähtikallio",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Artjärvi, Finnland",
+        "operator": "Ursa Astronomical Association",
+        "streamSource": "ursa.fi",
+        "note": "Beobachtungszentrum des finnischen Astronomievereins – bei hoher geomagnetischer Aktivität zeigt die Kamera Polarlichter.",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://www.ursa.fi/fileadmin/ursa2010/kuvat/tahtikallio/tahtikallio-allsky.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://www.ursa.fi/yhdistys/tahtikallio.html"
+        },
+        "latitude": 60.7306,
+        "longitude": 26.2064,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-northpole-ak",
+        "name": "North Pole SkyCam",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "North Pole bei Fairbanks, Alaska, USA",
+        "operator": "Frontier Village",
+        "streamSource": "northpoleskycam.com",
+        "note": "Liegt direkt unter dem Polarlichtoval – im Winter eine der besten Aurora-Kameras überhaupt.",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://www.northpoleskycam.com/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://www.northpoleskycam.com/"
+        },
+        "latitude": 65.8081,
+        "longitude": -147.5111,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-otago",
+        "name": "Otago Allsky",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Otago, Südinsel, Neuseeland",
+        "operator": "Brian Grant",
+        "streamSource": "grant.co.nz",
+        "note": "Tiefe Südhalbkugel – von hier aus sind Aurora Australis und das Kreuz des Südens zu sehen.",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://grant.co.nz/allsky/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://grant.co.nz/allsky/"
+        },
+        "latitude": -45.8094,
+        "longitude": 170.1256,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-rawal",
+        "name": "Rawal Observatory",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Rawalpindi, Pakistan",
+        "operator": "Farrukh Shahzad",
+        "streamSource": "farrukhshahzad.com",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://farrukhshahzad.com/allsky/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://farrukhshahzad.com/allsky/"
+        },
+        "latitude": 33.5973,
+        "longitude": 73.0479,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-phatthalung",
+        "name": "Astro-Seeker Phatthalung",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Phatthalung, Thailand",
+        "operator": "astro-seeker.com",
+        "streamSource": "astro-seeker.com",
+        "note": "Nahe dem Äquator – hier stehen Nord- und Südhimmel gemeinsam über dem Horizont.",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://allsky.astro-seeker.com/current/tmp/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://www.astro-seeker.com/"
+        },
+        "latitude": 7.680533,
+        "longitude": 99.971932,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-eureka",
+        "name": "Observatório Eureka",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Funilândia, Minas Gerais, Brasilien",
+        "operator": "Observatório Eureka",
+        "streamSource": "observatorioeureka.com",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://observatorioeureka.com/allsky/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://observatorioeureka.com/allsky/"
+        },
+        "latitude": -19.2909,
+        "longitude": -44.085,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-montsec",
+        "name": "Ad Astra Montsec",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Montsec, Lleida, Katalonien, Spanien",
+        "operator": "Ad Astra Observatory · Astromalalts",
+        "streamSource": "astromalalts.com",
+        "note": "Der Montsec ist der erste Starlight-zertifizierte Sternenpark Europas.",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://astromalalts.com/adastra/allsky/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://astromalalts.com/adastra/allsky/"
+        },
+        "latitude": 42.02,
+        "longitude": 0.73,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-hobbs",
+        "name": "Hobbs Observatory",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Fall Creek, Wisconsin, USA",
+        "operator": "Chippewa Valley Astronomical Society",
+        "streamSource": "cvastro.org",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://allsky.cvastro.org/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://allsky.cvastro.org/"
+        },
+        "latitude": 44.815702,
+        "longitude": -91.272252,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-clanfield",
+        "name": "Clanfield Observatory",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Clanfield, Hampshire, England",
+        "operator": "Hampshire Astronomical Group",
+        "streamSource": "hagobservatory.uk",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://allsky.hagobservatory.uk/image.jpg",
+            "refreshSeconds": 120,
+            "pageUrl": "https://hagobservatory.uk/"
+        },
+        "latitude": 50.93,
+        "longitude": -1.01,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-zebrak",
+        "name": "Hvězdárna Žebrák",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Žebrák, Mittelböhmen, Tschechien",
+        "operator": "Hvězdárna Žebrák",
+        "streamSource": "hvezdarnazebrak.cz",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://allsky.hvezdarnazebrak.cz/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://www.hvezdarnazebrak.cz/"
+        },
+        "latitude": 49.8736583,
+        "longitude": 13.8986794,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-areeiro",
+        "name": "Pico do Areeiro",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Pico do Areeiro, Madeira, Portugal",
+        "operator": "AAAM – Associação de Astrónomos Amadores da Madeira",
+        "streamSource": "astronomiamadeira.pt",
+        "note": "Auf 1800 m über dem Atlantik, meist oberhalb der Wolkendecke.",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://astronomiamadeira.pt/allsky/image.jpg",
+            "refreshSeconds": 60,
+            "pageUrl": "https://astronomiamadeira.pt/allsky/"
+        },
+        "latitude": 32.7225368,
+        "longitude": -16.9167989,
+        "altitude": 12
+    },
+    {
+        "id": "allsky-antares",
+        "name": "Sternwarte Antares",
+        "cameraType": "Allsky-Kamera",
+        "status": "online",
+        "location": "Andwil, St. Gallen, Schweiz",
+        "operator": "Astronomischer Verein Antares",
+        "streamSource": "sternwarte-antares.ch",
+        "stream": {
+            "label": "Himmel live",
+            "type": "image",
+            "url": "https://sternwarte-antares.ch/allsky2/image.jpg",
+            "refreshSeconds": 120,
+            "pageUrl": "https://sternwarte-antares.ch/"
+        },
+        "latitude": 47.4256403,
+        "longitude": 9.2834057,
+        "altitude": 12
+    }
+]

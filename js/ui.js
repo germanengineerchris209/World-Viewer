@@ -137,6 +137,25 @@ const DETAIL_SCHEMAS = {
             ["Länge", F.coord(o.position.longitude)]
         ]
     },
+    allsky: {
+        badge: "Allsky-Kamera",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Typ", F.text(m.cameraType)],
+                ["Ort", F.text(m.location), true]
+            ];
+            if (m.operator) rows.push(["Betreiber", F.text(m.operator), true]);
+            if (m.hardware) rows.push(["Technik", F.text(m.hardware), true]);
+            if (m.note) rows.push(["Hinweis", F.text(m.note), true]);
+            rows.push(
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        }
+    },
     radio: {
         badge: "Radiosender",
         title: (o) => o.name,
@@ -929,8 +948,8 @@ export class UI {
         this._el.description.classList.add("hidden");
         this._el.description.textContent = "";
 
-        // Kameras: echter Livestream
-        if (object.type === "camera") {
+        // Kameras und Allsky-Kameras: echter Livestream
+        if (object.type === "camera" || object.type === "allsky") {
             slot.classList.remove("loading");
             playCameraStream(slot, object);
             const credit = object.metadata.attribution || object.metadata.streamSource;

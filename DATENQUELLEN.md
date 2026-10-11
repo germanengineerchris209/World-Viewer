@@ -52,6 +52,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🌀 Wirbelstürme | NOAA National Hurricane Center | nur Atlantik/Ost-/Zentralpazifik; sendet kein CORS → Server-Proxy für Übersicht + Vorhersagekegel |
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
+| 🌌 Allsky-Kameras | 20 bekannte Sternwarten + öffentliche Allsky-Karte | Ganzhimmelkameras weltweit, rund 380 Standorte |
 | Objektfotos | Wikipedia | |
 | Ortsnamen | OpenStreetMap/Nominatim | |
 | 🌫️ Luftqualität (AQI) | Open-Meteo Air Quality API | Großstädte, handkuratiert |
@@ -376,6 +377,45 @@ CORS-freigegeben sind und die Bilder teils hotlink-geschützt.
 > TfL verlangt wörtlich: "Powered by TfL Open Data. Contains OS data
 > © Crown copyright and database rights." Die App zeigt diesen Hinweis
 > im Bildnachweis jeder TfL-Kamera an.
+
+### 🌌 Allsky-Kameras
+
+Allsky-Kameras blicken mit einem Fisheye-Objektiv senkrecht nach oben und
+zeigen den kompletten Himmel von Horizont zu Horizont. Sternwarten nutzen
+sie zur Wolken- und Meteorüberwachung; nachts zeigen sie Milchstraße,
+Polarlichter und Feuerkugeln. Auch hier zwei Quellen:
+
+**Handverlesene Standorte** in `data/allsky-cameras.json` – 20 bekannte
+Kameras über alle Kontinente verteilt, jede beim Einpflegen auf Erreichbarkeit
+geprüft:
+
+| Standort | Besonderheit |
+|---|---|
+| Sternwarte Rotheul (Thüringen) | Allskycam 2.0, tags alle 30 s, nachts alle 20 s |
+| ESO La Silla (Chile) | Kamera am Dänischen 1,54-m-Teleskop, 2400 m, Atacama |
+| Subaru-Asahi StarCam (Mauna Kea) | 24/7-Livestream auf YouTube, 4200 m |
+| Konkoly-Observatorium (Budapest) | Forschungssternwarte, gegründet 1871 |
+| Perth Observatory (Australien) | Südhimmel mit den Magellanschen Wolken |
+| Boyden Observatory (Südafrika) | 1927 von Harvard nach Bloemfontein verlegt |
+| Tähtikallio (Finnland), North Pole (Alaska) | Polarlicht-Breiten |
+| Otago (Neuseeland) | Aurora Australis, Kreuz des Südens |
+
+Dazu Standorte in Pakistan, Thailand, Brasilien, Spanien, Portugal, England,
+Tschechien, der Schweiz, Wisconsin und zwei weitere in Deutschland.
+
+**Öffentliche Allsky-Karte** (`thomasjacquin.com/allsky-map/`) – die Betreiber
+der verbreiteten Allsky-Software melden ihre Kameras dort freiwillig mit
+Koordinaten an. Der Server holt den Datensatz über `/api/allsky` und cacht ihn
+6 Stunden; rund 380 Kameras bleiben so automatisch aktuell.
+
+> Die Karte liefert kein JSON aus, sondern bettet den Datensatz als Array in
+> die Seite ein – der Server schält ihn aus dem HTML. Bricht das, bleibt der
+> Layer bei den handverlesenen Standorten.
+
+Die gemeldeten Kameras werden **direkt** geladen, nicht über den Kamera-Proxy:
+Dessen Erlaubnisliste entsteht nur aus `data/cameras.json` und
+`data/allsky-cameras.json`, damit über den Fremdkatalog niemand neue
+Ziel-Hosts unterschieben kann.
 
 ### 📻 Radiosender
 
