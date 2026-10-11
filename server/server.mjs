@@ -68,6 +68,7 @@ import {
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
+import { getKeyStatuses } from "./keyRegistry.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -556,6 +557,12 @@ export function createServer() {
                     ships: !!AISSTREAM_API_KEY,
                     tleGroups: TLE_GROUPS
                 });
+
+            case "/api/keys":
+                // POWER-UP-Panel (WEB-87): nur Status je Dienst, NIE ein
+                // Schlüsselwert. Dieselbe Logik wie "npm run doctor".
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return sendJson(res, 200, { keys: getKeyStatuses() });
 
             case "/api/chat":
                 if (req.method !== "POST") return res.writeHead(405).end();
