@@ -29,11 +29,16 @@ const WEATHER_FIELDS = "temperature_2m,precipitation,weather_code,wind_speed_10m
 
 const CFG = () => window.WORLD_VIEWER_CONFIG?.worldWeather ?? {};
 
-// Gradnetz-Raster: Schrittweite in Grad. 10° ≙ 576 Zellen und eine
-// Antwort von ~260 kB – grob genug fürs Lagebild, klein genug für einen
-// Aufruf. Die Pole bleiben frei: dort liefert das Modell kaum Mehrwert
-// und die Zellen würden extrem verzerrt.
-const DEFAULT_STEP_DEG = 10;
+// Gradnetz-Raster: Schrittweite in Grad. Die Zellenzahl bestimmt direkt den
+// API-Verbrauch, denn Open-Meteo zählt bei Sammelabfragen JEDE Koordinate als
+// eigenen Aufruf (Fair Use: ~10.000/Tag). 15° ≙ 264 Zellen; bei stündlicher
+// Aktualisierung sind das ~6.300 Koordinaten-Aufrufe/Tag und damit noch im
+// kostenlosen Rahmen. Ein 10°-Raster (576 Zellen) wäre optisch feiner, würde
+// das Tageslimit aber schon im Einzelbetrieb sprengen – wer einen eigenen
+// API-Schlüssel/Server nutzt, kann per Konfiguration feiner stellen.
+// Die Pole bleiben frei: dort liefert das Modell kaum Mehrwert und die
+// Zellen würden extrem verzerrt.
+const DEFAULT_STEP_DEG = 15;
 const DEFAULT_LAT_LIMIT = 80;
 const DEFAULT_OPACITY = 0.45;
 
@@ -119,9 +124,12 @@ export class WorldWeatherLayer extends BaseLayer {
         this._cells ??= this._buildGrid();
         await this.refresh();
 
-        // Das Raster ist grob, stündliche Modellwerte ändern sich langsam –
-        // Standard: alle 15 Minuten neu abfragen (wie WeatherLayer.js).
-        const seconds = CFG().refreshSeconds ?? 900;
+        // Open-Meteo rechnet seine Modelldaten stündlich neu, und auf einem
+        // 15°-Raster ändert sich ohnehin nichts im Minutentakt – stündlich
+        // neu abfragen hält den Koordinaten-Verbrauch im Fair-Use-Rahmen
+        // (siehe DEFAULT_STEP_DEG). Punktgenaue Minutenwerte liefern weiter
+        // WeatherLayer.js (Städte) und RadarLayer.js (Niederschlag).
+        const seconds = CFG().refreshSeconds ?? 3600;
         this._timer = setInterval(() => this.refresh(), seconds * 1000);
     }
 
