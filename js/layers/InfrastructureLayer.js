@@ -2,12 +2,23 @@
  * InfrastructureLayer.js – Öffentliche Infrastruktur & Sehenswürdigkeiten.
  *
  * Statischer Layer: Flughäfen, Häfen, Bahnhöfe, Kraftwerke,
- * Sehenswürdigkeiten … aus data/infrastructure.json.
+ * Sehenswürdigkeiten … aus data/infrastructure.json, plus die
+ * OSM-Massendatensätze data/datacenters.json und data/dams.json
+ * (siehe scripts/build-infrastructure-mass.mjs, WEB-100). Bei tausenden
+ * Objekten bündelt Cesium-Clustering (BaseLayer.enableClustering) gleich
+ * dicht beieinanderliegende Marker zu einem Symbol mit Anzahl.
  * Jede Kategorie bekommt ein eigenes Symbol/Farbe.
  */
 
 import { BaseLayer } from "./BaseLayer.js";
-import { svgDataUri } from "../dataManager.js";
+import { loadJSON, normalizeRecord, svgDataUri } from "../dataManager.js";
+
+// Zusätzliche, automatisch erzeugte Massendatensätze – ergänzen die
+// handkuratierten Einträge aus data/infrastructure.json additiv.
+const MASS_SOURCES = [
+    "./data/datacenters.json",
+    "./data/dams.json"
+];
 
 // Symbole je Kategorie (einfache SVG-Kreise mit Emoji wären unscharf,
 // deshalb klare geometrische Marker mit Kategorie-Farbe)
@@ -48,10 +59,34 @@ export class InfrastructureLayer extends BaseLayer {
         for (const [key, style] of Object.entries(CATEGORY_STYLE)) {
             this._icons[key] = svgDataUri(markerSvg(style.color));
         }
+
+        // Tausende Rechenzentren/Dämme würden als Einzel-Billboards die
+        // Framerate einbrechen lassen – siehe WEB-100 Abnahme (fps-Messung).
+        this.enableClustering({ pixelRange: 65, minimumClusterSize: 12, color: CATEGORY_STYLE.default.color });
     }
 
     static categoryLabel(category) {
         return (CATEGORY_STYLE[category] ?? CATEGORY_STYLE.default).label;
+    }
+
+    /** Lädt die handkuratierte Liste plus die generierten Massendatensätze additiv. */
+    async load() {
+        this.objects = [];
+        const sources = [this.dataUrl, ...MASS_SOURCES];
+        for (const url of sources) {
+            const raw = await loadJSON(url);
+            const records = Array.isArray(raw) ? raw : (raw.items ?? []);
+            for (const record of records) {
+                const obj = normalizeRecord(record, this.type);
+                const entity = this.createEntity(obj);
+                if (entity) {
+                    entity.worldViewerObject = obj;
+                    this.entityById.set(obj.id, entity);
+                }
+                this.objects.push(obj);
+            }
+        }
+        console.info(`[${this.name}] ${this.objects.length} Objekte geladen.`);
     }
 
     createEntity(obj) {
