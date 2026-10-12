@@ -636,6 +636,53 @@ body { display: flex; }
     #graph-panel { width: calc(100vw - 24px); height: calc(100vh - 24px); top: 12px; padding: 10px 12px; }
 }
 
+/* ══════════════ Andockbare Panel-Rail (rechts) ══════════════
+   WEB-86: Detail-, Graph- und KI-Panel stapeln sich hier statt sich zu
+   überdecken, sind per Kopfzeile verschiebbar (-> floating) und an der
+   Kante skalierbar. Unterhalb von 821px (WEB-60 Mobile-Breakpoint) bleibt
+   die Rail unsichtbar ("display:contents") und jedes Panel behält sein
+   bisheriges Vollbild-/Bottom-Sheet-Verhalten aus den Regeln weiter unten. */
+
+.panel-rail { display: contents; }
+
+@media (min-width: 821px) {
+    .panel-rail-right {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        position: absolute;
+        top: 16px; right: 16px; bottom: 16px;
+        width: 380px; max-width: calc(100vw - 32px);
+        overflow-y: auto; overflow-x: visible;
+        pointer-events: none;
+        z-index: 30;
+    }
+    .panel-rail-right > .dock-panel { pointer-events: auto; flex: 0 0 auto; }
+    .panel-rail-right > .dock-panel.dragging { opacity: 0.55; }
+
+    #detail-panel.docked, #graph-panel.docked, #ai-panel.docked {
+        position: relative; top: auto; right: auto; bottom: auto; left: auto;
+        width: 100%; max-width: none; transform: none;
+    }
+    #detail-panel.floating, #graph-panel.floating, #ai-panel.floating {
+        position: fixed;
+    }
+}
+
+.dock-panel-header-draggable { cursor: grab; }
+.dock-panel-header-draggable:active { cursor: grabbing; }
+
+.dock-resize-handle { position: absolute; z-index: 5; }
+.dock-resize-bottom { left: 0; right: 0; bottom: 0; height: 7px; cursor: ns-resize; }
+.dock-resize-corner {
+    right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize;
+    display: none;
+}
+.dock-panel.floating .dock-resize-corner { display: block; }
+
+body.wv-dragging-panel, body.wv-dragging-panel * { user-select: none !important; }
+
 /* ── Timeline ── */
 
 #timeline-bar {
