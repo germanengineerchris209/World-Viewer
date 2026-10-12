@@ -28,6 +28,9 @@ import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
 import { SensorStyles } from "./sensorStyles.js";
 import { TacticalHUD } from "./hud.js";
+import { KeyboardShortcuts } from "./keyboardShortcuts.js";
+import { KeyboardReference } from "./keyboardReference.js";
+import { FpsCounter } from "./fpsCounter.js";
 
 import { AircraftLayer } from "./layers/AircraftLayer.js";
 import { ShipLayer } from "./layers/ShipLayer.js";
@@ -86,7 +89,13 @@ async function main() {
     layerManager.register(spaceWeatherLayer);
 
     /* 3 ── UI, Suche, Timeline, KI */
-    const ui = new UI(worldViewer, layerManager);
+    // Zentrale Tastenkürzel-Verwaltung: eine Stelle statt verstreuter
+    // keydown-Handler (WEB-88). Wird an Module weitergegeben, die eigene
+    // Kürzel oder einen Schritt der Esc-Kette beitragen.
+    const shortcuts = new KeyboardShortcuts();
+    new KeyboardReference(shortcuts);
+
+    const ui = new UI(worldViewer, layerManager, shortcuts);
     ui.aircraftLayer = aircraftLayer;
     ui.buildBasemapSwitcher();
 
@@ -120,7 +129,7 @@ async function main() {
        Route Fuß/Rad/Auto über den öffentlichen OSRM-Demo-Server (WEB-71) */
     const drawTools = new DrawTools(worldViewer);
     const routeTool = new RouteTool(worldViewer);
-    new DrawToolsPanel(drawTools, routeTool, ui);
+    new DrawToolsPanel(drawTools, routeTool, ui, shortcuts);
 
     /* Cockpit-Ansicht: mit der Kamera im Flugzeug mitfliegen */
     const cockpit = new CockpitView(worldViewer, ui);
@@ -128,16 +137,20 @@ async function main() {
     cockpit.onStateChange = (active) => ui.setCockpitActive(active);
 
     // KI-Assistent (Button unten links)
-    const assistant = new Assistant(worldViewer, layerManager, ui);
+    const assistant = new Assistant(worldViewer, layerManager, ui, shortcuts);
     ui.assistant = assistant;
 
     /* Sensor-Stile (CRT/NVG/FLIR/Noir/Schnee/HUD) über CSS-Filter */
     const sensorStyles = new SensorStyles(worldViewer);
     ui.sensorStyles = sensorStyles;
 
-    /* Taktisches HUD: Ziel-Boxen + Telemetrie-Overlay über dem Viewport,
-       gehört zu den Sensor-Stilen (Taste 7 bzw. Klick bis "Tactical HUD") */
+    /* Taktisches HUD: Ziel-Boxen (Taste D, "Erkennung") + Eckmarken/Statuszeile
+       (Taste H, "HUD") über dem Viewport. Der Sensor-Stil "Tactical HUD"
+       (Taste 7) schaltet komfortabel beide zusammen. */
     const tacticalHud = new TacticalHUD(worldViewer, layerManager);
+
+    /* FPS-Zähler, Taste ` (Backtick) */
+    const fpsCounter = new FpsCounter();
 
     sensorStyles.onChange = (key, label) => {
         tacticalHud.setActive(key === "hud");
@@ -146,6 +159,65 @@ async function main() {
         btn.textContent = `🎛️ ${label}`;
         btn.classList.toggle("active", key !== "normal");
     };
+
+    /* ── Zentrale Tastenkürzel: 1–7 Sensorstile, H HUD, D Erkennung,
+       C Cockpit, ` FPS-Zähler (Parität zu "God's Eye View", WEB-88) ── */
+    for (let digit = 1; digit <= 7; digit++) {
+        shortcuts.register({
+            key: String(digit),
+            label: `Sensorstil „${digit}" wählen`,
+            category: "Sensorstile (1–7)",
+            handler: () => sensorStyles.applyByDigit(digit)
+        });
+    }
+
+    shortcuts.register({
+        key: "h",
+        label: "Tactical-HUD-Rahmen (Eckmarken + Statuszeile) ein/aus",
+        category: "Overlays",
+        handler: () => tacticalHud.setHudActive(!tacticalHud.hudActive)
+    });
+
+    shortcuts.register({
+        key: "d",
+        label: "Erkennungs-Overlay (Ziel-Boxen + Telemetrie) ein/aus",
+        category: "Overlays",
+        handler: () => tacticalHud.setDetectionActive(!tacticalHud.detectionActive)
+    });
+
+    shortcuts.register({
+        key: "c",
+        label: "Cockpit-Ansicht für das ausgewählte Flugzeug ein/aus",
+        category: "Ansicht",
+        handler: () => {
+            if (cockpit.active) { cockpit.exit(); return; }
+            const entity = ui.selectedObject && layerManager.findEntityById(ui.selectedObject.id);
+            if (!entity) return;
+            if (!cockpit.enter(entity)) {
+                alert("In dieses Flugzeug kann gerade nicht eingestiegen werden.");
+            }
+        }
+    });
+
+    shortcuts.register({
+        key: "`",
+        label: "FPS-Zähler ein/aus",
+        category: "Ansicht",
+        handler: () => fpsCounter.toggle()
+    });
+
+    /* ── Esc-Kette: Panel schließen (10er) → Verfolgen beenden (20er) →
+       Cockpit verlassen (30er). Der erste zutreffende Schritt gewinnt. ── */
+    shortcuts.registerEscapeStep(20, () => {
+        if (!worldViewer.followedEntity) return false;
+        worldViewer.stopFollowing();
+        return true;
+    });
+    shortcuts.registerEscapeStep(30, () => {
+        if (!cockpit.active) return false;
+        cockpit.exit();
+        return true;
+    });
 
     const timeline = new Timeline();
     timeline.onReset = async () => {
@@ -184,19 +256,6 @@ async function main() {
             satelliteLayer.hideOrbit();
         }
     };
-
-    /* Escape verlässt die Cockpit-Ansicht; Tasten 1–7 wechseln den Sensor-Stil */
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && cockpit.active) {
-            e.preventDefault();
-            cockpit.exit();
-            return;
-        }
-        const typing = ["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName);
-        if (!typing && e.key >= "1" && e.key <= "7") {
-            sensorStyles.applyByDigit(Number(e.key));
-        }
-    });
 
     /* Kamera bewegt → Flugzeuge für den neuen Ausschnitt nachladen.
        Der Layer selbst drosselt die Anfragen, zusätzlich cacht der Server. */
@@ -243,6 +302,9 @@ async function main() {
 
         // Taktisches HUD neu zeichnen (nur wenn aktiv, siehe TacticalHUD.update)
         tacticalHud.update(ui.selectedObject?.id ?? null);
+
+        // FPS-Zähler (nur wenn eingeblendet, siehe FpsCounter.tick)
+        fpsCounter.tick(now);
 
         // "vor N Sekunden aktualisiert" mitlaufen lassen
         if (now - lastStatusUpdate > 2000) {
