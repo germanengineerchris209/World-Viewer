@@ -11,7 +11,7 @@
  * sowie ggf. update() überschreiben – fertig.
  */
 
-import { loadJSON, normalizeRecord } from "../dataManager.js";
+import { loadJSON, normalizeRecord, svgDataUri } from "../dataManager.js";
 
 const TRAIL_MAX_POINTS = 25;
 const TRAIL_MIN_INTERVAL_MS = 4000;
@@ -105,6 +105,41 @@ export class BaseLayer {
     setTrailsVisible(visible) {
         this.trailsVisible = visible;
         for (const entity of this._trailEntities.values()) entity.show = visible;
+    }
+
+    /**
+     * Bündelt nah beieinanderliegende Entities zu einem Cluster-Symbol mit
+     * Anzahl-Label, sobald die DataSource viele tausend Objekte enthält –
+     * einzelne Billboards je Objekt (z.B. Rechenzentren/Dämme/Seekabel in
+     * GEV-Größenordnung) würden sonst die Framerate einbrechen lassen.
+     * Von Unterklassen im Konstruktor aufrufen, siehe InfrastructureLayer/CableLayer.
+     */
+    enableClustering({ pixelRange = 60, minimumClusterSize = 10, color = "#e5e9f0" } = {}) {
+        const clustering = this.dataSource.clustering;
+        clustering.enabled = true;
+        clustering.pixelRange = pixelRange;
+        clustering.minimumClusterSize = minimumClusterSize;
+
+        const icon = svgDataUri(`
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+  <circle cx="18" cy="18" r="16" fill="${color}" fill-opacity="0.85" stroke="#111" stroke-width="1.5"/>
+</svg>`);
+
+        clustering.clusterEvent.addEventListener((entities, cluster) => {
+            cluster.billboard.show = true;
+            cluster.billboard.image = icon;
+            cluster.billboard.width = 36;
+            cluster.billboard.height = 36;
+            cluster.billboard.disableDepthTestDistance = Number.POSITIVE_INFINITY;
+
+            cluster.label.show = true;
+            cluster.label.text = entities.length.toLocaleString("de-DE");
+            cluster.label.font = "bold 13px 'SF Mono', Consolas, monospace";
+            cluster.label.fillColor = Cesium.Color.BLACK;
+            cluster.label.style = Cesium.LabelStyle.FILL;
+            cluster.label.verticalOrigin = Cesium.VerticalOrigin.CENTER;
+            cluster.label.pixelOffset = new Cesium.Cartesian2(0, 0);
+        });
     }
 
     /** Daten laden und Entities erzeugen. */
