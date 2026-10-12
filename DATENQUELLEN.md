@@ -170,6 +170,11 @@ Endpunkte: `opensky-network.org/api/states/all`,
 > ist eine eigene Vereinbarung mit OpenSky nötig.
 > **adsb.lol:** ODbL 1.0, Namensnennung erforderlich.
 
+Ab 6 km Kameraabstand wechseln fünf Typen (787, ATR-72, Cessna
+Citation/Gulfstream/Phenom, Hubschrauber, MQ-9/RQ-9) vom Glyph auf ein
+3D-Modell (`js/aircraftModels.js`); alle anderen Typen bleiben beim
+Glyph. Lizenz- und Herkunftsnachweis der GLB-Dateien: Abschnitt 5.
+
 ### 🛰️ Satelliten
 
 Bahndaten (TLE) von **CelesTrak**, gerechnet mit dem SGP4-Modell aus
@@ -558,3 +563,26 @@ Namensnennungen oben sind einzuhalten. Für eine kommerzielle Nutzung
 sind besonders zu prüfen: OpenSky (nicht-kommerziell), Google Maps
 (eigener Vertrag), TfL (Namensnennung Pflicht) und die
 Nutzungsbedingungen der einzelnen Webcam-Betreiber.
+
+### ✈️ 3D-Modelle für Flugzeuge (WEB-96)
+
+Fünf GLB-Dateien, unverändert übernommen aus dem GEV-"Hangar"
+(`public/models/` dort), dort bereits für die Web-Darstellung optimiert
+(Geometrie/Material vereinfacht, Texturen verkleinert, Ausrichtung auf
+reale Metergrößen gebacken). Keine eigene Nachbearbeitung unsererseits.
+Alle **CC BY 4.0** – Namensnennung des jeweiligen Sketchfab-Urhebers ist
+Pflicht, auch bei kommerzieller Nutzung:
+
+| Datei | Original & Urheber | Quelle | Lizenz |
+|---|---|---|---|
+| `assets/models/b789.glb` | "Boeing 787-9" von [Nobilis 2](https://sketchfab.com/nobilishornet2) | [Sketchfab](https://sketchfab.com/3d-models/boeing-787-9-b6711e2e698e4e469675c1154a50b7a3) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `assets/models/atr72.glb` | "ATR 72 - 600" von [Oyan3D](https://sketchfab.com/oyan3D) | [Sketchfab](https://sketchfab.com/3d-models/atr-72-600-1e1a7186f7444d288675262fcee44744) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `assets/models/citation2.glb` | "1990 Cessna Citation, Texture Detailed, Exterior" von [BlenderCommunityHead](https://sketchfab.com/aboodgoudagad) | [Sketchfab](https://sketchfab.com/3d-models/1990-cessna-citation-texture-detailed-exterior-a78839624fe64900a8352cb23462350a) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `assets/models/bell206.glb` | "Bell 206 JetRanger" von [terran4627](https://sketchfab.com/terran4627) | [Sketchfab](https://sketchfab.com/3d-models/bell-206-jetranger-d2f7ba1d671549d4b26aaf834139a1dd) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+| `assets/models/mq9.glb` | "MQ-9" von [IProZenoN](https://sketchfab.com/IProZenoN) | [Sketchfab](https://sketchfab.com/3d-models/mq-9-fabe963feb354c5584b51f9c470c3f7e) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+
+Diese Credits ersetzen nicht die Namensnennung bei eigener
+Weiterverbreitung der Dateien; sie implizieren keine Billigung durch
+die Urheber. CC BY 4.0 erlaubt Teilen und Bearbeiten, auch kommerziell,
+solange Namensnennung, Lizenzlink und Kennzeichnung von Änderungen
+erhalten bleiben.
