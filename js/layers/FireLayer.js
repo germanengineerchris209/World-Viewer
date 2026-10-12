@@ -153,4 +153,9 @@ export class FireLayer extends BaseLayer {
     _stopTimer() {
         if (this._timer) { clearInterval(this._timer); this._timer = null; }
     }
+
+    /** Erklärt in der Layer-Konsole, warum die Ebene ohne FIRMS_MAP_KEY leer bleibt (WEB-87). */
+    statusText() {
+        return this.needsKey ? this.lastError : null;
+    }
 }
