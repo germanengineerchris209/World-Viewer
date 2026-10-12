@@ -23,6 +23,7 @@ import { DrawTools } from "./drawTools.js";
 import { DrawToolsPanel } from "./drawToolsPanel.js";
 import { RouteTool } from "./routeTool.js";
 import { DeepSpacePanel } from "./deepSpace.js";
+import { PanelDock } from "./panelDock.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -130,6 +131,34 @@ async function main() {
     // KI-Assistent (Button unten links)
     const assistant = new Assistant(worldViewer, layerManager, ui);
     ui.assistant = assistant;
+
+    /* Andockbare Panel-Rail rechts: Detail-, Graph- und KI-Panel verschieb-
+       und skalierbar machen, Position/Größe merken, beim Öffnen stapeln
+       statt überdecken (WEB-86). Unterhalb von 821px bleibt pro Panel
+       das bisherige Vollbild-Verhalten (siehe panelDock.js). */
+    const panelDock = new PanelDock("#panel-rail-right");
+    panelDock.register({
+        id: "detail",
+        el: document.getElementById("detail-panel"),
+        header: document.getElementById("detail-header"),
+        minWidth: 260, minHeight: 200,
+        close: () => ui.hideObjectDetails()
+    });
+    panelDock.register({
+        id: "graph",
+        el: document.getElementById("graph-panel"),
+        header: document.getElementById("graph-header"),
+        minWidth: 280, minHeight: 240,
+        close: () => ui.closeGraphView()
+    });
+    panelDock.register({
+        id: "ai",
+        el: document.getElementById("ai-panel"),
+        header: document.getElementById("ai-header"),
+        minWidth: 280, minHeight: 240,
+        close: () => assistant.close()
+    });
+    panelDock.applySavedOrder();
 
     /* Sensor-Stile (CRT/NVG/FLIR/Noir/Schnee/HUD) über CSS-Filter */
     const sensorStyles = new SensorStyles(worldViewer);
