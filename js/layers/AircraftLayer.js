@@ -19,6 +19,8 @@ import { BaseLayer } from "./BaseLayer.js";
 import { movePosition, svgDataUri, normalizeRecord } from "../dataManager.js";
 import { FlightDataSource } from "../flightData.js";
 import { typeName, typeWikipedia, sizeClass } from "../aircraftTypes.js";
+import { modelClassFor, modelSpecFor, MODEL_HEADING_OFFSET_DEG } from "../aircraftModels.js";
+import { normalizeHeading, slewHeading } from "../cockpit.js";
 
 // Flugzeug-Symbol als Inline-SVG (Spitze zeigt nach oben = Norden)
 const AIRCRAFT_SVG = `
@@ -28,6 +30,28 @@ const AIRCRAFT_SVG = `
 </svg>`;
 
 const SIZE_PX = { heavy: 34, medium: 28, light: 22 };
+
+/*
+ * Glyph → 3D-Modell: nur für die fünf ICAO-Typen, für die wir ein Modell
+ * haben (siehe aircraftModels.js). Umschaltung mit Hysterese (NEAR zum
+ * Wechsel auf das Modell, FAR zum Zurückwechseln), sonst flackert es an
+ * der Schwelle. Modell-Erzeugung (GLB-Laden) übernimmt Cesiums
+ * ModelVisualizer selbst erst beim ersten "show: true" – das ist das
+ * geforderte Lazy-Laden, ohne das hier nachzubauen. Einmal erzeugt bleibt
+ * das Model-Primitive beim Zurückzoomen erhalten (nur ausgeblendet),
+ * also auch die geforderte Cache-Wiederverwendung.
+ */
+const MODEL_SWITCH_NEAR_M = 6000;
+const MODEL_SWITCH_FAR_M = 9000;
+
+// Kursglättung fürs Modell: dieselbe Mechanik wie die Kamera im Cockpit
+// (normalizeHeading/slewHeading aus cockpit.js), nur mit eigener Rate –
+// die Absicht ist, Datensprünge zwischen zwei Live-Updates weich
+// auszugleichen, nicht die Kamera-Konstante zu kopieren.
+const MODEL_HEADING_SLEW_DPS = 25;
+
+const _scratchModelPos = new Cesium.Cartesian3();
+const _scratchHpr = new Cesium.HeadingPitchRoll();
 
 export class AircraftLayer extends BaseLayer {
 
@@ -323,6 +347,8 @@ export class AircraftLayer extends BaseLayer {
             country: record.country ?? "",
             verticalRate: record.verticalRate ?? 0,
             onGround: !!record.onGround,
+            // Welche Klasse ein 3D-Modell hat (sonst bleibt es beim Glyph)
+            modelClass: modelClassFor(rawType),
             // Für die Bildsuche: Wikipedia-Artikel zum Flugzeugtyp
             wikipedia: record.wikipedia || typeWikipedia(rawType) || readable || "",
             live: this.mode === "live"
@@ -344,8 +370,9 @@ export class AircraftLayer extends BaseLayer {
     createEntity(obj) {
         const meta = obj.metadata;
         const px = SIZE_PX[sizeClass(meta.typeCode)] ?? SIZE_PX.medium;
+        const spec = modelSpecFor(meta.modelClass);
 
-        return this.dataSource.entities.add({
+        const definition = {
             id: obj.id,
             // CallbackProperty → Position wird pro Frame gelesen,
             // die Koppelnavigation schreibt nur ins Datenobjekt
@@ -366,13 +393,69 @@ export class AircraftLayer extends BaseLayer {
                 alignedAxis: Cesium.Cartesian3.UNIT_Z,
                 verticalOrigin: Cesium.VerticalOrigin.CENTER,
                 scaleByDistance: new Cesium.NearFarScalar(1e5, 1.0, 1.2e7, 0.45),
-                disableDepthTestDistance: Number.POSITIVE_INFINITY
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                // Ohne Modell immer sichtbar; mit Modell nur, wenn das
+                // Modell (noch) nicht übernommen hat
+                show: spec
+                    ? new Cesium.CallbackProperty(() => !this._isModelNear(obj), false)
+                    : true
             },
             label: this._makeLabel(
                 meta.callsign ?? obj.name,
                 Cesium.Color.fromCssColorString("#ffd166")
             )
-        });
+        };
+
+        if (spec) {
+            definition.model = {
+                uri: spec.url,
+                minimumPixelSize: spec.minimumPixelSize,
+                maximumScale: spec.maximumScale,
+                show: new Cesium.CallbackProperty(() => this._isModelNear(obj), false),
+                orientation: new Cesium.CallbackProperty(() => {
+                    Cesium.Cartesian3.fromDegrees(
+                        obj.position.longitude,
+                        obj.position.latitude,
+                        obj.position.altitude,
+                        Cesium.Ellipsoid.WGS84,
+                        _scratchModelPos
+                    );
+                    _scratchHpr.heading = Cesium.Math.toRadians(
+                        normalizeHeading((obj.__modelHeading ?? obj.heading ?? 0) + MODEL_HEADING_OFFSET_DEG)
+                    );
+                    _scratchHpr.pitch = 0;
+                    _scratchHpr.roll = 0;
+                    return Cesium.Transforms.headingPitchRollQuaternion(
+                        _scratchModelPos, _scratchHpr, Cesium.Ellipsoid.WGS84);
+                }, false)
+            };
+        }
+
+        return this.dataSource.entities.add(definition);
+    }
+
+    /**
+     * Ist dieses Flugzeug nah genug für das 3D-Modell statt des Glyphs?
+     * Mit Hysterese (NEAR zum Umschalten, FAR zum Zurückschalten), damit
+     * es an der Schwelle nicht flackert.
+     */
+    _isModelNear(obj) {
+        Cesium.Cartesian3.fromDegrees(
+            obj.position.longitude,
+            obj.position.latitude,
+            obj.position.altitude,
+            Cesium.Ellipsoid.WGS84,
+            _scratchModelPos
+        );
+        const distance = Cesium.Cartesian3.distance(
+            this.viewer.camera.positionWC, _scratchModelPos);
+
+        if (obj.__modelNear) {
+            if (distance > MODEL_SWITCH_FAR_M) obj.__modelNear = false;
+        } else if (distance <= MODEL_SWITCH_NEAR_M) {
+            obj.__modelNear = true;
+        }
+        return !!obj.__modelNear;
     }
 
     /* ═══════════ Bewegung zwischen den Abrufen ═══════════ */
@@ -412,6 +495,14 @@ export class AircraftLayer extends BaseLayer {
             }
 
             this._recordTrailPoint(obj);
+        }
+
+        // Modell-Kurs weich nachführen (nur Flugzeuge mit 3D-Modell) –
+        // sonst springt die Nase bei jedem Live-Update um mehrere Grad.
+        for (const obj of this.objects) {
+            if (!obj.metadata?.modelClass || !Number.isFinite(obj.heading)) continue;
+            obj.__modelHeading = slewHeading(
+                obj.__modelHeading ?? obj.heading, obj.heading, MODEL_HEADING_SLEW_DPS * delta);
         }
     }
 

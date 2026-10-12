@@ -82,17 +82,14 @@ const DRONE_TYPES = new Set(["MQ9", "RQ9", "MQ-9", "RQ-9"]);
 /**
  * Modellklasse für einen ICAO-Typcode bestimmen.
  * @param {string} typeCode
- * @param {{military?: boolean}} [meta]  optionale Zusatzangaben (z.B. aus
- *   dem adsb.lol-Militärfeed, siehe server/flightProviders.mjs)
  * @returns {string|null} Schlüssel aus MODEL_CLASSES, oder null = kein
  *   Modell vorhanden, es bleibt beim Glyph
  */
-export function modelClassFor(typeCode, meta = {}) {
+export function modelClassFor(typeCode) {
     const code = (typeCode || "").toUpperCase();
 
     if (HELICOPTER_TYPES.has(code)) return "bell206";
     if (DRONE_TYPES.has(code)) return "mq9";
-    if (meta.military && (!code || DRONE_TYPES.has(code))) return "mq9";
 
     return TYPE_TO_CLASS[code] ?? null;
 }
