@@ -23,6 +23,7 @@ import { DrawTools } from "./drawTools.js";
 import { DrawToolsPanel } from "./drawToolsPanel.js";
 import { RouteTool } from "./routeTool.js";
 import { DeepSpacePanel } from "./deepSpace.js";
+import { KeyStatusPanel } from "./keyStatusPanel.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -130,6 +131,9 @@ async function main() {
     // KI-Assistent (Button unten links)
     const assistant = new Assistant(worldViewer, layerManager, ui);
     ui.assistant = assistant;
+
+    // POWER-UP: Schlüssel & Dienste (Chip unten rechts, WEB-87)
+    ui.keyPanel = new KeyStatusPanel(ui);
 
     /* Sensor-Stile (CRT/NVG/FLIR/Noir/Schnee/HUD) über CSS-Filter */
     const sensorStyles = new SensorStyles(worldViewer);
