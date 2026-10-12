@@ -159,18 +159,6 @@ out center tags;`;
 
 /* ──────────────────────────── Seekabel ─────────────────────────── */
 
-function wayToLandingPoints(el) {
-    const coords = el.geometry ?? [];
-    if (coords.length < 2) return null;
-    // Nur Anfangs- und Endpunkt als "Landepunkte" – Zwischenknoten dienen
-    // nur der Trassenform und würden sonst als eigene Marker gerendert.
-    return [
-        { latitude: coords[0].lat, longitude: coords[0].lon },
-        { latitude: coords[coords.length - 1].lat, longitude: coords[coords.length - 1].lon }
-    ];
-    // Die volle Geometrie (alle coords) wird separat für die Polyline genutzt.
-}
-
 async function fetchCables() {
     console.log("Seekabel: Overpass-Abfrage (weltweit, man_made=submarine_cable) …");
     const ql = `[out:json][timeout:180];
