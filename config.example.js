@@ -288,6 +288,13 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 900
     },
 
+    goesClouds: {
+        // NASA GIBS WMTS – frei, kein Key, CORS freigegeben (siehe
+        // GoesCloudLayer.js). Kein apiUrl-Override vorgesehen: Layer-IDs
+        // und Tile-Matrix-Set sind an das konkrete GIBS-Produkt gebunden.
+        refreshSeconds: 600
+    },
+
     heatmap: {
         // Pattern-of-Life-Heatmap: reine Weiterverarbeitung der bereits
         // geladenen Live-Positionen von Aircraft/Ships, keine neue Quelle.
