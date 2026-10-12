@@ -15,7 +15,14 @@
  * Läuft unabhängig von der Simulations-Timeline (timeline.js) – die steuert
  * den Zeitraffer für Schiffe/Satelliten/Demo-Flugzeuge, hier geht es um
  * echte historische Ereignisse mit echten Zeitstempeln.
+ *
+ * Raketenstarts (WEB-97): statt eines einzelnen Punkts wird der Aufstieg
+ * aus Startplatz + Zielorbit REKONSTRUIERT (siehe launchAscent.js) – Modell,
+ * keine Telemetrie. Stufentrennung ist modelliert, Bergungsorte sind echte
+ * Koordinaten aus Launch Library 2, soweit die API einen Versuch meldet.
  */
+
+import { buildAscentModel, sampleAscentPosition, ascentPathPositions } from "./launchAscent.js";
 
 const USGS_WEEK = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 const USGS_MONTH = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson";
@@ -60,6 +67,7 @@ export class HistoryReplay {
         this._shownIds = new Set();
         this._hiddenLiveLayers = [];
         this._rocketIcon = svgDataUri(ROCKET_SVG);
+        this._ascentModels = new Map();  // ev.id -> Rekonstruktionsmodell (launchAscent.js)
 
         this.dataSource = new Cesium.CustomDataSource("history-replay");
         this.dataSource.show = false;
@@ -81,7 +89,8 @@ export class HistoryReplay {
             close: document.getElementById("history-close"),
             scrub: document.getElementById("history-scrub"),
             speed: document.getElementById("hp-speed"),
-            clock: document.getElementById("history-clock")
+            clock: document.getElementById("history-clock"),
+            launchNote: document.getElementById("history-launch-note")
         };
 
         this._bind();
@@ -143,6 +152,7 @@ export class HistoryReplay {
         this.dataSource.entities.removeAll();
         this.dataSource.show = false;
         this._shownIds.clear();
+        this._ascentModels.clear();
 
         for (const id of this._hiddenLiveLayers) this.layerManager.get(id)?.show();
         this._hiddenLiveLayers = [];
@@ -164,6 +174,7 @@ export class HistoryReplay {
 
         this.dataSource.entities.removeAll();
         this._shownIds.clear();
+        this._ascentModels.clear();
 
         const counts = { eq: 0, fire: 0, launch: 0 };
         this.events = [];
@@ -259,7 +270,11 @@ export class HistoryReplay {
                 id: `hist-launch-${l.id}`,
                 type: "launch",
                 timeMs, lat, lon,
-                meta: { name: l.name ?? "Start", provider: l.provider ?? "", status: l.status ?? "" }
+                meta: {
+                    name: l.name ?? "Start", provider: l.provider ?? "", status: l.status ?? "",
+                    orbitAbbrev: l.orbitAbbrev ?? "", orbitName: l.orbit ?? "",
+                    stages: Array.isArray(l.stages) ? l.stages : []
+                }
             });
         }
         return out;
@@ -318,11 +333,17 @@ export class HistoryReplay {
         const showEq = this._el.eq.checked;
         const showFire = this._el.fire.checked;
         const showLaunch = this._el.launch.checked;
+        let anyLaunchShown = false;
 
         for (const ev of this.events) {
-            const typeVisible = (ev.type === "earthquake" && showEq)
-                || (ev.type === "fire" && showFire)
-                || (ev.type === "launch" && showLaunch);
+            if (ev.type === "launch") {
+                // Raketenstarts brauchen eine fortlaufende Positions-Aktualisierung
+                // während des Aufstiegs, nicht nur Erscheinen/Verschwinden.
+                if (this._syncLaunchAscent(ev, showLaunch)) anyLaunchShown = true;
+                continue;
+            }
+
+            const typeVisible = (ev.type === "earthquake" && showEq) || (ev.type === "fire" && showFire);
             const shouldShow = typeVisible && ev.timeMs <= this.cursorMs;
             const already = this._shownIds.has(ev.id);
 
@@ -334,6 +355,135 @@ export class HistoryReplay {
                 this._shownIds.delete(ev.id);
             }
         }
+
+        this._el.launchNote?.classList.toggle("hidden", !anyLaunchShown);
+    }
+
+    /**
+     * Aktualisiert die Rekonstruktion eines Raketenaufstiegs für den aktuellen
+     * Cursor – Position entlang der Modellbahn, wachsende Pfadlinie, Marker für
+     * Stufentrennung/Bergung. Gibt zurück, ob der Start aktuell sichtbar ist.
+     */
+    _syncLaunchAscent(ev, visible) {
+        const show = visible && ev.timeMs <= this.cursorMs;
+        if (!show) {
+            this._removeLaunchEntities(ev);
+            return false;
+        }
+
+        let model = this._ascentModels.get(ev.id);
+        if (!model) {
+            model = buildAscentModel({
+                padLat: ev.lat, padLon: ev.lon,
+                orbitAbbrev: ev.meta.orbitAbbrev, orbitName: ev.meta.orbitName,
+                stages: ev.meta.stages
+            });
+            this._ascentModels.set(ev.id, model);
+        }
+
+        const dt = this.cursorMs - ev.timeMs;
+        const sample = sampleAscentPosition(model, dt);
+
+        let rocket = this.dataSource.entities.getById(ev.id);
+        if (!rocket) rocket = this._createAscentRocketEntity(ev);
+        rocket.position = new Cesium.ConstantPositionProperty(
+            Cesium.Cartesian3.fromDegrees(sample.lon, sample.lat, sample.altM));
+
+        let path = this.dataSource.entities.getById(`${ev.id}::path`);
+        if (!path) path = this._createAscentPathEntity(ev.id);
+        path.polyline.positions = new Cesium.ConstantProperty(this._ascentPathCartesians(model, dt, sample));
+
+        for (const sub of model.subEvents) {
+            const subId = `${ev.id}::${sub.id}`;
+            const reached = dt >= sub.tMs;
+            const already = !!this.dataSource.entities.getById(subId);
+            if (reached && !already) this._createSubEventEntity(ev.id, sub);
+            else if (!reached && already) this.dataSource.entities.removeById(subId);
+        }
+
+        this._shownIds.add(ev.id);
+        return true;
+    }
+
+    _ascentPathCartesians(model, dt, currentSample) {
+        const pts = ascentPathPositions(model, dt);
+        return [...pts, currentSample].map(p =>
+            Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.altM));
+    }
+
+    _createAscentRocketEntity(ev) {
+        return this.dataSource.entities.add({
+            id: ev.id,
+            billboard: {
+                image: this._rocketIcon,
+                width: 22, height: 22,
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY
+            },
+            label: {
+                text: `${ev.meta.name} · Rekonstruktion`,
+                font: "10px 'SF Mono', Consolas, monospace",
+                fillColor: Cesium.Color.fromCssColorString("#c084fc"),
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 2,
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                pixelOffset: new Cesium.Cartesian2(0, 16),
+                verticalOrigin: Cesium.VerticalOrigin.TOP,
+                scaleByDistance: new Cesium.NearFarScalar(1e5, 1.0, 5e6, 0.0)
+            }
+        });
+    }
+
+    _createAscentPathEntity(baseId) {
+        return this.dataSource.entities.add({
+            id: `${baseId}::path`,
+            polyline: {
+                positions: [],
+                width: 2,
+                material: new Cesium.PolylineDashMaterialProperty({
+                    color: Cesium.Color.fromCssColorString("#c084fc").withAlpha(0.75),
+                    dashLength: 8
+                })
+            }
+        });
+    }
+
+    _createSubEventEntity(baseId, sub) {
+        const color = sub.kind === "recovery"
+            ? (sub.success ? "#4ade80" : "#f87171")
+            : "#facc15";
+
+        this.dataSource.entities.add({
+            id: `${baseId}::${sub.id}`,
+            position: Cesium.Cartesian3.fromDegrees(sub.lon, sub.lat, 0),
+            point: {
+                pixelSize: 9,
+                color: Cesium.Color.fromCssColorString(color),
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 1.5,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY
+            },
+            label: {
+                text: sub.label,
+                font: "9px 'SF Mono', Consolas, monospace",
+                fillColor: Cesium.Color.fromCssColorString(color),
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 2,
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                pixelOffset: new Cesium.Cartesian2(0, -14),
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                scaleByDistance: new Cesium.NearFarScalar(1e5, 1.0, 5e6, 0.0)
+            }
+        });
+    }
+
+    _removeLaunchEntities(ev) {
+        if (!this._shownIds.has(ev.id)) return;
+        this.dataSource.entities.removeById(ev.id);
+        this.dataSource.entities.removeById(`${ev.id}::path`);
+        const model = this._ascentModels.get(ev.id);
+        if (model) for (const sub of model.subEvents) this.dataSource.entities.removeById(`${ev.id}::${sub.id}`);
+        this._shownIds.delete(ev.id);
     }
 
     _createEntity(ev) {
@@ -359,42 +509,17 @@ export class HistoryReplay {
             return;
         }
 
-        if (ev.type === "fire") {
-            const { frp = 0, confidence = 0.5 } = ev.meta;
-            const heat = Math.min(1, Math.sqrt(Math.max(0, frp) / 150) * 0.85 + confidence * 0.15);
-            const color = heat > 0.72 ? "#ff3b30" : heat > 0.42 ? "#ff8c00" : "#ffd400";
-            this.dataSource.entities.add({
-                id: ev.id,
-                position,
-                point: {
-                    pixelSize: 7,
-                    color: Cesium.Color.fromCssColorString(color).withAlpha(0.85),
-                    disableDepthTestDistance: Number.POSITIVE_INFINITY
-                }
-            });
-            return;
-        }
-
-        // launch
+        // fire
+        const { frp = 0, confidence = 0.5 } = ev.meta;
+        const heat = Math.min(1, Math.sqrt(Math.max(0, frp) / 150) * 0.85 + confidence * 0.15);
+        const color = heat > 0.72 ? "#ff3b30" : heat > 0.42 ? "#ff8c00" : "#ffd400";
         this.dataSource.entities.add({
             id: ev.id,
             position,
-            billboard: {
-                image: this._rocketIcon,
-                width: 22, height: 22,
-                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            point: {
+                pixelSize: 7,
+                color: Cesium.Color.fromCssColorString(color).withAlpha(0.85),
                 disableDepthTestDistance: Number.POSITIVE_INFINITY
-            },
-            label: {
-                text: ev.meta.name,
-                font: "10px 'SF Mono', Consolas, monospace",
-                fillColor: Cesium.Color.fromCssColorString("#c084fc"),
-                outlineColor: Cesium.Color.BLACK,
-                outlineWidth: 2,
-                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                pixelOffset: new Cesium.Cartesian2(0, 16),
-                verticalOrigin: Cesium.VerticalOrigin.TOP,
-                scaleByDistance: new Cesium.NearFarScalar(1e5, 1.0, 5e6, 0.0)
             }
         });
     }
