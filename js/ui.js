@@ -27,7 +27,7 @@ function escapeHtml(text) {
     }[c]));
 }
 
-const LINK_TYPE_ICONS = {
+export const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",

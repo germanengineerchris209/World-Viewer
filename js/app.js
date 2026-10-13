@@ -23,6 +23,8 @@ import { DrawTools } from "./drawTools.js";
 import { DrawToolsPanel } from "./drawToolsPanel.js";
 import { RouteTool } from "./routeTool.js";
 import { DeepSpacePanel } from "./deepSpace.js";
+import { ContactsRoster } from "./contactsRoster.js";
+import { ContactsPanel } from "./contactsPanel.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -115,6 +117,12 @@ async function main() {
     const anomalyAlerts = new AnomalyAlerts(layerManager);
 
     new WatchlistPanel(watchlist, worldViewer, ui, anomalyAlerts);
+
+    /* Kontakte-Liste: alle Objekte aktiver Layer im Radius um das
+       Kamerazentrum, nach Entfernung sortiert (WEB-91). Klick auf eine
+       Zeile nutzt die Auswahl-/Tracking-Logik von ui.js (ui.selectEntity). */
+    const contactsRoster = new ContactsRoster(worldViewer, layerManager);
+    const contactsPanel = new ContactsPanel(contactsRoster, ui);
 
     /* Zeichnen & Messen: Freihand/Grenzen/Punkte zeichnen, Distanzen messen;
        Route Fuß/Rad/Auto über den öffentlichen OSRM-Demo-Server (WEB-71) */
@@ -258,6 +266,10 @@ async function main() {
             anomalyAlerts.check();
             lastWatchlistCheck = now;
         }
+
+        // Kontakte-Liste: drosselt sich selbst, wenn sichtbar (siehe
+        // ContactsPanel.refresh) – kein voller Listen-Rebuild pro Frame.
+        contactsPanel.refresh(false, now);
 
         requestAnimationFrame(updateWorld);
     }
