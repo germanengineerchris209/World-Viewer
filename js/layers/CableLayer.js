@@ -1,17 +1,21 @@
 /**
  * CableLayer.js – Unterseekabel (statisch).
  *
- * Handkuratierte Auswahl bekannter Seekabel aus data/cables.json,
- * belegt über öffentlich zugängliche Quellen (Wikipedia je Kabel).
+ * Zwei additive Quellen:
+ *  - data/cables.json: Handkuratierte, bekannte Seekabel (Wikipedia je Kabel).
+ *  - data/cables-osm.json: Massendatensatz aus OpenStreetMap (ODbL), erzeugt
+ *    von scripts/build-infrastructure-mass.mjs (WEB-100).
  * Bewusst KEINE Übernahme der (CC BY-NC-SA-lizenzierten) TeleGeography-
- * Kartengeometrie: die Trassen hier sind vereinfachte Geodäten zwischen
- * den dokumentierten Landepunkten, keine echten Kabelrouten.
+ * Kartengeometrie – weder hier noch im Massendatensatz, siehe DATENQUELLEN.md.
+ * Bei hunderten Kabeln bündelt BaseLayer.enableClustering gleich dicht
+ * beieinanderliegende Landepunkte zu einem Symbol mit Anzahl.
  */
 
 import { BaseLayer } from "./BaseLayer.js";
 import { loadJSON, normalizeRecord, svgDataUri } from "../dataManager.js";
 
 const CABLE_COLOR = "#a78bfa";
+const MASS_SOURCE_URL = "./data/cables-osm.json";
 
 const LANDING_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
@@ -29,18 +33,26 @@ export class CableLayer extends BaseLayer {
             dataUrl: "./data/cables.json"
         });
         this._landingIcon = svgDataUri(LANDING_SVG);
+
+        // Hunderte Kabel+Landepunkte würden ohne Bündelung die Framerate
+        // einbrechen lassen – siehe WEB-100 Abnahme (fps-Messung).
+        this.enableClustering({ pixelRange: 55, minimumClusterSize: 10, color: CABLE_COLOR });
     }
 
     async load() {
-        const raw = await loadJSON(this.dataUrl);
-        this.objects = raw.map(r => this._normalize(r));
-        for (const obj of this.objects) {
+        this.objects = [];
+        const curated = await loadJSON(this.dataUrl);
+        const mass = await loadJSON(MASS_SOURCE_URL);
+        const records = [...curated, ...(mass.items ?? [])];
+        for (const raw of records) {
+            const obj = this._normalize(raw);
             const entity = this.createEntity(obj);
             if (entity) {
                 entity.worldViewerObject = obj;
                 this.entityById.set(obj.id, entity);
             }
             this._addLandingMarkers(obj);
+            this.objects.push(obj);
         }
         console.info(`[${this.name}] ${this.objects.length} Kabel geladen.`);
     }
@@ -76,9 +88,15 @@ export class CableLayer extends BaseLayer {
         });
     }
 
-    /** Kleine Marker an jedem Landepunkt, anklickbar wie das Kabel selbst. */
+    /**
+     * Kleine Marker an den beiden Kabelenden, anklickbar wie das Kabel
+     * selbst. Nur Anfang+Ende, nicht jeder Stützpunkt – die OSM-Trassen im
+     * Massendatensatz haben teils dutzende Zwischenknoten, die sonst als
+     * eigene Billboards gerendert würden (siehe WEB-100 Performance-Abnahme).
+     */
     _addLandingMarkers(obj) {
-        const points = obj.metadata.landingPoints ?? [];
+        const allPoints = obj.metadata.landingPoints ?? [];
+        const points = allPoints.length <= 2 ? allPoints : [allPoints[0], allPoints[allPoints.length - 1]];
         points.forEach((p, idx) => {
             const marker = this.dataSource.entities.add({
                 id: `${obj.id}-landing-${idx}`,
