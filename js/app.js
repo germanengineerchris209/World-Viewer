@@ -46,6 +46,7 @@ import { RadioLayer } from "./layers/RadioLayer.js";
 import { CableLayer } from "./layers/CableLayer.js";
 import { AQILayer } from "./layers/AQILayer.js";
 import { WeatherLayer } from "./layers/WeatherLayer.js";
+import { GoesCloudLayer } from "./layers/GoesCloudLayer.js";
 import { HeatmapLayer } from "./layers/HeatmapLayer.js";
 import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
 import { EventLayer } from "./layers/EventLayer.js";
@@ -79,6 +80,7 @@ async function main() {
     layerManager.register(new RadioLayer(worldViewer));
     layerManager.register(new AQILayer(worldViewer));
     layerManager.register(new WeatherLayer(worldViewer));
+    layerManager.register(new GoesCloudLayer(worldViewer));
     layerManager.register(new FuelReserveLayer(worldViewer));
     layerManager.register(new EventLayer(worldViewer));
     layerManager.register(new HeatmapLayer(worldViewer, layerManager));
