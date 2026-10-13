@@ -47,6 +47,7 @@ export class RouteTool {
         this.distanceKm = null;
         this.durationSec = null;
         this.errorMessage = null;
+        this.routeCoordinates = null; // [lon,lat][] der aktuellen Route, für den Flythrough (sceneDirector.js)
 
         this.onChange = null;       // (state) => void, von der UI gesetzt
 
@@ -110,6 +111,7 @@ export class RouteTool {
         this.distanceKm = null;
         this.durationSec = null;
         this.errorMessage = null;
+        this.routeCoordinates = null;
         this.worldViewer.inputSuppressed = false;
         this._requestToken++; // laufende Anfrage als veraltet markieren
         this._lineEntity = null;
@@ -217,6 +219,7 @@ export class RouteTool {
             this.distanceKm = route.distance / 1000;
             this.durationSec = route.duration;
             this.status = "ok";
+            this.routeCoordinates = route.geometry.coordinates;
             this._renderRouteLine(route.geometry.coordinates);
             this._emit();
 
