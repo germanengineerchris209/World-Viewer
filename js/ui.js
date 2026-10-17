@@ -705,6 +705,56 @@ export class UI {
         this._restoreLayerCategoryState();
         this._refreshLayerCategoryCounts();
         this.updateStats();
+        this._renderKeyBadges();
+    }
+
+    /**
+     * Schlüssel-Status (von KeyStatusPanel/api/keys) auf die Layer-Konsole
+     * anwenden: Layer, deren Dienst fehlt, bekommen ein 🔑-Badge mit
+     * Erklärung, warum sie leer bleiben (WEB-87). Läuft die App ohne
+     * Server, bleibt `statuses` leer und es erscheint einfach kein Badge.
+     * @param {Array} statuses  Einträge aus /api/keys (nur Status, keine Werte)
+     */
+    applyKeyBadges(statuses = []) {
+        this._keyStatusByLayer = {};
+        for (const svc of statuses) {
+            if (svc.status !== "missing") continue;
+            for (const layerId of svc.layers ?? []) {
+                this._keyStatusByLayer[layerId] = svc;
+            }
+        }
+        this._renderKeyBadges();
+    }
+
+    _renderKeyBadges() {
+        if (!this._keyStatusByLayer) return;
+        for (const layer of this.layerManager.getAll()) {
+            // Seit WEB-85 liegen die Layer in den Kategorie-Listen unter
+            // #layer-categories, nicht mehr in einer flachen #layer-list.
+            const toggle = this._el.layerCategories
+                ?.querySelector(`.layer-toggle input[data-layer="${layer.id}"]`)
+                ?.closest(".layer-toggle");
+            if (!toggle) continue;
+
+            const svc = this._keyStatusByLayer[layer.id];
+            let badge = toggle.querySelector(".layer-key-badge");
+            if (!svc) {
+                badge?.remove();
+                continue;
+            }
+            if (!badge) {
+                badge = document.createElement("span");
+                badge.className = "layer-key-badge";
+                badge.textContent = "🔑";
+                badge.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.keyPanel?.open();
+                });
+                toggle.appendChild(badge);
+            }
+            badge.title = svc.layerImpact ?? `Benötigt ${svc.name} – siehe „Schlüssel & Dienste"`;
+        }
     }
 
     /** Zähler und Statustexte der Layer-Schalter aktuell halten (z.B. bei Live-Daten). */

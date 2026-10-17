@@ -25,6 +25,8 @@ import { RouteTool } from "./routeTool.js";
 import { DeepSpacePanel } from "./deepSpace.js";
 import { PanelDock } from "./panelDock.js";
 
+import { KeyStatusPanel } from "./keyStatusPanel.js";
+
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
 import { SensorStyles } from "./sensorStyles.js";
@@ -159,6 +161,9 @@ async function main() {
         close: () => assistant.close()
     });
     panelDock.applySavedOrder();
+
+    // POWER-UP: Schlüssel & Dienste (Chip unten rechts, WEB-87)
+    ui.keyPanel = new KeyStatusPanel(ui);
 
     /* Sensor-Stile (CRT/NVG/FLIR/Noir/Schnee/HUD) über CSS-Filter */
     const sensorStyles = new SensorStyles(worldViewer);
