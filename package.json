@@ -11,7 +11,8 @@
   "scripts": {
     "start": "node server/server.mjs",
     "doctor": "node server/doctor.mjs",
-    "build:volcanoes": "node scripts/build-volcano-fallback.mjs"
+    "build:volcanoes": "node scripts/build-volcano-fallback.mjs",
+    "build:infrastructure-mass": "node scripts/build-infrastructure-mass.mjs"
   },
   "dependencies": {}
 }
