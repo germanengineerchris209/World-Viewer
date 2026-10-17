@@ -35,7 +35,8 @@ const LINK_TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
-    fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠"
+    fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠",
+    worldweather: "🌡️"
 };
 
 /** Formatierungs-Helfer */
@@ -222,6 +223,28 @@ const DETAIL_SCHEMAS = {
             if (m.measuredAt) rows.push(["Stand", new Date(m.measuredAt).toLocaleString("de-DE"), true]);
             rows.push(
                 ["Land", F.text(m.country)],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        }
+    },
+    worldweather: {
+        badge: "Weltwetter",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Temperatur", m.temperature != null ? `${Math.round(m.temperature)} °C` : "–"],
+                ["Einordnung", F.text(m.tempLabel)],
+                ["Lage", F.text(m.weatherLabel)],
+                ["Niederschlag (1h)", m.precipitation != null ? `${fmt.format(m.precipitation)} mm` : "–"],
+                ["Wind", m.windSpeed != null ? `${Math.round(m.windSpeed)} km/h` : "–"],
+                ["Windrichtung", m.windDirection != null ? `${Math.round(m.windDirection)}°` : "–"],
+                ["Höhe", F.meters(m.elevation)]
+            ];
+            if (m.measuredAt) rows.push(["Stand (UTC)", m.measuredAt.replace("T", " "), true]);
+            rows.push(
                 ["Breite", F.coord(o.position.latitude)],
                 ["Länge", F.coord(o.position.longitude)]
             );

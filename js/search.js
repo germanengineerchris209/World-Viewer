@@ -47,6 +47,7 @@ const CITIES = [
 const TYPE_ICONS = {
     aircraft: "✈️", ship: "🚢", satellite: "🛰️",
     camera: "📷", infrastructure: "🏗️", cable: "🔌", aqi: "🌫️", weather: "🌦️",
+    worldweather: "🌡️",
     city: "🏙️", coords: "📍"
 };
 
