@@ -42,6 +42,7 @@ const CATEGORY_BY_LAYER_ID = {
     cyclones: "weather",
     spaceWeather: "weather",
     goesClouds: "weather",
+    worldweather: "weather",
 
     heatmap: "tools",
 };
