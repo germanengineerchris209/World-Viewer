@@ -1601,6 +1601,14 @@ body.wv-dragging-panel, body.wv-dragging-panel * { user-select: none !important;
     white-space: nowrap;
 }
 
+.history-reconstruction-note {
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--text-dim);
+    padding: 4px 2px 0;
+}
+.history-reconstruction-note strong { color: var(--text); }
+
 .flight-status-hint {
     font-size: 10.5px;
     color: var(--text-dim);

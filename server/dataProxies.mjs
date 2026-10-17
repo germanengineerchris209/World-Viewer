@@ -233,12 +233,40 @@ function normalizeLaunches(json) {
             missionName: launch.mission?.name ?? "",
             missionDescription: launch.mission?.description ?? "",
             orbit: launch.mission?.orbit?.name ?? "",
+            orbitAbbrev: launch.mission?.orbit?.abbrev ?? "",
             imageUrl: launch.image?.image_url ?? launch.image ?? "",
             latitude: lat,
-            longitude: lon
+            longitude: lon,
+            stages: extractStages(launch.rocket)
         });
     }
     return { fetchedAt: Date.now(), count: launches.length, launches };
+}
+
+/**
+ * Stufen-/Bergungsdaten aus der "detailed"-Antwort – nur für das
+ * Launch-Replay (WEB-97), das daraus Stufentrennung/Bergung markiert.
+ * Landeorte sind echte Koordinaten aus Launch Library 2, keine Rekonstruktion.
+ */
+function extractStages(rocket) {
+    const raw = rocket?.launcher_stage;
+    if (!Array.isArray(raw)) return [];
+
+    return raw.map(stage => {
+        const landing = stage.landing ?? {};
+        const loc = landing.landing_location ?? {};
+        return {
+            type: stage.type ?? "",
+            landingAttempt: landing.attempt === true,
+            landingSuccess: landing.success === true,
+            landingTypeAbbrev: landing.type?.abbrev ?? "",
+            landingTypeName: landing.type?.name ?? "",
+            landingLocationName: loc.name ?? "",
+            landingLat: Number(loc.latitude),
+            landingLon: Number(loc.longitude),
+            downrangeKm: Number(landing.downrange_distance) || 0
+        };
+    });
 }
 
 /* ═══════════════════════════════════════════════════════════
