@@ -41,6 +41,7 @@ const CATEGORY_BY_LAYER_ID = {
     aqi: "weather",
     cyclones: "weather",
     spaceWeather: "weather",
+    goesClouds: "weather",
 
     heatmap: "tools",
 };
