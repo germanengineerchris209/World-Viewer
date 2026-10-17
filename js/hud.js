@@ -9,6 +9,12 @@
  * umschaltbar (siehe app.js), zeichnet aber zusätzlich auf einem
  * eigenen Canvas über dem Cesium-Viewport statt nur einen CSS-Filter
  * zu setzen.
+ *
+ * Zwei unabhängig schaltbare Ebenen auf demselben Canvas, Parität zur
+ * Tastenbelegung von "God's Eye View" (WEB-88):
+ *   - `hudActive`:       Eckmarken + Statuszeile (Taste H)
+ *   - `detectionActive`: Ziel-Boxen + Telemetrie je Objekt (Taste D)
+ * Der Canvas ist sichtbar, sobald mindestens eine der beiden aktiv ist.
  */
 
 const MAX_TRACKS = 80;             // Deckelung gegen Overdraw bei vielen Objekten
@@ -26,7 +32,8 @@ export class TacticalHUD {
     constructor(worldViewer, layerManager) {
         this.worldViewer = worldViewer;
         this.layerManager = layerManager;
-        this.active = false;
+        this.hudActive = false;
+        this.detectionActive = false;
 
         this._canvas = document.createElement("canvas");
         this._canvas.id = "hud-overlay-canvas";
@@ -49,11 +56,30 @@ export class TacticalHUD {
         this._ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    /** Wird von sensorStyles.js beim Wechsel des Sensor-Stils gerufen. */
+    /** Beide Ebenen zusammen setzen, z.B. beim Wechsel des Sensor-Stils (app.js). */
     setActive(active) {
-        this.active = active;
-        this._canvas.classList.toggle("visible", active);
-        if (!active) this._ctx.clearRect(0, 0, this._width, this._height);
+        this.setHudActive(active);
+        this.setDetectionActive(active);
+    }
+
+    /** Eckmarken + Statuszeile ein/aus (Taste H). */
+    setHudActive(active) {
+        this.hudActive = active;
+        this._applyVisibility();
+    }
+
+    /** Ziel-Boxen + Telemetrie je Objekt ein/aus (Taste D). */
+    setDetectionActive(active) {
+        this.detectionActive = active;
+        this._applyVisibility();
+    }
+
+    get active() { return this.hudActive || this.detectionActive; }
+
+    _applyVisibility() {
+        const visible = this.active;
+        this._canvas.classList.toggle("visible", visible);
+        if (!visible) this._ctx.clearRect(0, 0, this._width, this._height);
     }
 
     /** Pro Frame aus der zentralen Update-Schleife (app.js). Kein Aufwand, wenn inaktiv. */
@@ -69,17 +95,22 @@ export class TacticalHUD {
         ctx.textBaseline = "top";
 
         const tracks = this._collectTracks(selectedObjectId);
-        // Bei vielen Zielen auf dem Bildschirm (z.B. Weltansicht) nur die
-        // ausgewählte/nächste Handvoll mit voller Telemetrie beschriften –
-        // sonst wird die Anzeige unlesbar.
-        const fullDetail = tracks.length <= 20;
-        for (const track of tracks) {
-            const selected = track.obj.id === selectedObjectId;
-            this._drawTrack(track, selected, fullDetail || selected);
+
+        if (this.detectionActive) {
+            // Bei vielen Zielen auf dem Bildschirm (z.B. Weltansicht) nur die
+            // ausgewählte/nächste Handvoll mit voller Telemetrie beschriften –
+            // sonst wird die Anzeige unlesbar.
+            const fullDetail = tracks.length <= 20;
+            for (const track of tracks) {
+                const selected = track.obj.id === selectedObjectId;
+                this._drawTrack(track, selected, fullDetail || selected);
+            }
         }
 
-        this._drawFrameCorners();
-        this._drawStatusLine(tracks.length);
+        if (this.hudActive) {
+            this._drawFrameCorners();
+            this._drawStatusLine(tracks.length);
+        }
     }
 
     /**
