@@ -26,6 +26,8 @@ import { DeepSpacePanel } from "./deepSpace.js";
 import { PanelDock } from "./panelDock.js";
 
 import { KeyStatusPanel } from "./keyStatusPanel.js";
+import { SceneDirector } from "./sceneDirector.js";
+import { SceneDirectorPanel } from "./sceneDirectorPanel.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -126,6 +128,11 @@ async function main() {
     const drawTools = new DrawTools(worldViewer);
     const routeTool = new RouteTool(worldViewer);
     new DrawToolsPanel(drawTools, routeTool, ui);
+
+    /* Szenen-Regisseur: Kamerafahrten aufnehmen/abspielen, Flythrough
+       entlang der oben geplanten Route als Spezialfall (WEB-92) */
+    const sceneDirector = new SceneDirector(worldViewer);
+    new SceneDirectorPanel(sceneDirector, routeTool);
 
     /* Cockpit-Ansicht: mit der Kamera im Flugzeug mitfliegen */
     const cockpit = new CockpitView(worldViewer, ui);

@@ -280,6 +280,38 @@
             </p>
         </section>
 
+        <!-- Szenen-Regisseur: Kamerafahrten aufzeichnen/abspielen (WEB-92) -->
+        <section class="sidebar-section">
+            <h2 class="section-title">Szenen-Regisseur</h2>
+            <p class="draw-hint">
+                Station aufnehmen = aktuelle Kameraposition merken. Mind. zwei Stationen
+                für eine Fahrt. Esc bricht das Abspielen ab.
+            </p>
+            <div id="scene-list"></div>
+            <div class="button-row" style="margin-top:8px">
+                <button id="scene-add" class="tool-btn" title="Aktuelle Kameraposition als Station merken">
+                    📍 Station aufnehmen
+                </button>
+            </div>
+            <div class="button-row">
+                <button id="scene-play" class="tool-btn" title="Fahrt abspielen (Esc bricht ab)" disabled>
+                    ▶ Fahrt abspielen
+                </button>
+                <button id="scene-clear" class="tool-btn" title="Alle Stationen löschen" disabled>🗑️ Leeren</button>
+            </div>
+            <div class="button-row">
+                <button id="scene-save" class="tool-btn" title="Fahrt als Link kopieren" disabled>💾 Speichern</button>
+                <button id="scene-route-fly" class="tool-btn" title="Entlang der geplanten Route fliegen" disabled>
+                    🛣️ Route abfliegen
+                </button>
+            </div>
+            <div class="scene-load-row">
+                <input type="text" id="scene-load-input" placeholder="Fahrt-Link einfügen …">
+                <button id="scene-load" class="tool-btn" title="Fahrt aus Link laden">📂 Laden</button>
+            </div>
+            <p id="scene-hint" class="draw-hint hidden"></p>
+        </section>
+
         <!-- Ansicht -->
         <section class="sidebar-section">
             <h2 class="section-title">Ansicht</h2>

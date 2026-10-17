@@ -410,6 +410,43 @@ body { display: flex; }
     padding: 4px 2px 0; margin: 0;
 }
 
+/* ── Szenen-Regisseur (WEB-92) ── */
+
+.scene-station-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px; border-radius: 8px; font-size: 12px;
+}
+.scene-station-row:hover { background: var(--bg-hover); }
+.scene-station-index {
+    flex-shrink: 0; width: 16px; text-align: center;
+    font-family: var(--mono); color: var(--text-dim); font-size: 11px;
+}
+.scene-station-name {
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer; font-family: var(--mono); font-size: 11px;
+}
+.scene-station-name:hover { color: var(--accent); }
+.scene-hold-input {
+    width: 48px; background: var(--glass-bg-hover); color: var(--text);
+    border: 1px solid var(--glass-border); border-radius: 6px;
+    padding: 2px 4px; font-size: 11px; font-family: var(--mono);
+}
+.scene-move-up, .scene-move-down, .scene-remove {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 11px; padding: 0 2px; flex-shrink: 0;
+}
+.scene-move-up:hover, .scene-move-down:hover { color: var(--accent); }
+.scene-remove:hover { color: var(--red); }
+
+.scene-load-row {
+    display: flex; gap: 6px; margin-top: 8px;
+}
+.scene-load-row input {
+    flex: 1; background: var(--glass-bg-hover); color: var(--text);
+    border: 1px solid var(--glass-border); border-radius: 8px;
+    padding: 0 8px; font-size: 11px; font-family: var(--mono);
+}
+
 /* ── Statistik ── */
 
 .stat-row {
@@ -1777,6 +1814,17 @@ body.cockpit-mode #sidebar,
 body.cockpit-mode #timeline-bar,
 body.cockpit-mode #history-bar,
 body.cockpit-mode #ai-button { display: none; }
+
+/* ══════════════ Szenen-Regisseur: UI-Chrom während der Fahrt ausblenden ══════════════
+   Gleiche Idee wie cockpit-mode oben – eine clip-taugliche Ansicht ohne Sidebar/
+   Leisten, damit eine aufgenommene Kamerafahrt direkt als Video brauchbar ist. */
+body.scene-director-playing #sidebar,
+body.scene-director-playing #timeline-bar,
+body.scene-director-playing #history-bar,
+body.scene-director-playing #ai-button,
+body.scene-director-playing #detail-panel,
+body.scene-director-playing #graph-panel,
+body.scene-director-playing #ai-panel { display: none; }
 
 #cockpit-hud {
     position: absolute;
