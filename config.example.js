@@ -345,6 +345,19 @@ window.WORLD_VIEWER_CONFIG = {
     },
 
 
+    /* ═══════════ Kennzeichenleser (ALPR, WEB-99) ═══════════ */
+
+    alpr: {
+        // Standorte aus OSM/DeFlock, nur sichtbarer Ausschnitt, über den
+        // Server zwischengespeichert (/api/alpr → Overpass API). Zeigt
+        // AUSSCHLIESSLICH Standorte/Gerätetags, siehe server/dataProxies.mjs.
+        refreshSeconds: 10,
+        minRequestGapSeconds: 4,
+        maxSpanDegrees: 2.5,   // größerer Kartenausschnitt → kein Abruf
+        maxHeightKm: 250       // weiter herausgezoomt → kein Abruf
+    },
+
+
     /* ═══════════ Objektbilder ═══════════ */
 
     images: {

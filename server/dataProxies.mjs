@@ -1678,6 +1678,143 @@ function decodeEntities(text) {
         .replace(/&amp;/g, "&");
 }
 
+/* ═══════════════════════════════════════════════════════════
+   9. ALPR-Kamerastandorte – OpenStreetMap (DeFlock-Projekt, WEB-99)
+   ═══════════════════════════════════════════════════════════
+
+   Kennzeichenleser (ALPR/ANPR) werden von der DeFlock-Community als
+   gewöhnliche OSM-Knoten/-Wege kartiert: man_made=surveillance mit
+   surveillance:type=ALPR/ANPR, dazu optionale Gerätedaten (Hersteller,
+   Modell, Blickrichtung). An diesen Tags stehen in OSM grundsätzlich
+   KEINE Kennzeichen-, Fahrzeug- oder Personendaten – und selbst wenn,
+   würden wir sie nicht durchreichen: mapAlprElement() unten reicht
+   ausschließlich eine feste Tag-Whitelist weiter.
+
+   Abgefragt wird per Overpass API immer nur der sichtbare Kartenausschnitt
+   (bbox-Parameter), serverseitig zwischengespeichert (ALPR_TTL_MS) – das
+   schont den öffentlichen Overpass-Endpunkt. Die Kartierung ist reines
+   Crowd-Sourcing und bleibt unvollständig; das macht auch DeFlock selbst
+   deutlich, und der Hinweis dazu steht auch im UI (siehe ALPRLayer.js).
+   ═══════════════════════════════════════════════════════════ */
+
+const ALPR_TTL_MS = 60 * 60 * 1000;     // 1 Stunde – Standorte ändern sich selten
+const ALPR_MAX_SPAN_DEG = 3;            // größere Ausschnitte werden abgelehnt
+const ALPR_ROUND_DEG = 0.25;            // Cache-Schlüssel grob runden → mehr Treffer
+const OVERPASS_URL = process.env.OVERPASS_URL || "https://overpass-api.de/api/interpreter";
+
+export async function handleAlprCameras(res, searchParams) {
+    const south = Number(searchParams.get("south"));
+    const west = Number(searchParams.get("west"));
+    const north = Number(searchParams.get("north"));
+    const east = Number(searchParams.get("east"));
+
+    if (![south, west, north, east].every(Number.isFinite)) {
+        return sendJson(res, 400, { error: "bbox fehlt (south, west, north, east)" });
+    }
+    if (north <= south || east <= west) {
+        return sendJson(res, 400, { error: "Ungültige bbox" });
+    }
+    if (north - south > ALPR_MAX_SPAN_DEG || east - west > ALPR_MAX_SPAN_DEG) {
+        return sendJson(res, 400, { error: "Ausschnitt zu groß – bitte näher heranzoomen" });
+    }
+
+    // Nach außen runden, damit benachbarte Kartenschwenks denselben
+    // Cache-Eintrag treffen statt Overpass bei jedem Pixel neu zu fragen
+    const bbox = {
+        south: Math.floor(south / ALPR_ROUND_DEG) * ALPR_ROUND_DEG,
+        west: Math.floor(west / ALPR_ROUND_DEG) * ALPR_ROUND_DEG,
+        north: Math.ceil(north / ALPR_ROUND_DEG) * ALPR_ROUND_DEG,
+        east: Math.ceil(east / ALPR_ROUND_DEG) * ALPR_ROUND_DEG
+    };
+    const cacheKey = `alpr:${bbox.south.toFixed(2)},${bbox.west.toFixed(2)}`
+        + `,${bbox.north.toFixed(2)},${bbox.east.toFixed(2)}`;
+
+    try {
+        const result = await cachedFetch(cacheKey, ALPR_TTL_MS, async () => {
+            const cameras = await loadAlprCameras(bbox);
+            return {
+                data: JSON.stringify({
+                    fetchedAt: Date.now(),
+                    count: cameras.length,
+                    incomplete: true,
+                    attribution: "© OpenStreetMap-Mitwirkende (ODbL) · DeFlock-Projekt – "
+                        + "Community-Kartierung, garantiert unvollständig",
+                    bbox,
+                    cameras
+                }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `ALPR-Standorte nicht abrufbar: ${err.message}` });
+    }
+}
+
+/** Fragt Overpass nach ALPR/ANPR-Kameras in der bbox ab (nur Standort + Gerätetags). */
+async function loadAlprCameras(bbox) {
+    const bboxStr = `${bbox.south},${bbox.west},${bbox.north},${bbox.east}`;
+    // [timeout:25] ist das Overpass-interne Zeitbudget für die Abfrage selbst;
+    // unser HTTP-Timeout liegt bewusst etwas darüber, damit der öffentliche
+    // (oft ausgelastete) Server noch regulär mit "at capacity"/502 antworten
+    // kann statt dass wir ihm vorher die Verbindung wegreißen.
+    const query = `[out:json][timeout:25];
+(
+  node["man_made"="surveillance"]["surveillance:type"~"^(ALPR|ANPR)$"](${bboxStr});
+  way["man_made"="surveillance"]["surveillance:type"~"^(ALPR|ANPR)$"](${bboxStr});
+);
+out center tags;`;
+
+    const upstream = await fetchWithTimeout(OVERPASS_URL, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded", Accept: "application/json" },
+        body: `data=${encodeURIComponent(query)}`
+    }, 30_000);
+
+    if (!upstream.ok) throw new Error(`Overpass antwortete mit ${upstream.status}`);
+    const json = await upstream.json();
+
+    const cameras = [];
+    for (const el of json?.elements ?? []) {
+        const lat = el.lat ?? el.center?.lat;
+        const lon = el.lon ?? el.center?.lon;
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+        cameras.push(mapAlprElement(el, lat, lon));
+    }
+    return cameras;
+}
+
+/**
+ * Whitelist der durchgereichten Felder – ausschließlich Standort- und
+ * Gerätedaten (keine Kennzeichen-, Fahrzeug- oder Personendaten; solche
+ * Tags gibt es an diesen OSM-Knoten ohnehin nicht, werden hier aber auch
+ * bei Vorhandensein bewusst nicht übernommen).
+ */
+function mapAlprElement(el, lat, lon) {
+    const tags = el.tags ?? {};
+    return {
+        id: `osm-${el.type}-${el.id}`,
+        osmType: el.type,
+        osmId: el.id,
+        latitude: lat,
+        longitude: lon,
+        surveillanceType: tags["surveillance:type"] ?? null,
+        zone: tags["surveillance:zone"] ?? null,
+        manufacturer: tags.manufacturer ?? null,
+        model: tags.model ?? null,
+        direction: Number.isFinite(Number(tags.direction)) ? Number(tags.direction) : null,
+        mount: tags["camera:mount"] ?? null,
+        operator: tags.operator ?? null,
+        startDate: tags.start_date ?? null
+    };
+}
+
 /* ═══════════ Hilfsfunktion ═══════════ */
 
 function sendJson(res, status, data) {

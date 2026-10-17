@@ -22,6 +22,8 @@
  *      /api/asteroids         Erdnahe Asteroiden der nächsten 7 Tage (NASA NeoWs)
  *      /api/comets            Kometen mit Bahnelementen (NASA JPL SBDB)
  *      /api/deepspace         Aktive Raumsonden (NASA JPL Horizons)
+ *      /api/alpr              ALPR-Kamerastandorte (OSM/DeFlock via Overpass,
+ *                              nur sichtbarer Ausschnitt, nur Standortdaten)
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -64,7 +66,7 @@ import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
     handleFires, handleFiresHistory, handleCctvCatalog, handleAllskyCatalog, handleEvents,
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
-    handleComets, TLE_GROUPS
+    handleComets, handleAlprCameras, TLE_GROUPS
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
@@ -541,6 +543,10 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleDeepSpace(res);
 
+            case "/api/alpr":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleAlprCameras(res, searchParams);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
@@ -552,6 +558,7 @@ export function createServer() {
                     asteroids: true,
                     comets: true,
                     deepspace: true,
+                    alpr: true,
                     storms: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,

@@ -53,6 +53,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
 | 🌌 Allsky-Kameras | 20 bekannte Sternwarten + öffentliche Allsky-Karte | Ganzhimmelkameras weltweit, rund 380 Standorte |
+| 🪪 Kennzeichenleser (ALPR) | OpenStreetMap / DeFlock | nur sichtbarer Ausschnitt, nur Standortdaten, Community-Kartierung unvollständig |
 | Objektfotos | Wikipedia | |
 | Ortsnamen | OpenStreetMap/Nominatim | |
 | 🌫️ Luftqualität (AQI) | Open-Meteo Air Quality API | Großstädte, handkuratiert |
@@ -421,6 +422,27 @@ Die gemeldeten Kameras werden **direkt** geladen, nicht über den Kamera-Proxy:
 Dessen Erlaubnisliste entsteht nur aus `data/cameras.json` und
 `data/allsky-cameras.json`, damit über den Fremdkatalog niemand neue
 Ziel-Hosts unterschieben kann.
+
+### 🪪 Kennzeichenleser (ALPR, WEB-99)
+
+**OpenStreetMap / DeFlock-Projekt** (`deflock.me`) – Community-Kartierung von
+Kennzeichenlesern (ALPR/ANPR) als gewöhnliche OSM-Knoten/-Wege
+(`man_made=surveillance` + `surveillance:type=ALPR` bzw. `ANPR`). Abgefragt
+wird per Overpass API (`overpass-api.de/api/interpreter`) über `/api/alpr`,
+immer nur der **sichtbare Kartenausschnitt**, und für eine Stunde
+zwischengespeichert.
+
+> **Datenschutzgrenze:** Dieser Layer zeigt ausschließlich Standorte und
+> Gerätetags (Hersteller, Modell, Blickrichtung, Betreiber). OSM führt an
+> diesen Knoten grundsätzlich keine Kennzeichen-, Fahrzeug- oder
+> Personendaten – der Server reicht zusätzlich nur eine feste Tag-Whitelist
+> durch (siehe `mapAlprElement()` in `server/dataProxies.mjs`).
+
+Die Kartierung ist reines Crowd-Sourcing und **garantiert unvollständig** –
+DeFlock weist selbst darauf hin, und die App zeigt denselben Hinweis
+dauerhaft unter dem Layer-Schalter an, nicht erst bei leerem Ergebnis.
+
+Lizenz: [ODbL](https://opendatacommons.org/licenses/odbl/) (OpenStreetMap).
 
 ### 📻 Radiosender
 
