@@ -17,6 +17,10 @@ import { playCameraStream, playRadioStream, stopActiveStream } from "./streamPla
 import { findLinkedObjects } from "./linkAnalysis.js";
 import { buildDossierText, dossierFilename, downloadTextFile } from "./dossier.js";
 import { GraphView } from "./graphView.js";
+import { LAYER_CATEGORIES, categoryForLayer } from "./layerCategories.js";
+
+/** localStorage-Key für den Auf-/Zu-Zustand der Layer-Kategorien (WEB-85) */
+const LAYER_CATEGORY_STATE_KEY = "wv-layer-category-open";
 
 const fmt = new Intl.NumberFormat("de-DE");
 
@@ -611,7 +615,7 @@ export class UI {
             mediaSlot: document.getElementById("detail-media-slot"),
             mediaCredit: document.getElementById("detail-media-credit"),
             description: document.getElementById("detail-description"),
-            layerList: document.getElementById("layer-list"),
+            layerCategories: document.getElementById("layer-categories"),
             basemapList: document.getElementById("basemap-list"),
             coords: document.getElementById("coords-display"),
             statTotal: document.getElementById("stat-total"),
@@ -652,10 +656,20 @@ export class UI {
 
     /* ─────────── Layer-Schalter ─────────── */
 
-    /** Erzeugt die Layer-Schalter in der Sidebar (nach dem Laden aufrufen). */
+    /** Erzeugt die Layer-Schalter gruppiert nach Kategorie (nach dem Laden aufrufen). */
     buildLayerToggles() {
-        this._el.layerList.innerHTML = "";
+        const root = this._el.layerCategories;
+        if (!root) return;
+
+        for (const cat of LAYER_CATEGORIES) {
+            const list = root.querySelector(`[data-layer-list="${cat.id}"]`);
+            if (list) list.innerHTML = "";
+        }
+
         for (const layer of this.layerManager.getAll()) {
+            const list = root.querySelector(`[data-layer-list="${categoryForLayer(layer.id)}"]`);
+            if (!list) continue; // Kategorie fehlt in der Konsole – Layer überspringen statt zu werfen
+
             const item = document.createElement("div");
             item.className = "layer-item";
 
@@ -671,6 +685,7 @@ export class UI {
             label.querySelector("input").addEventListener("change", (e) => {
                 e.target.checked ? layer.show() : layer.hide();
                 this.updateStats();
+                this._refreshLayerCategoryCounts();
             });
             item.appendChild(label);
 
@@ -684,15 +699,18 @@ export class UI {
                 item.appendChild(status);
             }
 
-            this._el.layerList.appendChild(item);
+            list.appendChild(item);
         }
+
+        this._restoreLayerCategoryState();
+        this._refreshLayerCategoryCounts();
         this.updateStats();
     }
 
     /** Zähler und Statustexte der Layer-Schalter aktuell halten (z.B. bei Live-Daten). */
     refreshLayerCounts() {
         for (const layer of this.layerManager.getAll()) {
-            const item = this._el.layerList
+            const item = this._el.layerCategories
                 ?.querySelector(`.layer-toggle input[data-layer="${layer.id}"]`)
                 ?.closest(".layer-item");
             if (!item) continue;
@@ -712,6 +730,55 @@ export class UI {
             } else if (status) {
                 status.remove();
             }
+        }
+        this._refreshLayerCategoryCounts();
+    }
+
+    /** Pro Kategorie anzeigen, wie viele ihrer Layer aktuell aktiv sind (WEB-85). */
+    _refreshLayerCategoryCounts() {
+        const root = this._el.layerCategories;
+        if (!root) return;
+        for (const cat of LAYER_CATEGORIES) {
+            const badge = root.querySelector(`[data-cat-count="${cat.id}"]`);
+            if (!badge) continue;
+            const inputs = root.querySelectorAll(`[data-layer-list="${cat.id}"] input[data-layer]`);
+            const active = Array.from(inputs).filter((i) => i.checked).length;
+            badge.textContent = `${active}/${inputs.length}`;
+        }
+    }
+
+    /** Auf-/Zu-Zustand der Kategorien aus localStorage übernehmen (WEB-85). */
+    _restoreLayerCategoryState() {
+        const root = this._el.layerCategories;
+        if (!root) return;
+
+        let saved = {};
+        try {
+            saved = JSON.parse(localStorage.getItem(LAYER_CATEGORY_STATE_KEY)) ?? {};
+        } catch {
+            // korrupte/fehlende Daten – Kategorien bleiben beim Default (offen)
+        }
+
+        for (const details of root.querySelectorAll("details.layer-category")) {
+            const id = details.dataset.category;
+            if (id in saved) details.open = !!saved[id];
+
+            if (details.dataset.wvBound) continue;
+            details.dataset.wvBound = "1";
+            details.addEventListener("toggle", () => {
+                let state = {};
+                try {
+                    state = JSON.parse(localStorage.getItem(LAYER_CATEGORY_STATE_KEY)) ?? {};
+                } catch {
+                    state = {};
+                }
+                state[id] = details.open;
+                try {
+                    localStorage.setItem(LAYER_CATEGORY_STATE_KEY, JSON.stringify(state));
+                } catch {
+                    // z.B. privater Modus ohne Storage-Zugriff – Zustand gilt nur für die Sitzung
+                }
+            });
         }
     }
 
@@ -810,7 +877,7 @@ export class UI {
         }
 
         // Zähler im Layer-Schalter mitziehen
-        const counter = this._el.layerList
+        const counter = this._el.layerCategories
             ?.querySelector('.layer-toggle input[data-layer="aircraft"]')
             ?.closest(".layer-toggle")?.querySelector(".layer-count");
         if (counter) counter.textContent = status.count;

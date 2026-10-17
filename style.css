@@ -232,6 +232,37 @@ body { display: flex; }
     font-style: italic;
 }
 
+/* ── Layer-Konsole: Kategorien (WEB-85) ── */
+
+#layer-categories { display: flex; flex-direction: column; gap: 8px; }
+
+.layer-category { border-radius: var(--radius); overflow: visible; }
+
+.layer-category-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: var(--radius);
+    cursor: pointer; user-select: none; list-style: none;
+}
+.layer-category-header::-webkit-details-marker { display: none; }
+
+.cat-chevron {
+    font-size: 10px; color: var(--text-dim); flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+.layer-category[open] > .layer-category-header .cat-chevron { transform: rotate(90deg); }
+
+.cat-icon { font-size: 14px; width: 18px; text-align: center; }
+.cat-label {
+    flex: 1; font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text);
+}
+.cat-count {
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    background: rgba(255,255,255,0.06); border-radius: 10px; padding: 1px 8px;
+}
+
+.layer-category-body { padding: 8px 2px 2px; }
+
 /* ── Buttons ── */
 
 .button-row { display: flex; gap: 8px; margin-bottom: 8px; }
