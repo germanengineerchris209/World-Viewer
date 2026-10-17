@@ -325,63 +325,6 @@
             <p>Initialisiere ARGUS …</p>
         </div>
 
-        <!-- ────────── Detailpanel (rechts) ────────── -->
-        <aside id="detail-panel" class="hidden">
-            <header id="detail-header">
-                <span id="detail-type-badge">OBJECT</span>
-                <button id="detail-close" title="Schließen">✕</button>
-            </header>
-
-            <h2 id="detail-title">–</h2>
-
-            <!-- Bild bzw. Livestream des Objekts -->
-            <figure id="detail-media">
-                <div id="detail-media-slot"></div>
-                <figcaption id="detail-media-credit"></figcaption>
-            </figure>
-
-            <!-- Kurzbeschreibung (z.B. aus Wikipedia) -->
-            <p id="detail-description" class="hidden"></p>
-
-            <div id="detail-content"></div>
-
-            <!-- Verknüpfte Objekte (Link-Analyse) -->
-            <div id="detail-links" class="hidden">
-                <div class="detail-links-head">
-                    <h3 class="detail-links-title">🔗 Verknüpfungen</h3>
-                    <button id="detail-graph" class="tool-btn" title="Verknüpfungen als Netzwerk-Graph anzeigen">🕸️ Graph</button>
-                </div>
-                <ul id="detail-links-list"></ul>
-            </div>
-
-            <div class="button-row detail-actions">
-                <button id="detail-follow" class="tool-btn">🎯 Verfolgen</button>
-                <button id="detail-fly" class="tool-btn">✈️ Hinfliegen</button>
-            </div>
-            <div class="button-row">
-                <button id="detail-dossier" class="tool-btn" title="Objekt-Dossier als Textdatei herunterladen">📄 Dossier</button>
-            </div>
-            <div class="button-row hidden" id="detail-cockpit-row">
-                <button id="detail-cockpit" class="tool-btn">🛩️ Mitfliegen (Cockpit)</button>
-            </div>
-            <div class="button-row">
-                <button id="detail-ask" class="tool-btn ai-accent">✨ Claude dazu fragen</button>
-            </div>
-        </aside>
-
-        <!-- ────────── Netzwerk-Graph (Link-Analyse als Node-Graph) ────────── -->
-        <div id="graph-panel" class="hidden">
-            <header id="graph-header">
-                <div>
-                    <h2>🕸️ Netzwerk-Graph</h2>
-                    <span id="graph-subtitle">–</span>
-                </div>
-                <button id="graph-close" title="Schließen">✕</button>
-            </header>
-            <div id="graph-canvas"></div>
-            <p id="graph-hint">Klick auf einen Knoten: Objekt auswählen &amp; Graph neu zentrieren · Ziehen: verschieben · Scrollen: zoomen</p>
-        </div>
-
         <!-- ────────── Cockpit-Anzeige ────────── -->
         <div id="cockpit-hud" class="hidden">
             <div id="cockpit-hud-main">
@@ -403,67 +346,131 @@
             <span class="ai-button-label">Claude fragen</span>
         </button>
 
-        <!-- ────────── KI-Assistent: Chatfenster ────────── -->
-        <section id="ai-panel" class="hidden">
-            <header id="ai-header">
-                <div class="ai-header-main">
-                    <span class="ai-avatar">✨</span>
+        <!-- ────────── Rechte Panel-Rail (WEB-86): Detail-, Graph- und KI-Panel
+             stapeln sich hier andock-/verschieb-/skalierbar statt sich zu
+             überdecken. Unterhalb 821px bleibt pro Panel das alte
+             Vollbild-Verhalten (siehe style.css, panelDock.js). ────────── -->
+        <div id="panel-rail-right" class="panel-rail panel-rail-right">
+
+            <!-- ────────── Detailpanel ────────── -->
+            <aside id="detail-panel" class="hidden dock-panel">
+                <header id="detail-header">
+                    <span id="detail-type-badge">OBJECT</span>
+                    <button id="detail-close" title="Schließen">✕</button>
+                </header>
+
+                <h2 id="detail-title">–</h2>
+
+                <!-- Bild bzw. Livestream des Objekts -->
+                <figure id="detail-media">
+                    <div id="detail-media-slot"></div>
+                    <figcaption id="detail-media-credit"></figcaption>
+                </figure>
+
+                <!-- Kurzbeschreibung (z.B. aus Wikipedia) -->
+                <p id="detail-description" class="hidden"></p>
+
+                <div id="detail-content"></div>
+
+                <!-- Verknüpfte Objekte (Link-Analyse) -->
+                <div id="detail-links" class="hidden">
+                    <div class="detail-links-head">
+                        <h3 class="detail-links-title">🔗 Verknüpfungen</h3>
+                        <button id="detail-graph" class="tool-btn" title="Verknüpfungen als Netzwerk-Graph anzeigen">🕸️ Graph</button>
+                    </div>
+                    <ul id="detail-links-list"></ul>
+                </div>
+
+                <div class="button-row detail-actions">
+                    <button id="detail-follow" class="tool-btn">🎯 Verfolgen</button>
+                    <button id="detail-fly" class="tool-btn">✈️ Hinfliegen</button>
+                </div>
+                <div class="button-row">
+                    <button id="detail-dossier" class="tool-btn" title="Objekt-Dossier als Textdatei herunterladen">📄 Dossier</button>
+                </div>
+                <div class="button-row hidden" id="detail-cockpit-row">
+                    <button id="detail-cockpit" class="tool-btn">🛩️ Mitfliegen (Cockpit)</button>
+                </div>
+                <div class="button-row">
+                    <button id="detail-ask" class="tool-btn ai-accent">✨ Claude dazu fragen</button>
+                </div>
+            </aside>
+
+            <!-- ────────── Netzwerk-Graph (Link-Analyse als Node-Graph) ────────── -->
+            <div id="graph-panel" class="hidden dock-panel">
+                <header id="graph-header">
                     <div>
-                        <h3>Claude</h3>
-                        <span id="ai-place">📍 –</span>
+                        <h2>🕸️ Netzwerk-Graph</h2>
+                        <span id="graph-subtitle">–</span>
+                    </div>
+                    <button id="graph-close" title="Schließen">✕</button>
+                </header>
+                <div id="graph-canvas"></div>
+                <p id="graph-hint">Klick auf einen Knoten: Objekt auswählen &amp; Graph neu zentrieren · Ziehen: verschieben · Scrollen: zoomen</p>
+            </div>
+
+            <!-- ────────── KI-Assistent: Chatfenster ────────── -->
+            <section id="ai-panel" class="hidden dock-panel">
+                <header id="ai-header">
+                    <div class="ai-header-main">
+                        <span class="ai-avatar">✨</span>
+                        <div>
+                            <h3>Claude</h3>
+                            <span id="ai-place">📍 –</span>
+                        </div>
+                    </div>
+                    <div class="ai-header-actions">
+                        <button id="ai-speak-toggle"
+                                title="Antworten vorlesen">🔈</button>
+                        <button id="ai-handsfree-toggle"
+                                title="Freisprechen: nach der Antwort automatisch weiter zuhören">🔁</button>
+                        <button id="ai-clear" title="Chat leeren">🗑️</button>
+                        <button id="ai-close" title="Schließen">✕</button>
+                    </div>
+                </header>
+
+                <!-- Einrichtung, falls noch kein Key/Proxy verfügbar ist -->
+                <div id="ai-setup" class="hidden">
+                    <p><strong>KI-Assistent einrichten</strong></p>
+                    <p class="ai-setup-mode"></p>
+                    <p class="ai-setup-hint">
+                        Trage hier deinen Anthropic-API-Key ein, um Claude direkt aus dem
+                        Browser zu nutzen. Der Key wird nur lokal in diesem Browser
+                        gespeichert. Für den Einsatz im Internet stattdessen den
+                        mitgelieferten Proxy verwenden (siehe README).
+                    </p>
+                    <div class="ai-key-row">
+                        <input type="password" id="ai-key-input" placeholder="sk-ant-…"
+                               autocomplete="off" spellcheck="false">
+                        <button id="ai-key-save" class="tool-btn">Speichern</button>
                     </div>
                 </div>
-                <div class="ai-header-actions">
-                    <button id="ai-speak-toggle"
-                            title="Antworten vorlesen">🔈</button>
-                    <button id="ai-handsfree-toggle"
-                            title="Freisprechen: nach der Antwort automatisch weiter zuhören">🔁</button>
-                    <button id="ai-clear" title="Chat leeren">🗑️</button>
-                    <button id="ai-close" title="Schließen">✕</button>
-                </div>
-            </header>
 
-            <!-- Einrichtung, falls noch kein Key/Proxy verfügbar ist -->
-            <div id="ai-setup" class="hidden">
-                <p><strong>KI-Assistent einrichten</strong></p>
-                <p class="ai-setup-mode"></p>
-                <p class="ai-setup-hint">
-                    Trage hier deinen Anthropic-API-Key ein, um Claude direkt aus dem
-                    Browser zu nutzen. Der Key wird nur lokal in diesem Browser
-                    gespeichert. Für den Einsatz im Internet stattdessen den
-                    mitgelieferten Proxy verwenden (siehe README).
-                </p>
-                <div class="ai-key-row">
-                    <input type="password" id="ai-key-input" placeholder="sk-ant-…"
-                           autocomplete="off" spellcheck="false">
-                    <button id="ai-key-save" class="tool-btn">Speichern</button>
-                </div>
-            </div>
-
-            <div id="ai-messages">
-                <div class="ai-msg ai-msg-system">
-                    <div class="ai-bubble">
-                        Hallo! Ich beantworte Fragen zu dem Ort, den du gerade auf dem
-                        Globus betrachtest – und zu den Objekten, die dort unterwegs sind.
+                <div id="ai-messages">
+                    <div class="ai-msg ai-msg-system">
+                        <div class="ai-bubble">
+                            Hallo! Ich beantworte Fragen zu dem Ort, den du gerade auf dem
+                            Globus betrachtest – und zu den Objekten, die dort unterwegs sind.
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="ai-suggestions"></div>
+                <div id="ai-suggestions"></div>
 
-            <div id="ai-listening" class="hidden">
-                <span class="ai-listening-dot"></span>
-                <span id="ai-transcript">Ich höre zu …</span>
-            </div>
+                <div id="ai-listening" class="hidden">
+                    <span class="ai-listening-dot"></span>
+                    <span id="ai-transcript">Ich höre zu …</span>
+                </div>
 
-            <div id="ai-input-row">
-                <button id="ai-mic" title="Frage sprechen (Mikrofon)">🎤</button>
-                <textarea id="ai-input" rows="1"
-                          placeholder="Frage zu diesem Ort stellen …"></textarea>
-                <button id="ai-send" title="Senden (Enter)">➤</button>
-                <button id="ai-stop" class="hidden" title="Abbrechen">■</button>
-            </div>
-        </section>
+                <div id="ai-input-row">
+                    <button id="ai-mic" title="Frage sprechen (Mikrofon)">🎤</button>
+                    <textarea id="ai-input" rows="1"
+                              placeholder="Frage zu diesem Ort stellen …"></textarea>
+                    <button id="ai-send" title="Senden (Enter)">➤</button>
+                    <button id="ai-stop" class="hidden" title="Abbrechen">■</button>
+                </div>
+            </section>
+        </div>
 
         <!-- ────────── Timeline (unten) ────────── -->
         <footer id="timeline-bar">

@@ -1234,11 +1234,7 @@ export class UI {
             if (this.selectedObject) this.openGraphView(this.selectedObject);
         });
         document.getElementById("graph-close").addEventListener("click", () => this.closeGraphView());
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape" && !this._el.graphPanel.classList.contains("hidden")) {
-                this.closeGraphView();
-            }
-        });
+        // Esc schließt nur noch das oberste Panel, verwaltet vom PanelDock (WEB-86)
 
         // "Claude dazu fragen" öffnet den Assistenten mit passender Frage
         document.getElementById("detail-ask").addEventListener("click", () => {

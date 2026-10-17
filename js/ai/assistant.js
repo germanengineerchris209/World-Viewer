@@ -105,9 +105,7 @@ export class Assistant {
                 : "Key gespeichert, aber Claude ist weiterhin nicht erreichbar.");
         });
 
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape" && this.isOpen) this.close();
-        });
+        // Esc schließt nur noch das oberste Panel, verwaltet vom PanelDock (WEB-86)
     }
 
     /* ─────────── Sprache ─────────── */
