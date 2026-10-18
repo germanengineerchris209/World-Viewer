@@ -22,6 +22,8 @@
  *      /api/asteroids         Erdnahe Asteroiden der nächsten 7 Tage (NASA NeoWs)
  *      /api/comets            Kometen mit Bahnelementen (NASA JPL SBDB)
  *      /api/deepspace         Aktive Raumsonden (NASA JPL Horizons)
+ *      /api/transit/:stadt    ÖPNV-Fahrzeugpositionen (GTFS-Realtime, Protobuf → JSON)
+ *      /api/transit/status    Welche Städte sind eingerichtet?
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -64,7 +66,7 @@ import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
     handleFires, handleFiresHistory, handleCctvCatalog, handleAllskyCatalog, handleEvents,
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
-    handleComets, TLE_GROUPS
+    handleComets, TLE_GROUPS, handleTransit, handleTransitStatus
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
@@ -467,6 +469,12 @@ export function createServer() {
             return handleCelestrak(res, pathname.slice("/api/celestrak/".length));
         }
 
+        // ÖPNV: /api/transit/<stadt>
+        if (pathname.startsWith("/api/transit/") && pathname !== "/api/transit/status") {
+            if (req.method !== "GET") return res.writeHead(405).end();
+            return handleTransit(res, pathname.slice("/api/transit/".length));
+        }
+
         switch (pathname) {
             case "/api/flights":
                 if (req.method !== "GET") return res.writeHead(405).end();
@@ -541,6 +549,9 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleDeepSpace(res);
 
+            case "/api/transit/status":
+                return handleTransitStatus(res);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
@@ -555,6 +566,7 @@ export function createServer() {
                     storms: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
+                    transit: true,
                     tleGroups: TLE_GROUPS
                 });
 
