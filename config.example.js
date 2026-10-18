@@ -171,18 +171,30 @@ window.WORLD_VIEWER_CONFIG = {
     satellites: {
         // "auto" = echte Bahndaten (TLE) über den Server, sonst Beispieldaten
         mode: "auto",
-        // Welche CelesTrak-Gruppen geladen werden.
-        // "starlink" ist möglich, bringt aber tausende Objekte.
-        // Die "*-debris"-Gruppen sind Trümmerfelder aus ASAT-Tests und
-        // Kollisionen – rötlich und kleiner dargestellt, ohne Label.
-        // Zum Ausblenden einfach aus der Liste entfernen.
+        // Welche CelesTrak-Gruppen geladen werden (ohne Starlink ergibt
+        // das zusammen rund 830 Objekte, GEV-Maßstab). Die "*-debris"-
+        // Gruppen sind Trümmerfelder aus ASAT-Tests und Kollisionen –
+        // rötlich und kleiner dargestellt, ohne Label. Zum Ausblenden
+        // einfach aus der Liste entfernen.
         groups: [
-            "stations", "visual", "gps-ops", "galileo", "geo",
+            "stations", "visual", "gps-ops", "glo-ops", "galileo", "geo",
             "cosmos-1408-debris", "fengyun-1c-debris",
             "iridium-33-debris", "cosmos-2251-debris"
         ],
-        // Obergrenze je Gruppe – hält die Karte lesbar
-        maxPerGroup: 60
+        // Schalter für die Starlink-Dichte: fügt zusätzlich ~10.600
+        // Starlink-Objekte an (gekappt auf maxStarlinkPerGroup), ohne
+        // dass "groups" angefasst werden muss. Standard: aus, damit die
+        // Szene nicht zugemüllt wird.
+        dense: false,
+        // Obergrenzen je Gruppenart. Reguläre Gruppen (Stationen, GPS,
+        // Galileo, GLONASS, geostationär, sichtbar) sind real klein
+        // genug (max. ~570 bei "geo"), um praktisch unbegrenzt zu
+        // bleiben. Schrott- und Starlink-Gruppen brauchen eigene,
+        // engere Deckel – sie liefern sonst hunderte bis zehntausende
+        // Objekte und würden die Karte zumüllen.
+        maxPerGroup: 2000,
+        maxDebrisPerGroup: 60,
+        maxStarlinkPerGroup: 1500
     },
 
     earthquakes: {

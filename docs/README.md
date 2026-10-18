@@ -29,5 +29,9 @@ nicht rückwirkend umbenannt.
 | WEB-15 | God's-Eye-View-Vergleich + Tier-1-Umsetzung | erledigt | [WEB-15-gods-eye-view-tier1.md](./WEB-15-gods-eye-view-tier1.md) |
 | WEB-20 | Open Source Palantir – Gotham-Features | erledigt | [WEB-20-open-source-palantir.md](./WEB-20-open-source-palantir.md) |
 | WEB-33 | UI Update – Liquid Glass + Rebranding zu ARGUS | erledigt | [WEB-33-ui-update-liquid-glass.md](./WEB-33-ui-update-liquid-glass.md) |
+| WEB-83 | [R2] Datenquellen-Spezifikation Verkehr/ÖPNV/Street-Level/Militär | erledigt | [WEB-83-datenquellen-verkehr-oepnv-streetlevel-militaer.md](./WEB-83-datenquellen-verkehr-oepnv-streetlevel-militaer.md) |
+| WEB-84 | [R3] SGP4-Satellitenpropagation ohne Build-Schritt | erledigt | [WEB-84-sgp4-satellitenpropagation-ohne-build-schritt.md](./WEB-84-sgp4-satellitenpropagation-ohne-build-schritt.md) |
+| WEB-81 | New Features + UI Overhaul (Epic-Dossier) | größter Teil erledigt, Details siehe Dokument | [WEB-81-gev-features-ui-overhaul.md](./WEB-81-gev-features-ui-overhaul.md) |
+| — | Integrationsbericht zur WEB-81-Welle vom 17.10.2026 | erledigt | [WEB-81-integrationswelle.md](./WEB-81-integrationswelle.md) |
 
 *(Wird vom Documentation Agent bei jedem neuen/aktualisierten Task ergänzt.)*

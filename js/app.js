@@ -24,6 +24,7 @@ import { DrawToolsPanel } from "./drawToolsPanel.js";
 import { RouteTool } from "./routeTool.js";
 import { DeepSpacePanel } from "./deepSpace.js";
 import { PanelDock } from "./panelDock.js";
+import { StreetLevelPanel } from "./streetLevelPanel.js";
 
 import { KeyStatusPanel } from "./keyStatusPanel.js";
 import { SceneDirector } from "./sceneDirector.js";
@@ -62,6 +63,7 @@ import { HeatmapLayer } from "./layers/HeatmapLayer.js";
 import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
 import { EventLayer } from "./layers/EventLayer.js";
 import { SpaceWeatherLayer } from "./layers/SpaceWeatherLayer.js";
+import { StreetLevelLayer } from "./layers/StreetLevelLayer.js";
 
 async function main() {
     /* 1 ── 3D-Globus mit Satellitenansicht */
@@ -98,6 +100,8 @@ async function main() {
     layerManager.register(new HeatmapLayer(worldViewer, layerManager));
     const spaceWeatherLayer = new SpaceWeatherLayer(worldViewer);
     layerManager.register(spaceWeatherLayer);
+    const streetLevelLayer = new StreetLevelLayer(worldViewer);
+    layerManager.register(streetLevelLayer);
 
     /* 3 ── UI, Suche, Timeline, KI */
     // Zentrale Tastenkürzel-Verwaltung: eine Stelle statt verstreuter
@@ -195,6 +199,20 @@ async function main() {
         minWidth: 240, minHeight: 200,
         close: () => contactsPanel.hide()
     });
+
+    /* Street-Level (Mapillary): Abdeckungslinien + Bildkegel, eingebetteter
+       Betrachter im Panel rechts (WEB-95). Ohne MAPILLARY_TOKEN bleibt der
+       Layer leer (siehe StreetLevelLayer.statusText()); das Panel öffnet sich
+       dann schlicht nie, weil keine Bildkegel zum Anklicken entstehen. */
+    const streetLevelPanel = new StreetLevelPanel(streetLevelLayer);
+    panelDock.register({
+        id: "streetlevel",
+        el: document.getElementById("streetlevel-panel"),
+        header: document.getElementById("streetlevel-header"),
+        minWidth: 300, minHeight: 280,
+        close: () => streetLevelPanel.close()
+    });
+
     panelDock.applySavedOrder();
 
     // POWER-UP: Schlüssel & Dienste (Chip unten rechts, WEB-87)
@@ -303,6 +321,14 @@ async function main() {
     /* Klick auf Objekte → Auswahl + Detailpanel */
     worldViewer.onObjectPicked = (entity) => {
         if (cockpit.active) return;      // im Cockpit wird nicht ausgewählt
+
+        // Street-Level-Bildkegel öffnen das eigene Rail-Panel (Betrachter +
+        // Filter) statt des generischen Detailpanels (WEB-95)
+        if (entity?.streetLevelImage) {
+            streetLevelPanel.openImage(entity.streetLevelImage);
+            return;
+        }
+
         if (entity && entity.worldViewerObject) {
             ui.selectEntity(entity, { fly: false });
             // Bahnring des ausgewählten Satelliten zeichnen
@@ -322,6 +348,7 @@ async function main() {
     worldViewer.camera.moveEnd.addEventListener(() => {
         aircraftLayer.refreshLive();
         shipLayer.refreshLive();
+        streetLevelLayer.refreshForView();
     });
 
     /* 4 ── Zentrale Update-Schleife */
