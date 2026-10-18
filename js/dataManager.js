@@ -37,6 +37,30 @@ export async function loadJSON(url) {
 }
 
 /**
+ * Wie loadJSON, aber für Quellen, die bewusst fehlen dürfen (generierte
+ * Massendatensätze, siehe scripts/build-infrastructure-mass.mjs). Ein 404
+ * ist dort ein erwarteter Zustand vor dem ersten Build-Lauf, kein Fehler –
+ * daher kein console.error, nur eine info-Zeile.
+ * @returns {Promise<Array>} leeres Array, wenn die Quelle (noch) nicht existiert
+ */
+export async function loadJSONOptional(url) {
+    try {
+        const response = await fetch(url);
+        if (response.status === 404) {
+            console.info(`[dataManager] ${url} nicht vorhanden – optionale Quelle wird übersprungen.`);
+            return [];
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} für ${url}`);
+        }
+        return await response.json();
+    } catch (err) {
+        console.error(`[dataManager] Konnte ${url} nicht laden:`, err);
+        return [];
+    }
+}
+
+/**
  * Entfernt unsichtbare Unicode-Steuerzeichen (z.B. Bidi-Marker wie
  * LEFT-TO-RIGHT MARK) aus Anzeigenamen. Solche Zeichen kommen bei
  * extern bezogenen Datensätzen vor (z.B. Radiosender-Namen) und
