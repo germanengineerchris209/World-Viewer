@@ -70,6 +70,8 @@ const DETAIL_SCHEMAS = {
                 ["Rufzeichen", F.text(m.callsign)],
                 ["Flugzeugtyp", F.text(m.aircraftType ?? m.type)]
             ];
+            // Militärflüge-Layer (WEB-90): adsb.lol markiert diese Zeilen
+            if (m.military) rows.push(["Status", F.text("🎖️ Militär")]);
             // Diese Angaben liefert nur Flightradar24, nicht OpenSky
             if (m.registration) rows.push(["Registrierung", F.text(m.registration)]);
             if (m.flightNumber && m.flightNumber !== m.callsign) {

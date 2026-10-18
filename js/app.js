@@ -69,10 +69,25 @@ async function main() {
     /* 2 ── Layer */
     const layerManager = new LayerManager();
     const aircraftLayer = new AircraftLayer(worldViewer);
+    // Militärflüge (WEB-90): eigener Layer, bernsteinfarben, weltweiter
+    // adsb.lol-Feed ohne Bounding-Box und ohne Demo-Rückfall. dedupeAgainst
+    // verhindert, dass ein Flugzeug, das in beiden Feeds steckt, doppelt
+    // gezeichnet wird.
+    const militaryAircraftLayer = new AircraftLayer(worldViewer, {
+        id: "militaryAircraft",
+        name: "Militärflüge",
+        icon: "🎖️",
+        color: "#fbbf24",
+        configKey: "militaryFlights",
+        allowDemo: false,
+        boundsInQuery: false,
+        dedupeAgainst: aircraftLayer
+    });
     const shipLayer = new ShipLayer(worldViewer);
     const satelliteLayer = new SatelliteLayer(worldViewer);
 
     layerManager.register(aircraftLayer);
+    layerManager.register(militaryAircraftLayer);
     layerManager.register(shipLayer);
     layerManager.register(satelliteLayer);
     layerManager.register(new CameraLayer(worldViewer));
@@ -306,6 +321,7 @@ async function main() {
        Der Layer selbst drosselt die Anfragen, zusätzlich cacht der Server. */
     worldViewer.camera.moveEnd.addEventListener(() => {
         aircraftLayer.refreshLive();
+        militaryAircraftLayer.refreshLive();
         shipLayer.refreshLive();
     });
 

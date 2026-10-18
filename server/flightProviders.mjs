@@ -350,10 +350,20 @@ export async function fetchAdsbLol(bounds, opts = {}) {
 
 /** Militärflugzeuge weltweit – eigener Endpunkt ohne Parameter. */
 export async function fetchAdsbLolMilitary() {
-    const res = await fetch(`${ADSBLOL_BASE}/mil`, {
-        headers: { Accept: "application/json", "User-Agent": "world-viewer/2.3" }
-    });
-    if (!res.ok) throw new Error(`adsb.lol antwortete mit ${res.status}`);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+    let res;
+    try {
+        res = await fetch(`${ADSBLOL_BASE}/mil`, {
+            signal: controller.signal,
+            headers: { Accept: "application/json", "User-Agent": "world-viewer/2.3" }
+        });
+    } finally {
+        clearTimeout(timer);
+    }
+
+    if (!res.ok) throw Object.assign(
+        new Error(`adsb.lol antwortete mit ${res.status}`), { status: res.status });
 
     const json = await res.json();
     const nowRaw = Number(json?.now);

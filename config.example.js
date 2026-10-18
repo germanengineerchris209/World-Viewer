@@ -130,6 +130,33 @@ window.WORLD_VIEWER_CONFIG = {
     },
 
 
+    /* ═══════════ Militärflüge (WEB-90) ═══════════ */
+
+    // Eigener Layer, getrennt vom zivilen Verkehr oben: adsb.lol/v2/mil,
+    // weltweit, kein Schlüssel nötig. Kein "mode"/demoUrl – ohne Server
+    // bleibt der Layer einfach leer statt mit erfundenen Daten zu füllen.
+    militaryFlights: {
+        // Endpunkt des eigenen Servers (server/server.mjs)
+        apiUrl: "/api/flights/military",
+
+        // Wie oft neue Positionen geholt werden (Sekunden)
+        refreshSeconds: 20,
+
+        // Mindestabstand zwischen zwei Anfragen beim Kameraschwenken
+        minRequestGapSeconds: 3,
+
+        // Größter Kartenausschnitt in Grad, auf den die (weltweit
+        // geholten) Daten clientseitig zugeschnitten werden
+        maxSpanDegrees: 40,
+
+        // Ab dieser Kamerahöhe werden gar keine Live-Daten mehr geholt
+        maxHeightKm: 30000,
+
+        // Flugzeug entfernen, wenn es so lange nicht mehr geliefert wurde
+        removeAfterSeconds: 90
+    },
+
+
     /* ═══════════ Live-Schiffsdaten (AIS) ═══════════ */
 
     ships: {
