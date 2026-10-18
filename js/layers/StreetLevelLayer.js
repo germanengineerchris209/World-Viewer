@@ -296,6 +296,12 @@ export class StreetLevelLayer extends BaseLayer {
         return null; // Entities entstehen ausschließlich über _rebuild()/_addCone()
     }
 
+    /** Beim Wiedereinblenden sofort für den aktuellen Ausschnitt nachladen. */
+    show() {
+        super.show();
+        this.refreshForView(true);
+    }
+
     clear() {
         super.clear();
         this._lineEntities.clear();
