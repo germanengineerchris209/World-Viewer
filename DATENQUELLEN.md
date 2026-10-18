@@ -70,6 +70,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🚀 Mehr Start-Kontingent | Launch Library 2 | <https://ll.thespacedevs.com/docs/> |
 | ☄️ Mehr Asteroiden-Kontingent | NASA api.nasa.gov | <https://api.nasa.gov> → sofort per E-Mail (1000 Abrufe/Stunde) |
 | 📷 Mehr TfL-Kontingent | TfL Open Data | <https://api-portal.tfl.gov.uk> |
+| 📸 Street-Level-Fotos (Abdeckung + Bildkegel) | Mapillary | <https://www.mapillary.com/dashboard/developers> → "Register application" |
 
 ### 🔴 Kostenpflichtig, rein optional
 
@@ -383,6 +384,28 @@ CORS-freigegeben sind und die Bilder teils hotlink-geschützt.
 > © Crown copyright and database rights." Die App zeigt diesen Hinweis
 > im Bildnachweis jeder TfL-Kamera an.
 
+### 📸 Street-Level (Mapillary, WEB-95)
+
+Abdeckungslinien (eine Polylinie je Mapillary-"sequence") und Bildkegel in
+Blickrichtung, analog zur Kamera-Sichtkegel-Mechanik. Lädt lazy nur für den
+sichtbaren Kartenausschnitt (`/api/mapillary/images`), nicht global.
+
+**Ohne `MAPILLARY_TOKEN`** bleibt die Ebene leer (503/no_key vom Server) –
+Layer-Konsole und POWER-UP-Panel erklären das 🔑-Badge.
+
+**Mit Token:** Bildsuche und Abdeckung laufen komplett über den Server
+(Token bleibt in `.env`). Nur der eingebettete `mapillary-js`-Betrachter
+holt sich den Token transient über `/api/mapillary/token`, weil die
+Bibliothek ihre Kachel-/Mesh-Anfragen selbst direkt aus dem Browser stellt –
+dafür braucht sie den echten Wert, der deshalb nie fest im Client-Code
+abgelegt wird.
+
+Filter im Panel (rechte Rail): Bildtyp (Alle/360°/Flach) und Zeitraum –
+beides filtert die bereits geladenen Bilder, ohne neu abzufragen.
+
+> Mapillary verlangt die Namensnennung "Imagery © Mapillary contributors"
+> (CC-BY-SA) – die App zeigt sie im Street-Level-Panel an jedem Bild.
+
 ### 🌌 Allsky-Kameras
 
 Allsky-Kameras blicken mit einem Fisheye-Objektiv senkrecht nach oben und
@@ -538,6 +561,12 @@ nur in `.env` auf dem Server. Er wird nie an den Browser ausgeliefert;
 der Server sagt beim Start lediglich, dass er ihn gefunden hat, ohne den
 Wert auszugeben. Das Kontingent gilt pro Key (5.000 Abrufe je 10 Minuten)
 und wird durch den 30-Minuten-Cache des Servers geschont.
+
+**Mapillary** – Dieser Key steht nur in `.env` auf dem Server. Bildsuche
+und Abdeckungslinien laufen vollständig über den Server-Proxy; nur beim
+tatsächlichen Öffnen eines Bildes im Panel holt sich der eingebettete
+`mapillary-js`-Betrachter den Token einmalig über `/api/mapillary/token` –
+er landet dabei nie in `config.js` oder einer anderen Datei im Repository.
 
 **Falls ein Schlüssel doch einmal nach außen gelangt:** Beide lassen sich
 ohne Aufwand ersetzen – bei Cesium unter „Access Tokens" einen neuen
