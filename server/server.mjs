@@ -22,6 +22,9 @@
  *      /api/asteroids         Erdnahe Asteroiden der nächsten 7 Tage (NASA NeoWs)
  *      /api/comets            Kometen mit Bahnelementen (NASA JPL SBDB)
  *      /api/deepspace         Aktive Raumsonden (NASA JPL Horizons)
+ *      /api/mapillary/status  Ist ein MAPILLARY_TOKEN gesetzt?
+ *      /api/mapillary/images  Street-Level-Bilder in einer bbox (Key nötig)
+ *      /api/mapillary/token   Token für den eingebetteten Betrachter (Key nötig)
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -64,7 +67,8 @@ import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
     handleFires, handleFiresHistory, handleCctvCatalog, handleAllskyCatalog, handleEvents,
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
-    handleComets, TLE_GROUPS
+    handleComets, TLE_GROUPS,
+    handleMapillaryStatus, handleMapillaryToken, handleMapillaryImages, mapillaryAvailable
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
@@ -541,6 +545,17 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleDeepSpace(res);
 
+            case "/api/mapillary/status":
+                return handleMapillaryStatus(res);
+
+            case "/api/mapillary/images":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleMapillaryImages(res, searchParams);
+
+            case "/api/mapillary/token":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleMapillaryToken(res);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
@@ -555,6 +570,7 @@ export function createServer() {
                     storms: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
+                    mapillary: mapillaryAvailable(),
                     tleGroups: TLE_GROUPS
                 });
 

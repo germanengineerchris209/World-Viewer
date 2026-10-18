@@ -139,7 +139,18 @@ kommerzielle Weiterverwendung braucht oft eine Erlaubnis.
 | Objektbilder | ✅ Wikipedia | – |
 | Ortsnamen | ✅ OpenStreetMap | – |
 | Live-Flugzeuge | ✅ OpenSky (kostenlos) | ✨ Flightradar24-Abo |
+| 🚢 Schiffe (echte AIS-Daten) | Demo-Daten | AISStream (kostenlos) |
+| 🚀 Mehr Start-Kontingent | ✅ Launch Library 2 (15/h) | Launch Library 2 API-Token |
+| 📷 Mehr TfL-Kamera-Kontingent | ✅ TfL (Basiskontingent) | TfL App Key |
 | KI-Assistent | – | ✅ Anthropic-API-Key |
+
+**🔌 POWER-UP-Panel.** Alle Schlüssel-Dienste aus der Tabelle oben stehen
+auch live im Browser: Klick auf den „POWER-UP"-Chip unten öffnet das Panel
+„Schlüssel & Dienste" mit Status (gesetzt / extern gesetzt / fehlt) je
+Dienst, was er freischaltet, Kostenhinweis und Link zur Registrierung. Die
+Layer-Konsole markiert zusätzlich jeden Layer, der ohne Key eingeschränkt
+ist, mit einem kleinen Schlüssel-Badge. Die Werte selbst gehen nie über
+`/api/keys` an den Browser – nur Status-Strings (siehe `server/keyRegistry.mjs`).
 
 **Wo kommt was hin?**
 
@@ -161,9 +172,51 @@ Satellitenansicht als Standard (Satellit / Hybrid mit Beschriftung / Karte /
 Relief, umschaltbar in der Sidebar), drehen, zoomen vom Weltraum bis auf
 Straßenebene, sanfte Kameraflüge, 2D/3D, Tag-Nacht-Beleuchtung, Koordinatenanzeige.
 
-**Layer (einzeln schaltbar)**
-✈️ Aircraft · 🚢 Ships · 🛰️ Satellites · 📷 Cameras · 🏗️ Infrastructure ·
-🌋 Erdbeben · 🗻 Vulkane · 🚀 Raketenstarts · ☄️ Asteroiden · 🔥 Brände
+**Layer (einzeln schaltbar), gruppiert in der Kategorien-Konsole**
+
+Die Sidebar gruppiert alle Layer in sechs Kategorien statt einer langen
+flachen Liste (`js/layerCategories.js`):
+
+| Kategorie | Layer |
+|---|---|
+| 🚀 Bewegung | Aircraft · Ships · Satellites |
+| 📷 Kameras | Cameras · Allsky-Kameras |
+| 🏗️ Infrastruktur | Infrastructure (inkl. Rechenzentren/Dämme in Masse) · Seekabel (inkl. OSM-Massendatensatz) · Radiosender · Kraftstoffreserven |
+| 🚨 Ereignisse | Erdbeben · Vulkane · Brände · Raketenstarts (inkl. Launch-Replay-Rekonstruktion) · Globale Ereignis-Lage · Asteroiden · Kometen |
+| 🌦️ Wetter | Wetter-Overlay (Städte) · Luftqualität (AQI) · Wirbelstürme · Weltraumwetter · GOES-Wolken · Weltwetter-Raster |
+| 🧰 Werkzeuge | Heatmap (Pattern-of-Life) |
+
+Neue Layer landen automatisch unter „Werkzeuge", bis sie in
+`layerCategories.js` eingetragen werden – das verhindert, dass die Konsole
+durch einen vergessenen Eintrag unsichtbar wird.
+
+> ⚠️ **Bekannte Lücke:** Die Massendatensätze für Rechenzentren, Dämme und
+> OSM-Seekabel (`data/datacenters.json`, `data/dams.json`,
+> `data/cables-osm.json`) liegen nicht im Repo, sondern werden per
+> `npm run build:infrastructure-mass` aus der Overpass API erzeugt (dauert
+> mehrere Minuten, braucht Internet). Ohne diesen Lauf bleiben die Layer
+> bei den wenigen handkuratierten Einträgen – kein Fehler, nur leere
+> Massendaten (Nacharbeit siehe Issue WEB-142).
+
+**🪟 Andockbare Panels rechts.** Detail-, Verknüpfungs- und KI-Panel sitzen
+in einer rechten Panel-Rail, lassen sich dort verschieben, in der Größe
+ändern und stapeln; der Zustand bleibt über `localStorage` erhalten
+(`js/panelDock.js`). Unterhalb von 821px Breite (mobil) bleibt es bei der
+bisherigen Vollbild-Darstellung.
+
+**🎬 Szenen-Regisseur.** Kamerapositionen als Stationen einer Fahrt
+aufnehmen, Reihenfolge/Haltedauer bearbeiten und weich abspielen lassen
+(eigener Sidebar-Abschnitt). Speichern/Laden läuft über denselben
+Share-Link-Mechanismus wie sonst in der App. Eine berechnete Routen-Strecke
+(Fuß/Rad/Auto) lässt sich ebenfalls als Flythrough abspielen.
+
+**✈️ 3D-Flugzeugmodelle.** Fünf Flugzeugklassen (Boeing 787, ATR-72,
+Citation, Bell 206, MQ-9) wechseln ab einer Zoomschwelle vom Glyph auf ein
+echtes 3D-Modell; alle anderen Typen bleiben beim Glyph.
+
+**🚀 Launch-Replay.** Raketenstarts zeigen beim Abspielen eine
+rekonstruierte Aufstiegsbahn statt eines einzelnen Punkts – deutlich als
+Modell/Schätzung markiert, nicht als echte Telemetrie.
 
 **Echte Bahndaten statt Kreisbahn**
 Satelliten laufen auf echten Bahnen: TLE-Daten von CelesTrak, gerechnet
@@ -198,6 +251,27 @@ Antworten werden gestreamt. Im Detailpanel gibt es zusätzlich
 Suche nach Callsign, Schiff, Satellit, Stadt oder Koordinaten (`50.03, 8.56`).
 Timeline unten: Play / Pause / Reset / Zeitraffer 1×–300×.
 
+## ⌨️ Tastenkürzel
+
+Alle globalen Kürzel laufen über eine zentrale Stelle
+(`js/keyboardShortcuts.js`) statt über mehrere unabhängige Listener. Sie
+feuern nicht, während in einem Eingabefeld getippt wird (Suche, KI-Chat …) –
+außer Escape, das auch aus einem Textfeld heraus funktioniert.
+
+| Taste | Wirkung |
+|---|---|
+| `1`–`7` | Sensorstil wählen (Nachtsicht, Wärmebild, …) |
+| `H` | Tactical-HUD-Rahmen (Eckmarken + Statuszeile) ein/aus |
+| `D` | Erkennungs-Overlay (Ziel-Boxen + Telemetrie) ein/aus |
+| `C` | Cockpit-Ansicht für das ausgewählte Flugzeug ein/aus |
+| `` ` `` | FPS-Zähler ein/aus |
+| `?` | Kurzreferenz aller Tastenkürzel ein-/ausblenden |
+| `Esc` | Kette: oberstes Panel schließen → Verfolgen beenden → Cockpit verlassen (erster zutreffender Schritt gewinnt) |
+
+Die vollständige, immer aktuelle Liste zeigt die Kurzreferenz im Browser
+selbst (Taste `?` oder der „⌨"-Knopf unten links) – sie liest die
+tatsächlich registrierten Kürzel aus, nicht eine separat gepflegte Liste.
+
 ## 📁 Projektstruktur
 
 ```
@@ -220,6 +294,15 @@ world-viewer/
 │   ├── ui.js             Sidebar, Kartenauswahl, Detailpanel
 │   ├── search.js         Suche (Objekte, Städte, Koordinaten)
 │   ├── timeline.js       Zeitsteuerung der Simulation
+│   ├── layerCategories.js   Kategorie-Zuordnung für die Layer-Konsole
+│   ├── panelDock.js         Andock-/Verschiebe-/Skalierlogik der rechten Panel-Rail
+│   ├── keyStatusPanel.js    POWER-UP-Chip + Panel „Schlüssel & Dienste"
+│   ├── keyboardShortcuts.js Zentrale Verwaltung aller globalen Tastenkürzel
+│   ├── keyboardReference.js Einblendbare Kurzreferenz (Taste „?")
+│   ├── sceneDirector.js       Szenen-Regisseur: Kamerafahrten aufnehmen/abspielen
+│   ├── sceneDirectorPanel.js  Sidebar-UI dazu
+│   ├── aircraftModels.js      3D-Flugzeugmodelle je Klasse (Glyph-Wechsel)
+│   ├── launchAscent.js        Rekonstruierte Raketen-Aufstiegsbahn (Launch-Replay)
 │   │
 │   ├── ai/
 │   │   ├── assistant.js       Chat-UI (Button unten links)
@@ -229,12 +312,17 @@ world-viewer/
 │   └── layers/
 │       ├── BaseLayer.js  ·  AircraftLayer.js  ·  ShipLayer.js
 │       ├── SatelliteLayer.js  ·  CameraLayer.js  ·  InfrastructureLayer.js
+│       ├── GoesCloudLayer.js  ·  WorldWeatherLayer.js  (neu: WEB-81-Welle)
 │
 ├── server/
 │   ├── server.mjs           Webserver + Live-Flugdaten + Claude-Proxy
 │   ├── flightProviders.mjs  Anbindung Flightradar24 / OpenSky
 │   ├── cameraProxy.mjs      Holt Webcam-Bilder trotz Hotlink-Sperren
+│   ├── keyRegistry.mjs      Zentrale Liste der optionalen Schlüssel/Dienste (POWER-UP-Panel + `npm run doctor`)
 │   └── claude-proxy.mjs     Alter Startbefehl (leitet auf server.mjs weiter)
+│
+├── scripts/
+│   └── build-infrastructure-mass.mjs   Erzeugt Rechenzentren/Dämme/Seekabel aus OpenStreetMap (Overpass API)
 │
 └── data/                 aircraft · ships · satellites · cameras · infrastructure
 ```
