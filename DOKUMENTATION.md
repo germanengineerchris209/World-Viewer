@@ -1,4 +1,4 @@
-# World Viewer – Dokumentation (Stand: 20.09.2026, v2.7)
+# World Viewer – Dokumentation (Stand: 18.10.2026, v2.8)
 
 Aktueller Stand, Architektur und Erweiterungswege der Anwendung.
 
@@ -398,6 +398,130 @@ Quelle, kein Server): `buildDossierText()` baut den Text,
 Objektnamen und dem Erstellungsdatum abgeleitet
 (`dossier-<name>-<datum>.txt`).
 
+### 1.14 Kategorien-Konsole, Panel-Rails, POWER-UP-Panel (UI-Overhaul, neu in v2.8)
+
+Drei zusammenhängende UI-Bausteine aus dem Epic WEB-81 (Übernahme aus
+„God's Eye View", MIT, siehe `docs/WEB-81-gev-features-ui-overhaul.md`):
+
+**Kategorien-Konsole.** Die Sidebar gruppiert alle Layer-Schalter in sechs
+Kategorien (Bewegung, Kameras, Infrastruktur, Ereignisse, Wetter,
+Werkzeuge) statt einer flachen Liste. `js/layerCategories.js` ist die
+einzige Quelle der Zuordnung: `categoryForLayer(layerId)` liefert die
+Kategorie-ID, unbekannte Layer landen auf `"tools"` als Notbremse, damit
+ein neuer Layer ohne Eintrag die Konsole nicht unsichtbar macht. **Wichtige
+Lektion aus der Integration:** zwei Layer (GOES-Wolken, Weltwetter-Raster)
+wurden parallel zu diesem Umbau gebaut und kannten die Zuordnung nicht –
+sie fielen zunächst auf den Werkzeuge-Fallback zurück. Wer einen Layer
+registriert, trägt ihn im selben PR hier ein.
+
+**Andockbare Panel-Rails.** `js/panelDock.js` beobachtet die
+`hidden`-Klasse der bestehenden Panels (Detail, Verknüpfungs-Graph, KI) per
+`MutationObserver` und übernimmt Position, Größe und Stapel-Reihenfolge in
+der rechten Rail (`#panel-rail-right`) – die Panels selbst bleiben
+strukturell unverändert (gleiche IDs, gleiche `show()`/`hide()`-Logik).
+Zustand (Position/Größe je Panel) persistiert in `localStorage`
+(`wv.panelDock.v1`). Unterhalb von 821px Breite (derselbe Mobile-Breakpoint
+wie die PWA aus WEB-60) bleiben Drag/Resize deaktiviert, da dort weiterhin
+die Vollbild-Darstellung gilt. Escape schließt das oberste Panel – außer im
+Cockpit-Modus, der Escape bereits für „Kamera verlassen" nutzt.
+
+**POWER-UP-Panel.** `js/keyStatusPanel.js` zeigt im Panel „Schlüssel &
+Dienste" für jeden Dienst aus `server/keyRegistry.mjs` den Status
+(`set`/`external`/`missing`), was er freischaltet, den Kostenhinweis und
+einen Registrierungslink. `keyRegistry.mjs` ist bewusst die **einzige**
+Quelle für zwei Verbraucher (`npm run doctor` im Terminal und `/api/keys`
+im Browser) und gibt grundsätzlich nur Status-Strings zurück, nie den
+Wert einer Umgebungsvariable. Dieselbe Registry treibt die
+Schlüssel-Badges an betroffenen Layern in der Kategorien-Konsole
+(`UI._renderKeyBadges()`) – ein Dienst kann optional `layers`/`layerImpact`
+angeben, damit die Konsole erklärt, warum ein Layer ohne Key eingeschränkt
+bleibt (z.B. „Brände" ohne `FIRMS_MAP_KEY`).
+
+### 1.15 Tastatur-Parität + Kurzreferenz (neu in v2.8)
+
+Vorher hatte jedes Modul (`app.js`, `ui.js`, `drawToolsPanel.js`,
+`ai/assistant.js`) einen eigenen `keydown`-Listener. `js/keyboardShortcuts.js`
+ist jetzt die einzige Stelle: Module registrieren Kürzel über
+`register({key, label, category, handler})`, Escape läuft separat über
+`registerEscapeStep(order, handler)` als Kette (Panel schließen vor
+Tracking beenden vor Cockpit verlassen – die erste Stufe, die `true`
+liefert, gewinnt). Kürzel feuern nicht, während ein Eingabefeld fokussiert
+ist – außer Escape, bewusst, damit sich auch aus einem Textfeld heraus das
+nächste Panel schließen lässt. Schema in Parität zu GEV: `1`–`7`
+Sensorstile, `H` Tactical-HUD, `D` Erkennungs-Overlay, `C` Cockpit, `` ` ``
+FPS-Zähler, `?` Kurzreferenz.
+
+`js/keyboardReference.js` zeigt die Kurzreferenz als eigenes Overlay (baut
+sein Markup selbst, wie `hud.js` seinen Canvas) und liest dafür
+`shortcuts.list()` aus – die Liste ist also immer exakt das, was tatsächlich
+registriert ist, keine separat gepflegte Dokumentation im Code.
+
+### 1.16 Szenen-Regisseur (neu in v2.8)
+
+`js/sceneDirector.js` nimmt Kamerapositionen als „Stationen" einer Fahrt
+auf und fliegt sie weich ab – über Cesiums eigenes `camera.flyTo()` statt
+einer eigenen Spline-Berechnung, damit dieselbe Ein-/Ausschwing-Bewegung
+wie der Rest der App entsteht. Die Flugdauer zwischen zwei Stationen
+(`legDurationFor()`) skaliert mit dem Abstand, begrenzt auf 1,5–6 Sekunden.
+`js/sceneDirectorPanel.js` ist die zugehörige Sidebar-UI; Speichern/Laden
+nutzt denselben URL-Mechanismus wie der normale Share-Link
+(`shareLink.js`), kein eigenes Dateiformat. Der Routen-Flythrough (eine
+bereits berechnete OSRM-Route aus `routeTool.js` als Stationenfolge in
+Fahrtrichtung, ohne Haltezeit) ist ein Spezialfall derselben Maschinerie.
+
+### 1.17 3D-Flugzeugmodelle (neu in v2.8)
+
+`js/aircraftModels.js` wechselt ab einer Entfernungsschwelle vom
+2D-Glyph auf ein echtes 3D-Modell – für genau fünf Klassen, unverändert aus
+dem GEV-„Hangar" übernommen: Boeing 787, ATR-72, Citation, Bell 206, MQ-9
+(`MODEL_HEADING_OFFSET_DEG = 180`, weil die GLB-Dateien mit der Nase
+Richtung lokales −X gebacken sind). Nicht jeder ICAO-Typcode bekommt ein
+eigenes Modell – bewusste Entscheidung, lieber ehrlich fünf Klassen
+abzudecken als mit einem falschen Modell einen 737 als 787 zu zeigen. Alle
+anderen Typen bleiben beim Glyph. Lizenzen der einzelnen GLB-Dateien (alle
+CC BY 4.0, Sketchfab) stehen in DATENQUELLEN.md.
+
+### 1.18 GOES-Wolken & Weltwetter-Raster (neu in v2.8)
+
+Zwei neue Wetter-Layer, beide ohne Schlüssel und ohne Server-Proxy (direkter
+Browser-Zugriff, da CORS-offen):
+
+- **`js/layers/GoesCloudLayer.js`** – Infrarot-Wolkenbild von NASA GIBS
+  (GOES-Ost/-West, Band 13, „Clean Longwave Infrared", funktioniert auch
+  nachts). Abdeckung ist geostationär auf Amerika/Pazifik/Atlantik
+  beschränkt – Europa/Asien/Afrika bleiben absichtlich leer, das ist kein
+  Fehler. Kein Zeit-Parameter nötig: GIBS löst „default" serverseitig auf
+  das neueste Bild auf, der tatsächliche Zeitstempel kommt per
+  `layer-time-actual`-Header zurück.
+- **`js/layers/WorldWeatherLayer.js`** – weltweites Temperatur-Gradnetz
+  (Standard 15°-Schritt, 264 Zellen) über die Open-Meteo Forecast API,
+  dieselbe API wie `WeatherLayer.js` (v2.x, kuratierte Städte) und
+  `AQILayer.js`. **Wichtig:** Open-Meteo zählt bei Sammelabfragen jede
+  Koordinate als eigenen Aufruf gegen das Tageskontingent (~10.000/Tag
+  Fair Use) – das begrenzt direkt, wie fein das Raster werden darf. Ein
+  10°-Raster (576 Zellen) würde das Limit im Einzelbetrieb schon
+  sprengen, daher bleibt 15° der Standard.
+
+### 1.19 Infrastruktur in Masse (neu in v2.8, mit Einschränkung)
+
+`js/layers/InfrastructureLayer.js` und `js/layers/CableLayer.js` laden
+zusätzlich zu den handkuratierten Einträgen (`data/infrastructure.json`,
+`data/cables.json`) drei Massendatensätze (Rechenzentren, Dämme, Seekabel)
+und bündeln sie über `BaseLayer.enableClustering()` – eine generische
+Clustering-Hilfsmethode, die Cesiums `dataSource.clustering` aktiviert und
+nah beieinanderliegende Objekte zu einem Symbol mit Anzahl zusammenfasst.
+Quelle der Massendaten: OpenStreetMap via Overpass API (ODbL), erzeugt
+durch `scripts/build-infrastructure-mass.mjs` (`npm run
+build:infrastructure-mass`) – **ausdrücklich nicht** TeleGeography für
+Seekabel, deren Submarine Cable Map unter CC BY-NC-SA 3.0 steht.
+
+**Bekannte Lücke (Issue WEB-142):** Die drei generierten JSON-Dateien
+(`data/datacenters.json`, `data/dams.json`, `data/cables-osm.json`) liegen
+nicht im Repository und wurden vor dem Merge nicht erzeugt – ein frischer
+Checkout lädt sie mit 404, zeigt aber dank `loadJSON()`-Fehlertoleranz
+weiterhin die handkuratierten Einträge. Der Clustering-Code ist vorhanden
+und getestet, die Datenmenge dafür fehlt bis zur Nacharbeit.
+
 ## 2. Architektur
 
 ```
@@ -590,6 +714,27 @@ lösen „betreten"-Alarme mit korrektem Namen/Zeitstempel aus, Alarm-Klick
 fliegt zum Objekt, Zone entfernen räumt Kreis und Zustand auf.
 
 ## 7. Changelog
+
+**18.10.2026 – v2.8** — WEB-81: New Features + UI Overhaul (Integrationswelle)
+- UI-Overhaul: Layer-Konsole in sechs Kategorien (`js/layerCategories.js`),
+  andockbare Panel-Rails rechts (`js/panelDock.js`), POWER-UP-Panel für
+  Schlüssel-Status + Layer-Badges (`js/keyStatusPanel.js`,
+  `server/keyRegistry.mjs`, `/api/keys`), zentrale Tastenkürzel-Verwaltung
+  + Kurzreferenz (`js/keyboardShortcuts.js`, `js/keyboardReference.js`)
+- Neue Features: Szenen-Regisseur (`js/sceneDirector.js` +
+  `sceneDirectorPanel.js`), 3D-Flugzeugmodelle für fünf Klassen
+  (`js/aircraftModels.js`), Launch-Replay mit rekonstruierter Aufstiegsbahn
+  (`js/launchAscent.js`), GOES-Infrarot-Wolken
+  (`js/layers/GoesCloudLayer.js`), Weltwetter-Raster
+  (`js/layers/WorldWeatherLayer.js`), Infrastruktur/Seekabel in Masse mit
+  Clustering (`js/layers/InfrastructureLayer.js`, `CableLayer.js`,
+  `BaseLayer.enableClustering()`)
+- Details, vollständige PR-Liste, drei Integrationsregressionen und offene
+  Folgearbeit (WEB-91, WEB-142) in `docs/WEB-81-gev-features-ui-overhaul.md`
+  und `docs/WEB-81-integrationswelle.md`
+- Noch nicht umgesetzt aus demselben Epic: Militärflüge, Verkehrs-/ÖPNV-/
+  Street-Level-Layer, ALPR-Kamerastandorte, erweiterte SGP4-Katalog-Anbindung
+  (WEB-89, 90, 93–95, 99) – eigene Dokumentation folgt, wenn sie landen
 
 **20.09.2026 – v2.7** — Objekt-Dossier
 - Neuer Button „📄 Dossier" im Detailpanel: lädt eine Textdatei mit
