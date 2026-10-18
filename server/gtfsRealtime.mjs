@@ -133,9 +133,9 @@ function parseEntity(buf) {
 
     const trip = tripBuf instanceof Uint8Array ? parseTripDescriptor(tripBuf) : {};
     const vehicle = vehBuf instanceof Uint8Array ? parseVehicleDescriptor(vehBuf) : {};
-    const currentStatus = num(vp, 3);
+    const currentStatus = num(vp, 4);
     const timestamp = num(vp, 5);
-    const currentStopSequence = num(vp, 4);
+    const currentStopSequence = num(vp, 3);
     const stopId = text(vp, 7);
 
     return {
@@ -164,7 +164,7 @@ function parseEntity(buf) {
  */
 export function decodeVehiclePositions(buf) {
     const top = parseMessage(buf);
-    const entityBufs = top.get(3) ?? [];   // FeedMessage.entity (wiederholt)
+    const entityBufs = top.get(2) ?? [];   // FeedMessage.entity (wiederholt)
     const vehicles = [];
     for (const entityBuf of entityBufs) {
         if (!(entityBuf instanceof Uint8Array)) continue;
