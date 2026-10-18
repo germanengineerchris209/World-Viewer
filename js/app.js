@@ -60,6 +60,7 @@ import { HeatmapLayer } from "./layers/HeatmapLayer.js";
 import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
 import { EventLayer } from "./layers/EventLayer.js";
 import { SpaceWeatherLayer } from "./layers/SpaceWeatherLayer.js";
+import { TransitLayer } from "./layers/TransitLayer.js";
 
 async function main() {
     /* 1 ── 3D-Globus mit Satellitenansicht */
@@ -96,6 +97,7 @@ async function main() {
     layerManager.register(new HeatmapLayer(worldViewer, layerManager));
     const spaceWeatherLayer = new SpaceWeatherLayer(worldViewer);
     layerManager.register(spaceWeatherLayer);
+    layerManager.register(new TransitLayer(worldViewer));
 
     /* 3 ── UI, Suche, Timeline, KI */
     // Zentrale Tastenkürzel-Verwaltung: eine Stelle statt verstreuter
