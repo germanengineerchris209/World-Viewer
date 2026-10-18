@@ -24,6 +24,9 @@
  *      /api/deepspace         Aktive Raumsonden (NASA JPL Horizons)
  *      /api/transit/:stadt    ÖPNV-Fahrzeugpositionen (GTFS-Realtime, Protobuf → JSON)
  *      /api/transit/status    Welche Städte sind eingerichtet?
+ *      /api/mapillary/status  Ist ein MAPILLARY_TOKEN gesetzt?
+ *      /api/mapillary/images  Street-Level-Bilder in einer bbox (Key nötig)
+ *      /api/mapillary/token   Token für den eingebetteten Betrachter (Key nötig)
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -66,7 +69,8 @@ import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
     handleFires, handleFiresHistory, handleCctvCatalog, handleAllskyCatalog, handleEvents,
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
-    handleComets, TLE_GROUPS, handleTransit, handleTransitStatus
+    handleComets, TLE_GROUPS, handleTransit, handleTransitStatus,
+    handleMapillaryStatus, handleMapillaryToken, handleMapillaryImages, mapillaryAvailable
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
@@ -552,6 +556,17 @@ export function createServer() {
             case "/api/transit/status":
                 return handleTransitStatus(res);
 
+            case "/api/mapillary/status":
+                return handleMapillaryStatus(res);
+
+            case "/api/mapillary/images":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleMapillaryImages(res, searchParams);
+
+            case "/api/mapillary/token":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleMapillaryToken(res);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
@@ -567,6 +582,7 @@ export function createServer() {
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
                     transit: true,
+                    mapillary: mapillaryAvailable(),
                     tleGroups: TLE_GROUPS
                 });
 

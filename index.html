@@ -506,6 +506,39 @@
                     <button id="ai-stop" class="hidden" title="Abbrechen">■</button>
                 </div>
             </section>
+
+            <!-- ────────── Street-Level (Mapillary) ────────── -->
+            <section id="streetlevel-panel" class="hidden dock-panel">
+                <header id="streetlevel-header">
+                    <div>
+                        <h3>📸 Street-Level</h3>
+                        <span id="streetlevel-meta" class="streetlevel-meta"></span>
+                    </div>
+                    <button id="streetlevel-close" title="Schließen">✕</button>
+                </header>
+
+                <div id="streetlevel-filters">
+                    <label>
+                        Bildtyp
+                        <select id="streetlevel-filter-type">
+                            <option value="all">Alle</option>
+                            <option value="pano">360°</option>
+                            <option value="flat">Flach</option>
+                        </select>
+                    </label>
+                    <label>
+                        Von
+                        <input type="date" id="streetlevel-filter-start">
+                    </label>
+                    <label>
+                        Bis
+                        <input type="date" id="streetlevel-filter-end">
+                    </label>
+                </div>
+
+                <div id="streetlevel-viewer"></div>
+                <p id="streetlevel-hint" class="flight-status-line">Auf einen Bildkegel auf dem Globus klicken …</p>
+            </section>
         </div>
 
         <!-- ────────── POWER-UP: Chip unten rechts ────────── -->

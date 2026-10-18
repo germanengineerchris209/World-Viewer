@@ -107,6 +107,17 @@ export const KEY_SERVICES = [
         unlocks: "📷 Mehr TfL-Kamera-Kontingent",
         cost: "gratis-kontingent",
         signupUrl: "https://api-portal.tfl.gov.uk"
+    },
+    {
+        id: "mapillary",
+        envVar: "MAPILLARY_TOKEN",
+        name: "Mapillary",
+        unlocks: "📸 Street-Level-Fotos (Abdeckungslinien + Bildkegel)",
+        cost: "gratis",
+        signupUrl: "https://www.mapillary.com/dashboard/developers",
+        layers: ["streetlevel"],
+        layerImpact: "Ohne diesen Key bleibt die Ebene „Street-Level“ leer – "
+            + "ohne Mapillary-Client-Token lässt sich keine Abdeckung laden."
     }
 ];
 
