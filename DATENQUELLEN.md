@@ -59,6 +59,9 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🌫️ Luftqualität (AQI) | Open-Meteo Air Quality API | Großstädte, handkuratiert |
 | ⛽ Kraftstoffreserven | modelliert nach IEA-Bevorratungsregeln / nationalen Mindestbevorratungsgesetzen | 20 größte Volkswirtschaften, statische Modellwerte, keine Live-Meldung |
 | 📰 Ereignisse | GDELT Project GEO 2.0 API | geokodierte Weltnachrichten, Aktualisierung alle 15 Min. |
+| ☁️ GOES-Wolken (Infrarot) | NASA GIBS (WMTS) | geostationär, deckt nur Amerika/Pazifik/Atlantik ab; CORS-frei, direkter Browser-Zugriff |
+| 🌦️ Weltwetter-Raster | Open-Meteo Forecast API | weltweites Gradnetz, 1 Sammelanfrage pro Aktualisierung – zählt aber pro Zelle gegen das Tageskontingent (siehe Abschnitt „Weltwetter-Raster" unten) |
+| 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Build-Schritt `npm run build:infrastructure-mass` nötig, Ergebnis aktuell **nicht committet** (Issue WEB-142), siehe Abschnitt unten |
 
 ### 🟡 Kostenloser Schlüssel nötig
 
@@ -71,6 +74,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🚀 Mehr Start-Kontingent | Launch Library 2 | <https://ll.thespacedevs.com/docs/> |
 | ☄️ Mehr Asteroiden-Kontingent | NASA api.nasa.gov | <https://api.nasa.gov> → sofort per E-Mail (1000 Abrufe/Stunde) |
 | 📷 Mehr TfL-Kontingent | TfL Open Data | <https://api-portal.tfl.gov.uk> |
+| 📸 Street-Level-Fotos (Abdeckung + Bildkegel) | Mapillary | <https://www.mapillary.com/dashboard/developers> → "Register application" |
 
 ### 🔴 Kostenpflichtig, rein optional
 
@@ -183,8 +187,12 @@ Bahndaten (TLE) von **CelesTrak**, gerechnet mit dem SGP4-Modell aus
 überein – die ISS erscheint auf 420 km Höhe bei 27.600 km/h.
 
 Endpunkt: `celestrak.org/NORAD/elements/gp.php?GROUP=<gruppe>&FORMAT=tle`
-Gruppen in `config.js`: `stations`, `visual`, `gps-ops`, `galileo`, `geo`,
-optional `starlink` (bringt tausende Objekte).
+Gruppen in `config.js`: `stations`, `visual`, `gps-ops`, `glo-ops`,
+`galileo`, `geo` plus vier `*-debris`-Gruppen – zusammen rund 830–1000
+Objekte, GEV-Maßstab (siehe `docs/WEB-84-sgp4-satellitenpropagation-ohne-build-schritt.md`).
+`satellites.dense: true` hängt zusätzlich `starlink` an (~10.600 Objekte,
+gekappt auf `maxStarlinkPerGroup`) – Schalter für die Starlink-Dichte,
+Standard aus.
 
 Der Server spiegelt CelesTrak, weil dort keine CORS-Header gesetzt sind,
 und cacht 6 Stunden. Ohne Server fällt die Ebene auf die Beispieldaten
@@ -384,6 +392,28 @@ CORS-freigegeben sind und die Bilder teils hotlink-geschützt.
 > © Crown copyright and database rights." Die App zeigt diesen Hinweis
 > im Bildnachweis jeder TfL-Kamera an.
 
+### 📸 Street-Level (Mapillary, WEB-95)
+
+Abdeckungslinien (eine Polylinie je Mapillary-"sequence") und Bildkegel in
+Blickrichtung, analog zur Kamera-Sichtkegel-Mechanik. Lädt lazy nur für den
+sichtbaren Kartenausschnitt (`/api/mapillary/images`), nicht global.
+
+**Ohne `MAPILLARY_TOKEN`** bleibt die Ebene leer (503/no_key vom Server) –
+Layer-Konsole und POWER-UP-Panel erklären das 🔑-Badge.
+
+**Mit Token:** Bildsuche und Abdeckung laufen komplett über den Server
+(Token bleibt in `.env`). Nur der eingebettete `mapillary-js`-Betrachter
+holt sich den Token transient über `/api/mapillary/token`, weil die
+Bibliothek ihre Kachel-/Mesh-Anfragen selbst direkt aus dem Browser stellt –
+dafür braucht sie den echten Wert, der deshalb nie fest im Client-Code
+abgelegt wird.
+
+Filter im Panel (rechte Rail): Bildtyp (Alle/360°/Flach) und Zeitraum –
+beides filtert die bereits geladenen Bilder, ohne neu abzufragen.
+
+> Mapillary verlangt die Namensnennung "Imagery © Mapillary contributors"
+> (CC-BY-SA) – die App zeigt sie im Street-Level-Panel an jedem Bild.
+
 ### 🌌 Allsky-Kameras
 
 Allsky-Kameras blicken mit einem Fisheye-Objektiv senkrecht nach oben und
@@ -518,6 +548,69 @@ cacht, knapp unter GDELTs eigenem 15-Minuten-Update-Takt.
 > leer) statt die App zu stören – siehe `server/dataProxies.mjs`,
 > `handleEvents()`.
 
+### ☁️ GOES-Infrarot-Wolken
+
+**NASA GIBS** (Global Imagery Browse Services), WMTS-Kachel-Dienst,
+`https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/` – öffentlich, ohne
+Anmeldung, ohne Schlüssel, mit CORS-Freigabe
+(`access-control-allow-origin: *`), daher **direkter Browser-Zugriff ohne
+Server-Proxy**. Verwendet werden die Layer
+`GOES-East_ABI_Band13_Clean_Infrared` und
+`GOES-West_ABI_Band13_Clean_Infrared` (10,3 µm, zeigt Wolkenoberkanten/
+-temperatur statt nur sichtbares Licht, funktioniert deshalb auch nachts).
+
+Kein Zeit-Parameter im Request nötig: GIBS löst den WMTS-Pfad "default" auf
+das jeweils neueste verfügbare Bild auf; der tatsächliche Zeitstempel kommt
+per CORS-freigegebenem Response-Header `layer-time-actual` zurück.
+
+**Lizenz/Rate-Limit:** NASA-Daten sind gemeinfrei (public domain), kein
+offiziell dokumentiertes Rate-Limit für GIBS-WMTS-Kacheln, übliche
+Fair-Use-Erwartung bei einem öffentlichen Kachel-Dienst. **Abdeckung
+geostationär beschränkt:** GOES-Ost/-West decken nur Amerika, Pazifik und
+Atlantik ab – Europa/Asien/Afrika bleiben im Overlay leer, das ist der
+Normalfall, kein Fehler.
+
+### 🌦️ Weltwetter-Raster
+
+**Open-Meteo Forecast API** (`api.open-meteo.com/v1/forecast`) – dieselbe
+Quelle wie das bestehende städtebasierte Wetter-Overlay und die
+Luftqualität, hier aber als **flächendeckendes Gradnetz der ganzen Welt**
+(Standard-Schrittweite 15°, 264 Zellen inkl. Ozeane, Pole ausgespart).
+Öffentlich, ohne Anmeldung, ohne Schlüssel für nicht-kommerzielle Nutzung.
+
+Alle Zellen werden in **einer** HTTP-Anfrage geholt (`latitude`/`longitude`
+akzeptieren kommaseparierte Listen) – das hält die Netzwerklast niedrig,
+ändert aber nichts am Kontingent: **Open-Meteo zählt bei Sammelabfragen
+jede einzelne Koordinate als eigenen Aufruf** gegen das Fair-Use-Limit von
+rund 10.000 Aufrufen/Tag. Bei stündlicher Aktualisierung sind das ~6.300
+Koordinaten-Aufrufe/Tag beim 15°-Raster – noch im kostenlosen Rahmen. Ein
+feineres 10°-Raster (576 Zellen) würde das Tageslimit schon im
+Einzelbetrieb sprengen. Wer einen eigenen API-Schlüssel/Server nutzt, kann
+die Schrittweite in der Konfiguration (`worldWeather`) verkleinern.
+
+### 🏗️ Infrastruktur/Seekabel in Masse
+
+**OpenStreetMap via Overpass API** – Rechenzentren und Dämme
+(`man_made=data_center`/vergleichbare Tags) sowie Seekabel
+(`man_made=submarine_cable`) als statischer Snapshot, erzeugt durch
+`node scripts/build-infrastructure-mass.mjs` (`npm run
+build:infrastructure-mass`). Lizenz: **ODbL 1.0** (Attribution +
+Share-Alike) – bewusst **nicht** TeleGeography für Seekabel, deren
+Submarine Cable Map unter CC BY-NC-SA 3.0 (nicht-kommerziell) steht und
+damit nicht zur restlichen Lizenzlage des Projekts passt. Der Build-Lauf
+braucht Internet und dauert wegen Overpass-Timeouts mehrere Minuten; es
+gibt kein festes Overpass-Rate-Limit, aber die üblichen Fair-Use-Regeln
+des öffentlichen Overpass-Servers gelten (nicht parallelisieren, nicht in
+kurzen Abständen wiederholen).
+
+> ⚠️ **Rate-Limit in der Praxis = 0, weil der Build nicht gelaufen ist:**
+> Die drei erzeugten Dateien (`data/datacenters.json`, `data/dams.json`,
+> `data/cables-osm.json`) liegen aktuell nicht im Repository (Issue
+> WEB-142). Ein frischer Checkout lädt sie mit 404 und zeigt nur die
+> wenigen handkuratierten Einträge aus `data/infrastructure.json` /
+> `data/cables.json` – kein Absturz, aber die versprochene Masse an
+> Objekten fehlt, bis der Build-Schritt nachgeholt und committet wird.
+
 ### 🗺️ Karten und Gelände
 
 | | Quelle | Schlüssel |
@@ -542,8 +635,16 @@ Aus dem Referenzprojekt sinnvoll ergänzbar, aber noch offen:
 - **Sprachsteuerung des Globus** – im Referenzprojekt 28 Sprachbefehle über
   die OpenAI-Realtime-API. Mit der Claude API ließe sich das über
   Werkzeugaufrufe nachbauen.
-- Verkehrslage (TomTom), Seekabel, Rechenzentren, Staudämme, Radiosender,
-  Leihräder, Wetter im Cockpit.
+- Militärflüge als eigener Layer (adsb.lol, Sonderfarbe) – Issue WEB-90.
+- Verkehrs-Layer (OSM-Simulation, TomTom-Live optional) – Issue WEB-93.
+- ÖPNV-Layer (GTFS-Realtime, 1–2 Städte) – Issue WEB-94.
+- Street-Level-Panel (Mapillary) mit Abdeckungslinien – Issue WEB-95.
+- ALPR-Kamerastandorte aus OpenStreetMap (nur Standorte, kein Tracking) –
+  Issue WEB-99, PR offen.
+- Erweiterte SGP4-Katalog-Anbindung (mehr CelesTrak-Gruppen) – Issue WEB-89.
+- Zwei weitere Layer-Kandidaten in Recherche, noch nicht beauftragt:
+  globales Strahlungsmessnetz (Safecast, CC0) und NOAA-Tsunami-Warnungen –
+  Issue WEB-140.
 
 ---
 
@@ -560,6 +661,12 @@ nur in `.env` auf dem Server. Er wird nie an den Browser ausgeliefert;
 der Server sagt beim Start lediglich, dass er ihn gefunden hat, ohne den
 Wert auszugeben. Das Kontingent gilt pro Key (5.000 Abrufe je 10 Minuten)
 und wird durch den 30-Minuten-Cache des Servers geschont.
+
+**Mapillary** – Dieser Key steht nur in `.env` auf dem Server. Bildsuche
+und Abdeckungslinien laufen vollständig über den Server-Proxy; nur beim
+tatsächlichen Öffnen eines Bildes im Panel holt sich der eingebettete
+`mapillary-js`-Betrachter den Token einmalig über `/api/mapillary/token` –
+er landet dabei nie in `config.js` oder einer anderen Datei im Repository.
 
 **Falls ein Schlüssel doch einmal nach außen gelangt:** Beide lassen sich
 ohne Aufwand ersetzen – bei Cesium unter „Access Tokens" einen neuen
@@ -578,6 +685,15 @@ und Farbgebung der Satelliten, sowie die Mathematik der Cockpit-Kamera
 (Trägheitsanker, Korrekturbegrenzer, Kurs-Begrenzer). Die dortige
 Bewegungsmathematik ist ihrerseits von **skylight** (MIT,
 <https://github.com/cpaczek/skylight>) adaptiert.
+
+Aus der WEB-81-Welle zusätzlich übernommen (Konzept/Code, keine Daten):
+das Szenen-Regisseur-Prinzip (Kamerastationen + weiches Abfliegen), der
+"Hangar" mit fünf 3D-Flugzeugmodellen samt Ausrichtungs-Offset, die
+Methode zur Rekonstruktion einer Raketen-Aufstiegsbahn aus Startplatz und
+Zielorbit (Launch-Replay) sowie die Tastatur-Belegung (1–7, H, D, C,
+Backtick, Esc). GOES-Infrarot-Wolken, das Weltwetter-Raster und die
+Infrastruktur-Massendaten sind dagegen eigenständige Ergänzungen ohne
+GEV-Vorbild.
 
 **Wichtig:** Die MIT-Lizenz deckt nur den **Quellcode** ab, nicht die
 Daten. Jede Datenquelle behält ihre eigenen Bedingungen – die

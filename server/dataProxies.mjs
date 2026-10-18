@@ -1679,7 +1679,110 @@ function decodeEntities(text) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   9. ALPR-Kamerastandorte – OpenStreetMap (DeFlock-Projekt, WEB-99)
+   9. Mapillary – Street-Level-Abdeckung (WEB-95)
+   ═══════════════════════════════════════════════════════════
+
+   Referenz: docs/WEB-83-datenquellen-verkehr-oepnv-streetlevel-militaer.md.
+   Die Bildsuche läuft über diesen Server (Token bleibt hier), obwohl
+   Mapillary selbst CORS offen hat – siehe Auftrag WEB-95 ("Token über den
+   Server brokern, nicht im Client-Code ablegen"). Einzige Ausnahme ist
+   handleMapillaryToken(): der eingebettete mapillary-js-Betrachter stellt
+   seine Bild-/Mesh-Anfragen selbst direkt aus dem Browser und braucht dafür
+   den echten Token – der wird erst beim tatsächlichen Öffnen eines Bildes
+   abgeholt, nie fest im Client-Code abgelegt. */
+
+const MAPILLARY_TOKEN = (process.env.MAPILLARY_TOKEN ?? "").trim();
+const MAPILLARY_TTL_MS = 10 * 60 * 1000;   // Straßenbilder ändern sich nicht in Echtzeit
+const MAPILLARY_MAX_IMAGES = 500;          // ein Sichtausschnitt reicht, schont das Kontingent
+const MAPILLARY_MAX_BBOX_DEGREES = 0.2;    // ~20 km Kantenlänge – größer: erst heranzoomen
+
+const MAPILLARY_NO_KEY = {
+    error: "no_key",
+    message: "MAPILLARY_TOKEN ist nicht gesetzt. Kostenlos registrieren: "
+        + "https://www.mapillary.com/dashboard/developers"
+};
+
+export function mapillaryAvailable() {
+    return !!MAPILLARY_TOKEN;
+}
+
+export function handleMapillaryStatus(res) {
+    sendJson(res, 200, { available: mapillaryAvailable() });
+}
+
+export function handleMapillaryToken(res) {
+    if (!MAPILLARY_TOKEN) { sendJson(res, 503, MAPILLARY_NO_KEY); return; }
+    sendJson(res, 200, { token: MAPILLARY_TOKEN });
+}
+
+export async function handleMapillaryImages(res, searchParams) {
+    if (!MAPILLARY_TOKEN) { sendJson(res, 503, MAPILLARY_NO_KEY); return; }
+
+    const bbox = String(searchParams.get("bbox") ?? "");
+    const parts = bbox.split(",").map(Number);
+    if (parts.length !== 4 || parts.some(n => !Number.isFinite(n))) {
+        sendJson(res, 400, { error: "bbox muss 'minLon,minLat,maxLon,maxLat' sein" });
+        return;
+    }
+    const [minLon, minLat, maxLon, maxLat] = parts;
+    if (maxLon - minLon <= 0 || maxLat - minLat <= 0) {
+        sendJson(res, 400, { error: "Ungültige bbox (max muss größer als min sein)" });
+        return;
+    }
+    if (maxLon - minLon > MAPILLARY_MAX_BBOX_DEGREES || maxLat - minLat > MAPILLARY_MAX_BBOX_DEGREES) {
+        sendJson(res, 400, { error: `bbox zu groß – näher heranzoomen (max. ${MAPILLARY_MAX_BBOX_DEGREES}° Kantenlänge)` });
+        return;
+    }
+
+    const cacheKey = `mapillary:${parts.map(n => n.toFixed(4)).join(",")}`;
+
+    try {
+        const result = await cachedFetch(cacheKey, MAPILLARY_TTL_MS, async () => {
+            const url = new URL("https://graph.mapillary.com/images");
+            url.searchParams.set("access_token", MAPILLARY_TOKEN);
+            url.searchParams.set("fields", "id,geometry,compass_angle,captured_at,is_pano,sequence,thumb_256_url");
+            url.searchParams.set("bbox", bbox);
+            url.searchParams.set("limit", String(MAPILLARY_MAX_IMAGES));
+
+            const upstream = await fetchWithTimeout(url, {}, 20_000);
+            const body = await upstream.json().catch(() => null);
+            if (!upstream.ok) {
+                throw new Error(body?.error?.message ?? `Mapillary antwortete mit ${upstream.status}`);
+            }
+
+            // Defensiv gegen künftige Feldänderungen bei Mapillary: fehlt
+            // sequence/is_pano, bekommt das Bild eine Einzel-Sequenz bzw.
+            // gilt als Flachbild statt die ganze Antwort zu verwerfen.
+            const images = (body?.data ?? []).map(img => ({
+                id: img.id,
+                longitude: img.geometry?.coordinates?.[0] ?? null,
+                latitude: img.geometry?.coordinates?.[1] ?? null,
+                heading: Number(img.compass_angle) || 0,
+                capturedAt: img.captured_at ?? null,
+                isPano: img.is_pano === true,
+                sequence: img.sequence ?? img.id,
+                thumbUrl: img.thumb_256_url ?? null
+            })).filter(img => img.longitude != null && img.latitude != null);
+
+            return {
+                data: JSON.stringify({ fetchedAt: Date.now(), count: images.length, images }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Mapillary nicht abrufbar: ${err.message}` });
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   10. ALPR-Kamerastandorte – OpenStreetMap (DeFlock-Projekt, WEB-99)
    ═══════════════════════════════════════════════════════════
 
    Kennzeichenleser (ALPR/ANPR) werden von der DeFlock-Community als
