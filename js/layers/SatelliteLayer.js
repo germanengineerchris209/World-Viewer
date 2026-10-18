@@ -128,11 +128,24 @@ export class SatelliteLayer extends BaseLayer {
     async _loadFromCelestrak() {
         const cfg = CFG();
         const groups = cfg.groups ?? [
-            "stations", "visual", "gps-ops", "galileo", "geo",
+            "stations", "visual", "gps-ops", "glo-ops", "galileo", "geo",
             "cosmos-1408-debris", "fengyun-1c-debris",
             "iridium-33-debris", "cosmos-2251-debris"
         ];
-        const maxPerGroup = cfg.maxPerGroup ?? 60;
+        // "dense" hängt Starlink hinten an, ohne dass die Standardliste
+        // in der Config angefasst werden muss – das ist der Schalter
+        // für die Starlink-Dichte aus dem Ticket.
+        if (cfg.dense && !groups.includes("starlink")) groups.push("starlink");
+
+        // Reguläre Gruppen bleiben praktisch unbegrenzt (die realen
+        // Größen – u.a. 567 bei "geo" – lagen bisher am 60er-Deckel
+        // und wurden abgeschnitten, siehe WEB-84). Schrott und Starlink
+        // behalten eigene, kleinere Deckel: beide Gruppen liefern sonst
+        // hunderte bis über zehntausend Objekte und würden die Szene
+        // trotz Dedupe zumüllen.
+        const maxPerGroup = cfg.maxPerGroup ?? 2000;
+        const maxDebrisPerGroup = cfg.maxDebrisPerGroup ?? 60;
+        const maxStarlinkPerGroup = cfg.maxStarlinkPerGroup ?? 1500;
         const seen = new Set();
         let count = 0;
 
@@ -153,9 +166,13 @@ export class SatelliteLayer extends BaseLayer {
                 if (result.status === "rejected") throw result.reason;
                 const text = result.value;
 
+                const cap = DEBRIS_EVENTS[group]
+                    ? maxDebrisPerGroup
+                    : (group === "starlink" ? maxStarlinkPerGroup : maxPerGroup);
+
                 let added = 0;
                 for (const entry of parseTle(text)) {
-                    if (added >= maxPerGroup) break;
+                    if (added >= cap) break;
 
                     const satrec = this._sat.twoline2satrec(entry.line1, entry.line2);
                     if (!satrec || satrec.error !== 0) continue;

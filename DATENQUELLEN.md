@@ -186,8 +186,12 @@ Bahndaten (TLE) von **CelesTrak**, gerechnet mit dem SGP4-Modell aus
 überein – die ISS erscheint auf 420 km Höhe bei 27.600 km/h.
 
 Endpunkt: `celestrak.org/NORAD/elements/gp.php?GROUP=<gruppe>&FORMAT=tle`
-Gruppen in `config.js`: `stations`, `visual`, `gps-ops`, `galileo`, `geo`,
-optional `starlink` (bringt tausende Objekte).
+Gruppen in `config.js`: `stations`, `visual`, `gps-ops`, `glo-ops`,
+`galileo`, `geo` plus vier `*-debris`-Gruppen – zusammen rund 830–1000
+Objekte, GEV-Maßstab (siehe `docs/WEB-84-sgp4-satellitenpropagation-ohne-build-schritt.md`).
+`satellites.dense: true` hängt zusätzlich `starlink` an (~10.600 Objekte,
+gekappt auf `maxStarlinkPerGroup`) – Schalter für die Starlink-Dichte,
+Standard aus.
 
 Der Server spiegelt CelesTrak, weil dort keine CORS-Header gesetzt sind,
 und cacht 6 Stunden. Ohne Server fällt die Ebene auf die Beispieldaten
