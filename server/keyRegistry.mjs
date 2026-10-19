@@ -118,6 +118,17 @@ export const KEY_SERVICES = [
         layers: ["streetlevel"],
         layerImpact: "Ohne diesen Key bleibt die Ebene „Street-Level“ leer – "
             + "ohne Mapillary-Client-Token lässt sich keine Abdeckung laden."
+    },
+    {
+        id: "tomtom",
+        envVar: "TOMTOM_API_KEY",
+        name: "TomTom Traffic",
+        unlocks: "🚦 Echte Verkehrsfluss-Geschwindigkeiten",
+        cost: "gratis-kontingent",
+        signupUrl: "https://developer.tomtom.com",
+        layers: ["traffic"],
+        layerImpact: "Ohne diesen Key bleibt die Ebene „Verkehr“ eine reine "
+            + "Straßenraster-Simulation ohne echte Geschwindigkeiten."
     }
 ];
 
