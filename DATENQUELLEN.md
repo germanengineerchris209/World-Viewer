@@ -46,6 +46,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🛰️ Satelliten (echte Bahnen) | CelesTrak + SGP4 | |
 | 🌋 Erdbeben | USGS | letzte 24 Stunden |
 | 🗻 Vulkane | Smithsonian GVP (Weltkatalog + laufende Ausbrüche), USGS Volcano Hazards Program (amtliche Warnstufen) | 438 seit 1900 aktive Vulkane, Ampel live über `/api/volcanoes`; GVP sendet kein CORS → Server-Proxy. Rückfallebene: `data/volcanoes.json` (erzeugt via `npm run build:volcanoes`) |
+| 🏗️ Infrastruktur-Massendaten (Rechenzentren, Dämme, Seekabel) | OpenStreetMap via Overpass API | Statischer Snapshot, nicht live. Ergänzt additiv die handkuratierten Einträge aus `data/infrastructure.json`/`data/cables.json`. Erzeugt via `npm run build:infrastructure-mass` (braucht Internet, mehrere Minuten, Overpass-Server sind oft überlastet – bei Fehlern mit Backoff erneut versuchen). Die drei Ausgabedateien (`data/datacenters.json`, `data/dams.json`, `data/cables-osm.json`) sind **optional**: fehlen sie, zeigen die Layer nur die handkuratierte Liste, ohne Konsolenfehler. ODbL 1.0 – Namensnennung „© OpenStreetMap contributors" Pflicht. |
 | 🚀 Raketenstarts | Launch Library 2 | 15 Abrufe/Stunde |
 | ☄️ Asteroiden (Erdannäherungen, 7 Tage) | NASA NeoWs | läuft mit `DEMO_KEY`, 30 Abrufe/Stunde (weltweit geteilt) |
 | 🌠 Kometen | NASA JPL Small-Body Database | kein Schlüssel; Bahnelemente, Positionen rechnet der Browser |

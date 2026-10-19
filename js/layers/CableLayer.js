@@ -12,7 +12,7 @@
  */
 
 import { BaseLayer } from "./BaseLayer.js";
-import { loadJSON, normalizeRecord, svgDataUri } from "../dataManager.js";
+import { loadJSON, loadJSONOptional, normalizeRecord, svgDataUri } from "../dataManager.js";
 
 const CABLE_COLOR = "#a78bfa";
 const MASS_SOURCE_URL = "./data/cables-osm.json";
@@ -42,7 +42,7 @@ export class CableLayer extends BaseLayer {
     async load() {
         this.objects = [];
         const curated = await loadJSON(this.dataUrl);
-        const mass = await loadJSON(MASS_SOURCE_URL);
+        const mass = await loadJSONOptional(MASS_SOURCE_URL);
         const records = [...curated, ...(mass.items ?? [])];
         for (const raw of records) {
             const obj = this._normalize(raw);

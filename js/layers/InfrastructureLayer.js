@@ -11,7 +11,7 @@
  */
 
 import { BaseLayer } from "./BaseLayer.js";
-import { loadJSON, normalizeRecord, svgDataUri } from "../dataManager.js";
+import { loadJSON, loadJSONOptional, normalizeRecord, svgDataUri } from "../dataManager.js";
 
 // Zusätzliche, automatisch erzeugte Massendatensätze – ergänzen die
 // handkuratierten Einträge aus data/infrastructure.json additiv.
@@ -72,9 +72,10 @@ export class InfrastructureLayer extends BaseLayer {
     /** Lädt die handkuratierte Liste plus die generierten Massendatensätze additiv. */
     async load() {
         this.objects = [];
-        const sources = [this.dataUrl, ...MASS_SOURCES];
-        for (const url of sources) {
-            const raw = await loadJSON(url);
+        const curated = await loadJSON(this.dataUrl);
+        const massRaw = await Promise.all(MASS_SOURCES.map(loadJSONOptional));
+        const sourceLists = [curated, ...massRaw];
+        for (const raw of sourceLists) {
             const records = Array.isArray(raw) ? raw : (raw.items ?? []);
             for (const record of records) {
                 const obj = normalizeRecord(record, this.type);
