@@ -61,6 +61,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🌫️ Luftqualität (AQI) | Open-Meteo Air Quality API | Großstädte, handkuratiert |
 | ⛽ Kraftstoffreserven | modelliert nach IEA-Bevorratungsregeln / nationalen Mindestbevorratungsgesetzen | 20 größte Volkswirtschaften, statische Modellwerte, keine Live-Meldung |
 | 📰 Ereignisse | GDELT Project GEO 2.0 API | geokodierte Weltnachrichten, Aktualisierung alle 15 Min. |
+| 🚌 ÖPNV (Busse/Bahnen/Fähren) | GTFS-Realtime: MBTA (Boston), OVapi (Niederlande) | Protobuf, serverseitig dekodiert; nur diese zwei Regionen abgedeckt |
 | ☁️ GOES-Wolken (Infrarot) | NASA GIBS (WMTS) | geostationär, deckt nur Amerika/Pazifik/Atlantik ab; CORS-frei, direkter Browser-Zugriff |
 | 🌦️ Weltwetter-Raster | Open-Meteo Forecast API | weltweites Gradnetz, 1 Sammelanfrage pro Aktualisierung – zählt aber pro Zelle gegen das Tageskontingent (siehe Abschnitt „Weltwetter-Raster" unten) |
 | 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Build-Schritt `npm run build:infrastructure-mass` nötig, Ergebnis aktuell **nicht committet** (Issue WEB-142), siehe Abschnitt unten |
@@ -377,6 +378,30 @@ einzubinden.
 Außerhalb der Hurrikansaison ist `activeStorms` meist leer – das ist der
 Normalfall. Die Sidebar zeigt dann "derzeit keine aktiven Systeme" statt
 einer stillschweigend leeren Ebene.
+
+### 🚌 ÖPNV (Busse, Bahnen, Fähren)
+
+**GTFS-Realtime** (Google/MobilityData-Standard) ist Protobuf, kein JSON –
+dafür gibt es keine CDN-taugliche Decoder-Bibliothek ohne Build-Schritt.
+`server/gtfsRealtime.mjs` liest das Protobuf-Drahtformat (Varints +
+Length-Delimited-Felder) selbst aus, analog zu `server/kmz.mjs` für das
+ZIP-Format der NHC-Vorhersagekegel – kein npm-Paket nötig.
+
+Zwei schlüsselfreie Feeds, beide gegen MBTA/OVapi mit `curl` verifiziert
+(siehe `docs/WEB-83-datenquellen-verkehr-oepnv-streetlevel-militaer.md`):
+- **MBTA (Boston, USA)** – `cdn.mbta.com/realtime/VehiclePositions.pb`.
+  Deckt Bus, U-Bahn/Straßenbahn, Pendlerzug und Fähre in einem Feed ab.
+  route_id ist hier bereits die Linienbezeichnung selbst (z.B. "Red",
+  "CR-Providence", "1"), daher keine zusätzliche GTFS-Schedule-Datei nötig.
+- **OVapi (Niederlande)** – `gtfs.ovapi.nl/nl/vehiclePositions.pb`,
+  landesweiter Community-Aggregator mit deutlich mehr Fahrzeugen.
+
+Beide Feeds senden kein CORS, daher läuft die Dekodierung ohnehin
+serverseitig über `/api/transit/<stadt>` (20s Cache, Feeds aktualisieren
+sich selbst alle ~20-30s). Außerhalb dieser zwei Regionen bleibt die
+Ebene leer – das ist eine Dateneigenschaft (zwei ausgewählte offene
+Feeds von vielen tausend GTFS-Betreibern weltweit), die Sidebar erklärt
+das über `statusText()` statt stillschweigend leer zu bleiben.
 
 ### 🕰️ Zeitleisten-Replay
 

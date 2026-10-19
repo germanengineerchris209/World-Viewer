@@ -27,6 +27,7 @@
 import { countryDe, typeDe, displayName } from "./volcanoLabels.mjs";
 import { readKmzAsKml, extractConePolygon } from "./kmz.mjs";
 import { cometPosition, julianDateFromMs } from "../js/cometOrbits.js";
+import { decodeVehiclePositions } from "./gtfsRealtime.mjs";
 
 const UA = "world-viewer/2.3 (+https://github.com/)";
 
@@ -1916,6 +1917,122 @@ function mapAlprElement(el, lat, lon) {
         operator: tags.operator ?? null,
         startDate: tags.start_date ?? null
     };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   11. GTFS-Realtime – ÖPNV-Fahrzeugpositionen (WEB-94)
+   ═══════════════════════════════════════════════════════════
+
+ * GTFS-Realtime ist Protobuf, nicht JSON (siehe server/gtfsRealtime.mjs
+ * für den Decoder). Beide hier angebundenen Feeds senden außerdem kein
+ * CORS – ein direkter Browser-Zugriff wäre also ohnehin blockiert.
+ * Dekodiert wird serverseitig, der Browser bekommt sauberes JSON.
+ *
+ * Zwei Städte mit offenem, schlüsselfreiem Feed (siehe
+ * docs/WEB-83-datenquellen-verkehr-oepnv-streetlevel-militaer.md,
+ * Abschnitt 2, dort mit curl gegen die echten Endpunkte verifiziert):
+ *   - MBTA (Boston, USA): deckt Bus, U-Bahn/Straßenbahn (Subway/Light
+ *     Rail), Pendlerzüge (Commuter Rail) UND Fähren in einem Feed ab –
+ *     "Busse, Bahnen, Fähren" aus einer Quelle.
+ *   - OVapi (Niederlande): landesweiter Community-Aggregator aller
+ *     niederländischen Verkehrsbetreiber, deutlich mehr Fahrzeuge.
+ *
+ * MBTA-route_id ist bei dieser Quelle bereits die Linienbezeichnung
+ * selbst (z.B. "Red", "CR-Providence", "1"), keine interne ID – daher
+ * reicht die rohe route_id als Anzeige, ohne zusätzlich die
+ * GTFS-Schedule-Datei (routes.txt, separates ZIP) laden zu müssen.
+ */
+
+const TRANSIT_TTL_MS = 20_000;   // Feeds aktualisieren sich selbst alle ~20-30s
+
+/** MBTA-route_id → Verkehrsmittel, rein aus dem bekannten Namensschema. */
+function classifyMbtaVehicleType(routeId) {
+    if (!routeId) return "unbekannt";
+    if (/^(Red|Orange|Blue|Mattapan|Green-[A-E])$/.test(routeId)) return "bahn";
+    if (routeId.startsWith("CR-")) return "pendlerzug";
+    if (routeId.startsWith("Boat-")) return "faehre";
+    return "bus";
+}
+
+const TRANSIT_CITIES = {
+    boston: {
+        label: "Boston (MBTA)",
+        url: "https://cdn.mbta.com/realtime/VehiclePositions.pb",
+        attribution: "Data provided by MBTA",
+        classify: classifyMbtaVehicleType
+    },
+    nl: {
+        label: "Niederlande (OVapi)",
+        url: "https://gtfs.ovapi.nl/nl/vehiclePositions.pb",
+        attribution: "OVapi / Nationale Databank Openbaar Vervoer (NDOV)",
+        classify: () => "unbekannt"   // Linienschema ist hier betreiberspezifisch, nicht verlässlich klassifizierbar
+    }
+};
+
+/** Welche Städte sind eingerichtet? Kostet keinen Abruf. */
+export function handleTransitStatus(res) {
+    sendJson(res, 200, {
+        cities: Object.entries(TRANSIT_CITIES).map(([id, c]) => ({
+            id, label: c.label, attribution: c.attribution
+        }))
+    });
+}
+
+export async function handleTransit(res, cityId) {
+    const city = TRANSIT_CITIES[cityId];
+    if (!city) {
+        sendJson(res, 404, {
+            error: `Unbekannte Stadt "${cityId}". Verfügbar: ${Object.keys(TRANSIT_CITIES).join(", ")}`
+        });
+        return;
+    }
+
+    try {
+        const result = await cachedFetch(`transit:${cityId}`, TRANSIT_TTL_MS, async () => {
+            const upstream = await fetchWithTimeout(city.url, {}, 15_000);
+            if (!upstream.ok) throw new Error(`Feed antwortete mit ${upstream.status}`);
+
+            const buf = Buffer.from(await upstream.arrayBuffer());
+            const vehicles = decodeVehiclePositions(buf).map(v => ({
+                id: `${cityId}-${v.id}`,
+                latitude: v.latitude,
+                longitude: v.longitude,
+                bearing: v.bearing,
+                speedKmh: v.speed != null ? v.speed * 3.6 : null,
+                routeId: v.routeId,
+                tripId: v.tripId,
+                directionId: v.directionId,
+                currentStatus: v.currentStatus,
+                stopId: v.stopId,
+                vehicleLabel: v.vehicleLabel ?? v.vehicleId ?? v.id,
+                vehicleType: city.classify(v.routeId),
+                city: cityId,
+                timestamp: v.timestamp ?? Date.now()
+            }));
+
+            return {
+                data: JSON.stringify({
+                    city: cityId,
+                    label: city.label,
+                    attribution: city.attribution,
+                    fetchedAt: Date.now(),
+                    count: vehicles.length,
+                    vehicles
+                }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "no-store",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `ÖPNV-Feed (${city.label}) nicht abrufbar: ${err.message}` });
+    }
 }
 
 /* ═══════════ Hilfsfunktion ═══════════ */

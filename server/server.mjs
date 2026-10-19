@@ -22,6 +22,8 @@
  *      /api/asteroids         Erdnahe Asteroiden der nächsten 7 Tage (NASA NeoWs)
  *      /api/comets            Kometen mit Bahnelementen (NASA JPL SBDB)
  *      /api/deepspace         Aktive Raumsonden (NASA JPL Horizons)
+ *      /api/transit/:stadt    ÖPNV-Fahrzeugpositionen (GTFS-Realtime, Protobuf → JSON)
+ *      /api/transit/status    Welche Städte sind eingerichtet?
  *      /api/alpr              ALPR-Kamerastandorte (OSM/DeFlock via Overpass,
  *                              nur sichtbarer Ausschnitt, nur Standortdaten)
  *      /api/mapillary/status  Ist ein MAPILLARY_TOKEN gesetzt?
@@ -71,7 +73,7 @@ import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
     handleFires, handleFiresHistory, handleCctvCatalog, handleAllskyCatalog, handleEvents,
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
-    handleComets, handleAlprCameras, TLE_GROUPS,
+    handleComets, handleAlprCameras, TLE_GROUPS, handleTransit, handleTransitStatus,
     handleMapillaryStatus, handleMapillaryToken, handleMapillaryImages, mapillaryAvailable
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
@@ -528,6 +530,12 @@ export function createServer() {
             return handleCelestrak(res, pathname.slice("/api/celestrak/".length));
         }
 
+        // ÖPNV: /api/transit/<stadt>
+        if (pathname.startsWith("/api/transit/") && pathname !== "/api/transit/status") {
+            if (req.method !== "GET") return res.writeHead(405).end();
+            return handleTransit(res, pathname.slice("/api/transit/".length));
+        }
+
         switch (pathname) {
             case "/api/flights":
                 if (req.method !== "GET") return res.writeHead(405).end();
@@ -609,6 +617,9 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleDeepSpace(res);
 
+            case "/api/transit/status":
+                return handleTransitStatus(res);
+
             case "/api/alpr":
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleAlprCameras(res, searchParams);
@@ -640,6 +651,7 @@ export function createServer() {
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
                     militaryFlights: true,
+                    transit: true,
                     mapillary: mapillaryAvailable(),
                     tleGroups: TLE_GROUPS
                 });

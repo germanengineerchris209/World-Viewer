@@ -64,6 +64,7 @@ import { HeatmapLayer } from "./layers/HeatmapLayer.js";
 import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
 import { EventLayer } from "./layers/EventLayer.js";
 import { SpaceWeatherLayer } from "./layers/SpaceWeatherLayer.js";
+import { TransitLayer } from "./layers/TransitLayer.js";
 import { StreetLevelLayer } from "./layers/StreetLevelLayer.js";
 
 async function main() {
@@ -118,6 +119,7 @@ async function main() {
     layerManager.register(new HeatmapLayer(worldViewer, layerManager));
     const spaceWeatherLayer = new SpaceWeatherLayer(worldViewer);
     layerManager.register(spaceWeatherLayer);
+    layerManager.register(new TransitLayer(worldViewer));
     const streetLevelLayer = new StreetLevelLayer(worldViewer);
     layerManager.register(streetLevelLayer);
 

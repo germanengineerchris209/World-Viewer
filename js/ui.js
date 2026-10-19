@@ -36,7 +36,7 @@ export const LINK_TYPE_ICONS = {
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
     fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠",
-    worldweather: "🌡️", alpr: "🪪"
+    worldweather: "🌡️", transit: "🚌", alpr: "🪪"
 };
 
 /** Formatierungs-Helfer */
@@ -108,6 +108,30 @@ const DETAIL_SCHEMAS = {
             ["Breite", F.coord(o.position.latitude)],
             ["Länge", F.coord(o.position.longitude)]
         ]
+    },
+    transit: {
+        badge: "ÖPNV-Fahrzeug",
+        title: (o) => o.metadata.routeId ? `Linie ${o.metadata.routeId}` : o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Stadt", F.text(m.cityLabel)],
+                ["Linie", F.text(m.routeId)]
+            ];
+            if (m.directionId != null) rows.push(["Richtung", `Richtung ${m.directionId}`]);
+            rows.push(
+                ["Status", F.text(m.currentStatusDe)],
+                ["Fahrzeugtyp", F.text(m.vehicleType)]
+            );
+            if (m.vehicleLabel) rows.push(["Fahrzeug-Nr.", F.text(m.vehicleLabel)]);
+            if (m.stopId) rows.push(["Haltestelle (ID)", F.text(m.stopId)]);
+            rows.push(
+                ["Geschwindigkeit", F.kmh(o.speed)],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        }
     },
     satellite: {
         badge: "Satelliten-Details",

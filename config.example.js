@@ -192,6 +192,20 @@ window.WORLD_VIEWER_CONFIG = {
         demoUrl: "./data/ships.json"
     },
 
+    // ÖPNV (Busse, Bahnen, Fähren) über GTFS-Realtime – schlüsselfrei,
+    // läuft immer live über den eigenen Server (Protobuf → JSON), siehe
+    // server/dataProxies.mjs. Städte sind serverseitig festgelegt
+    // (aktuell Boston/MBTA und Niederlande/OVapi); hier nur Abruftakt.
+    transit: {
+        apiUrl: "/api/transit",
+
+        // Wie oft neue Fahrzeugpositionen geholt werden (Sekunden)
+        refreshSeconds: 20,
+
+        // Fahrzeug entfernen, wenn es so lange nicht mehr gemeldet wurde
+        removeAfterSeconds: 90
+    },
+
 
     /* ═══════════ Satelliten, Erdbeben, Starts, Brände ═══════════ */
 
