@@ -120,16 +120,24 @@ out center tags;`;
 /* ───────────────────────────── Dämme ───────────────────────────── */
 
 async function fetchDams() {
-    console.log("Dämme: Overpass-Abfrage pro Kontinent (waterway/man_made=dam) …");
+    console.log("Dämme: Overpass-Abfrage pro Kontinent (waterway/man_made=dam, mit Wikidata-Verknüpfung) …");
     const seen = new Map();
     for (const region of REGIONS) {
         const [s, w, n, e] = region.bbox;
+        // ["wikidata"] grenzt auf Dämme mit eigenem Wikidata-Eintrag ein,
+        // also tatsächlich bedeutsame Bauwerke. Ohne Filter liefert Overpass
+        // in Nordamerika allein >100.000 Treffer, auch mit ["name"] noch
+        // ~60.000 (Massenimport der National Hydrography Dataset benennt
+        // auch kleinste Rückhaltebecken/Teichdämme, z.B. "Pond Dam") – weit
+        // jenseits der mit dem GEV-Referenzprojekt vergleichbaren
+        // Größenordnung (~700 Dämme weltweit) und als eingecheckte Datei
+        // nicht mehr vertretbar.
         const ql = `[out:json][timeout:120];
 (
-  node["waterway"="dam"](${s},${w},${n},${e});
-  way["waterway"="dam"](${s},${w},${n},${e});
-  node["man_made"="dam"](${s},${w},${n},${e});
-  way["man_made"="dam"](${s},${w},${n},${e});
+  node["waterway"="dam"]["wikidata"](${s},${w},${n},${e});
+  way["waterway"="dam"]["wikidata"](${s},${w},${n},${e});
+  node["man_made"="dam"]["wikidata"](${s},${w},${n},${e});
+  way["man_made"="dam"]["wikidata"](${s},${w},${n},${e});
 );
 out center tags;`;
         const data = await overpassQuery(ql);

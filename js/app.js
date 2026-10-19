@@ -29,6 +29,8 @@ import { StreetLevelPanel } from "./streetLevelPanel.js";
 import { KeyStatusPanel } from "./keyStatusPanel.js";
 import { SceneDirector } from "./sceneDirector.js";
 import { SceneDirectorPanel } from "./sceneDirectorPanel.js";
+import { ContactsRoster } from "./contactsRoster.js";
+import { ContactsPanel } from "./contactsPanel.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -43,6 +45,7 @@ import { ShipLayer } from "./layers/ShipLayer.js";
 import { SatelliteLayer } from "./layers/SatelliteLayer.js";
 import { CameraLayer } from "./layers/CameraLayer.js";
 import { AllskyLayer } from "./layers/AllskyLayer.js";
+import { ALPRLayer } from "./layers/ALPRLayer.js";
 import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { EarthquakeLayer } from "./layers/EarthquakeLayer.js";
 import { VolcanoLayer } from "./layers/VolcanoLayer.js";
@@ -72,14 +75,31 @@ async function main() {
     /* 2 ── Layer */
     const layerManager = new LayerManager();
     const aircraftLayer = new AircraftLayer(worldViewer);
+    // Militärflüge (WEB-90): eigener Layer, bernsteinfarben, weltweiter
+    // adsb.lol-Feed ohne Bounding-Box und ohne Demo-Rückfall. dedupeAgainst
+    // verhindert, dass ein Flugzeug, das in beiden Feeds steckt, doppelt
+    // gezeichnet wird.
+    const militaryAircraftLayer = new AircraftLayer(worldViewer, {
+        id: "militaryAircraft",
+        name: "Militärflüge",
+        icon: "🎖️",
+        color: "#fbbf24",
+        configKey: "militaryFlights",
+        allowDemo: false,
+        boundsInQuery: false,
+        dedupeAgainst: aircraftLayer
+    });
     const shipLayer = new ShipLayer(worldViewer);
     const satelliteLayer = new SatelliteLayer(worldViewer);
+    const alprLayer = new ALPRLayer(worldViewer);
 
     layerManager.register(aircraftLayer);
+    layerManager.register(militaryAircraftLayer);
     layerManager.register(shipLayer);
     layerManager.register(satelliteLayer);
     layerManager.register(new CameraLayer(worldViewer));
     layerManager.register(new AllskyLayer(worldViewer));
+    layerManager.register(alprLayer);
     layerManager.register(new InfrastructureLayer(worldViewer));
     layerManager.register(new CableLayer(worldViewer));
     layerManager.register(new EarthquakeLayer(worldViewer));
@@ -140,6 +160,12 @@ async function main() {
 
     new WatchlistPanel(watchlist, worldViewer, ui, anomalyAlerts);
 
+    /* Kontakte-Liste: alle Objekte aktiver Layer im Radius um das
+       Kamerazentrum, nach Entfernung sortiert (WEB-91). Klick auf eine
+       Zeile nutzt die Auswahl-/Tracking-Logik von ui.js (ui.selectEntity). */
+    const contactsRoster = new ContactsRoster(worldViewer, layerManager);
+    const contactsPanel = new ContactsPanel(contactsRoster, ui);
+
     /* Zeichnen & Messen: Freihand/Grenzen/Punkte zeichnen, Distanzen messen;
        Route Fuß/Rad/Auto über den öffentlichen OSRM-Demo-Server (WEB-71) */
     const drawTools = new DrawTools(worldViewer);
@@ -185,6 +211,13 @@ async function main() {
         header: document.getElementById("ai-header"),
         minWidth: 280, minHeight: 240,
         close: () => assistant.close()
+    });
+    panelDock.register({
+        id: "contacts",
+        el: document.getElementById("contacts-panel"),
+        header: document.getElementById("contacts-header"),
+        minWidth: 240, minHeight: 200,
+        close: () => contactsPanel.hide()
     });
 
     /* Street-Level (Mapillary): Abdeckungslinien + Bildkegel, eingebetteter
@@ -334,7 +367,9 @@ async function main() {
        Der Layer selbst drosselt die Anfragen, zusätzlich cacht der Server. */
     worldViewer.camera.moveEnd.addEventListener(() => {
         aircraftLayer.refreshLive();
+        militaryAircraftLayer.refreshLive();
         shipLayer.refreshLive();
+        alprLayer.refresh();
         streetLevelLayer.refreshForView();
     });
 
@@ -394,6 +429,10 @@ async function main() {
             anomalyAlerts.check();
             lastWatchlistCheck = now;
         }
+
+        // Kontakte-Liste: drosselt sich selbst, wenn sichtbar (siehe
+        // ContactsPanel.refresh) – kein voller Listen-Rebuild pro Frame.
+        contactsPanel.refresh(false, now);
 
         requestAnimationFrame(updateWorld);
     }

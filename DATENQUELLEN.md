@@ -42,9 +42,11 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | Reliefkarte | Esri World Topo | |
 | ✈️ Flugzeuge | OpenSky Network | anonym 400 Abrufe/Tag |
 | ✈️ Flugzeuge (Alternative) | adsb.lol | regional um einen Punkt |
+| 🎖️ Militärflüge (eigener Layer) | adsb.lol `/v2/mil` | weltweit, unabhängig vom zivilen `FLIGHT_PROVIDER` |
 | 🛰️ Satelliten (echte Bahnen) | CelesTrak + SGP4 | |
 | 🌋 Erdbeben | USGS | letzte 24 Stunden |
 | 🗻 Vulkane | Smithsonian GVP (Weltkatalog + laufende Ausbrüche), USGS Volcano Hazards Program (amtliche Warnstufen) | 438 seit 1900 aktive Vulkane, Ampel live über `/api/volcanoes`; GVP sendet kein CORS → Server-Proxy. Rückfallebene: `data/volcanoes.json` (erzeugt via `npm run build:volcanoes`) |
+| 🏗️ Infrastruktur-Massendaten (Rechenzentren, Dämme, Seekabel) | OpenStreetMap via Overpass API | Statischer Snapshot, nicht live. Ergänzt additiv die handkuratierten Einträge aus `data/infrastructure.json`/`data/cables.json`. Erzeugt via `npm run build:infrastructure-mass` (braucht Internet, mehrere Minuten, Overpass-Server sind oft überlastet – bei Fehlern mit Backoff erneut versuchen). Die drei Ausgabedateien (`data/datacenters.json`, `data/dams.json`, `data/cables-osm.json`) sind **optional**: fehlen sie, zeigen die Layer nur die handkuratierte Liste, ohne Konsolenfehler. ODbL 1.0 – Namensnennung „© OpenStreetMap contributors" Pflicht. |
 | 🚀 Raketenstarts | Launch Library 2 | 15 Abrufe/Stunde |
 | ☄️ Asteroiden (Erdannäherungen, 7 Tage) | NASA NeoWs | läuft mit `DEMO_KEY`, 30 Abrufe/Stunde (weltweit geteilt) |
 | 🌠 Kometen | NASA JPL Small-Body Database | kein Schlüssel; Bahnelemente, Positionen rechnet der Browser |
@@ -53,6 +55,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
 | 🌌 Allsky-Kameras | 20 bekannte Sternwarten + öffentliche Allsky-Karte | Ganzhimmelkameras weltweit, rund 380 Standorte |
+| 🪪 Kennzeichenleser (ALPR) | OpenStreetMap / DeFlock | nur sichtbarer Ausschnitt, nur Standortdaten, Community-Kartierung unvollständig |
 | Objektfotos | Wikipedia | |
 | Ortsnamen | OpenStreetMap/Nominatim | |
 | 🌫️ Luftqualität (AQI) | Open-Meteo Air Quality API | Großstädte, handkuratiert |
@@ -179,6 +182,28 @@ Ab 6 km Kameraabstand wechseln fünf Typen (787, ATR-72, Cessna
 Citation/Gulfstream/Phenom, Hubschrauber, MQ-9/RQ-9) vom Glyph auf ein
 3D-Modell (`js/aircraftModels.js`); alle anderen Typen bleiben beim
 Glyph. Lizenz- und Herkunftsnachweis der GLB-Dateien: Abschnitt 5.
+
+#### 🎖️ Militärflüge (eigener Layer, WEB-90)
+
+Eigener, bernsteinfarbener Layer unter „Bewegung" in der Layer-Konsole,
+getrennt vom zivilen Verkehr oben. Nutzt **immer** `api.adsb.lol/v2/mil`
+(weltweite Militär-Transponder), unabhängig vom eingestellten
+`FLIGHT_PROVIDER` – kein Schlüssel nötig, kein eigenes `.env`-Flag.
+
+- **Endpunkt (Server → adsb.lol):** `GET https://api.adsb.lol/v2/mil`
+  (keine Parameter, liefert weltweit). Server-Proxy unter `/api/flights/military`,
+  Status unter `/api/flights/military/status`.
+- **Cache:** ein einzelner Server-Cache-Eintrag (kein Bounding-Box-Schlüssel
+  nötig, da der Feed ohnehin weltweit liefert), Intervall über
+  `MILITARY_FLIGHT_CACHE_MS` einstellbar (Default 20 s).
+- **Sparsamkeit:** die Begrenzung auf den sichtbaren Kartenausschnitt
+  passiert clientseitig nach dem Abruf (`AircraftLayer.boundsInQuery=false`),
+  da adsb.lol für `/mil` keine Bounding-Box kennt. Kein Abruf, solange der
+  Layer ausgeschaltet ist (siehe `AircraftLayer.show()/hide()`).
+- **Keine Doppelanzeige:** Maschinen, deren ID auch im zivilen Feed auftaucht
+  (gleicher ICAO-Hex), werden im Militär-Layer nicht zusätzlich gezeichnet
+  (`dedupeAgainst` in `js/app.js`).
+- **Lizenz:** ODbL 1.0 wie beim regulären adsb.lol-Feed oben.
 
 ### 🛰️ Satelliten
 
@@ -476,6 +501,27 @@ Die gemeldeten Kameras werden **direkt** geladen, nicht über den Kamera-Proxy:
 Dessen Erlaubnisliste entsteht nur aus `data/cameras.json` und
 `data/allsky-cameras.json`, damit über den Fremdkatalog niemand neue
 Ziel-Hosts unterschieben kann.
+
+### 🪪 Kennzeichenleser (ALPR, WEB-99)
+
+**OpenStreetMap / DeFlock-Projekt** (`deflock.me`) – Community-Kartierung von
+Kennzeichenlesern (ALPR/ANPR) als gewöhnliche OSM-Knoten/-Wege
+(`man_made=surveillance` + `surveillance:type=ALPR` bzw. `ANPR`). Abgefragt
+wird per Overpass API (`overpass-api.de/api/interpreter`) über `/api/alpr`,
+immer nur der **sichtbare Kartenausschnitt**, und für eine Stunde
+zwischengespeichert.
+
+> **Datenschutzgrenze:** Dieser Layer zeigt ausschließlich Standorte und
+> Gerätetags (Hersteller, Modell, Blickrichtung, Betreiber). OSM führt an
+> diesen Knoten grundsätzlich keine Kennzeichen-, Fahrzeug- oder
+> Personendaten – der Server reicht zusätzlich nur eine feste Tag-Whitelist
+> durch (siehe `mapAlprElement()` in `server/dataProxies.mjs`).
+
+Die Kartierung ist reines Crowd-Sourcing und **garantiert unvollständig** –
+DeFlock weist selbst darauf hin, und die App zeigt denselben Hinweis
+dauerhaft unter dem Layer-Schalter an, nicht erst bei leerem Ergebnis.
+
+Lizenz: [ODbL](https://opendatacommons.org/licenses/odbl/) (OpenStreetMap).
 
 ### 📻 Radiosender
 

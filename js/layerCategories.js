@@ -18,12 +18,14 @@ export const LAYER_CATEGORIES = [
 
 const CATEGORY_BY_LAYER_ID = {
     aircraft: "movement",
+    militaryAircraft: "movement",
     ships: "movement",
     satellites: "movement",
     transit: "movement",
 
     cameras: "cameras",
     allsky: "cameras",
+    alpr: "cameras",
     streetlevel: "cameras",
 
     infrastructure: "infrastructure",

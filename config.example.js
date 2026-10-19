@@ -130,6 +130,33 @@ window.WORLD_VIEWER_CONFIG = {
     },
 
 
+    /* ═══════════ Militärflüge (WEB-90) ═══════════ */
+
+    // Eigener Layer, getrennt vom zivilen Verkehr oben: adsb.lol/v2/mil,
+    // weltweit, kein Schlüssel nötig. Kein "mode"/demoUrl – ohne Server
+    // bleibt der Layer einfach leer statt mit erfundenen Daten zu füllen.
+    militaryFlights: {
+        // Endpunkt des eigenen Servers (server/server.mjs)
+        apiUrl: "/api/flights/military",
+
+        // Wie oft neue Positionen geholt werden (Sekunden)
+        refreshSeconds: 20,
+
+        // Mindestabstand zwischen zwei Anfragen beim Kameraschwenken
+        minRequestGapSeconds: 3,
+
+        // Größter Kartenausschnitt in Grad, auf den die (weltweit
+        // geholten) Daten clientseitig zugeschnitten werden
+        maxSpanDegrees: 40,
+
+        // Ab dieser Kamerahöhe werden gar keine Live-Daten mehr geholt
+        maxHeightKm: 30000,
+
+        // Flugzeug entfernen, wenn es so lange nicht mehr geliefert wurde
+        removeAfterSeconds: 90
+    },
+
+
     /* ═══════════ Live-Schiffsdaten (AIS) ═══════════ */
 
     ships: {
@@ -368,6 +395,19 @@ window.WORLD_VIEWER_CONFIG = {
         // setzen, wenn nur die gepflegten Standorte erscheinen sollen.
         usePublicCatalog: true,
         catalogUrl: "/api/allsky"
+    },
+
+
+    /* ═══════════ Kennzeichenleser (ALPR, WEB-99) ═══════════ */
+
+    alpr: {
+        // Standorte aus OSM/DeFlock, nur sichtbarer Ausschnitt, über den
+        // Server zwischengespeichert (/api/alpr → Overpass API). Zeigt
+        // AUSSCHLIESSLICH Standorte/Gerätetags, siehe server/dataProxies.mjs.
+        refreshSeconds: 10,
+        minRequestGapSeconds: 4,
+        maxSpanDegrees: 2.5,   // größerer Kartenausschnitt → kein Abruf
+        maxHeightKm: 250       // weiter herausgezoomt → kein Abruf
     },
 
 

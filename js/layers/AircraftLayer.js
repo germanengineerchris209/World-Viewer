@@ -13,6 +13,11 @@
  *
  *  DEMO  Läuft kein Server, greift die bisherige Simulation mit den
  *        Beispieldaten aus data/aircraft.json.
+ *
+ * Dieselbe Klasse trägt auch den Militärflüge-Layer (WEB-90): die App
+ * legt dafür eine zweite Instanz mit `overrides` an (eigene Farbe, eigener
+ * Server-Endpunkt ohne Bounding-Box, kein Demo-Rückfall, Abgleich gegen
+ * den zivilen Layer gegen Doppelanzeige). Siehe js/app.js.
  */
 
 import { BaseLayer } from "./BaseLayer.js";
@@ -23,10 +28,10 @@ import { modelClassFor, modelSpecFor, MODEL_HEADING_OFFSET_DEG } from "../aircra
 import { normalizeHeading, slewHeading } from "../cockpit.js";
 
 // Flugzeug-Symbol als Inline-SVG (Spitze zeigt nach oben = Norden)
-const AIRCRAFT_SVG = `
+const aircraftSvg = (color) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
   <path d="M20 3 L23 14 L36 20 L36 23 L23 20 L22 30 L27 34 L27 36 L20 34 L13 36 L13 34 L18 30 L17 20 L4 23 L4 20 L17 14 Z"
-        fill="#ffd166" stroke="#1a1a1a" stroke-width="1"/>
+        fill="${color}" stroke="#1a1a1a" stroke-width="1"/>
 </svg>`;
 
 const SIZE_PX = { heavy: 34, medium: 28, light: 22 };
@@ -55,18 +60,52 @@ const _scratchHpr = new Cesium.HeadingPitchRoll();
 
 export class AircraftLayer extends BaseLayer {
 
-    constructor(worldViewer) {
+    /**
+     * @param {WorldViewer} worldViewer
+     * @param {object} [overrides]
+     * @param {string} [overrides.id="aircraft"]
+     * @param {string} [overrides.name="Aircraft"]
+     * @param {string} [overrides.icon="✈️"]
+     * @param {string} [overrides.color="#ffd166"]       Symbol-/Spurfarbe
+     * @param {string} [overrides.configKey="flights"]   Schlüssel in config.js
+     * @param {boolean} [overrides.allowDemo=true]        bei fehlenden Live-Daten
+     *        auf data/aircraft.json zurückfallen (für den Militär-Layer
+     *        unerwünscht – dann lieber ein sauberer Leerzustand)
+     * @param {boolean} [overrides.boundsInQuery=true]    Kartenausschnitt als
+     *        Bounding-Box mitschicken (adsb.lol/mil kennt keine und liefert
+     *        immer weltweit; die Begrenzung passiert dann clientseitig)
+     * @param {AircraftLayer} [overrides.dedupeAgainst]   Maschinen, die dort
+     *        schon angezeigt werden, hier nicht zusätzlich zeichnen
+     */
+    constructor(worldViewer, overrides = {}) {
+        const {
+            id = "aircraft",
+            name = "Aircraft",
+            icon = "✈️",
+            color = "#ffd166",
+            configKey = "flights",
+            allowDemo = true,
+            boundsInQuery = true,
+            dedupeAgainst = null
+        } = overrides;
+
         super(worldViewer, {
-            id: "aircraft",
-            name: "Aircraft",
-            icon: "✈️",
+            id,
+            name,
+            icon,
             type: "aircraft",
             dataUrl: null            // Daten kommen über FlightDataSource
         });
 
-        this._iconUrl = svgDataUri(AIRCRAFT_SVG);
-        this.source = new FlightDataSource();
-        this.enableTrails(Cesium.Color.fromCssColorString("#ffd166"));
+        this._color = color;
+        this._configKey = configKey;
+        this.allowDemo = allowDemo;
+        this.boundsInQuery = boundsInQuery;
+        this.dedupeAgainst = dedupeAgainst;
+
+        this._iconUrl = svgDataUri(aircraftSvg(color));
+        this.source = new FlightDataSource(configKey);
+        this.enableTrails(Cesium.Color.fromCssColorString(color));
 
         /** "live" | "demo" | "unknown" */
         this.mode = "unknown";
@@ -81,7 +120,7 @@ export class AircraftLayer extends BaseLayer {
     }
 
     get config() {
-        return window.WORLD_VIEWER_CONFIG?.flights ?? {};
+        return window.WORLD_VIEWER_CONFIG?.[this._configKey] ?? {};
     }
 
     /** UI benachrichtigen, wenn sich Quelle/Status ändern. */
@@ -110,9 +149,14 @@ export class AircraftLayer extends BaseLayer {
             this._statusMessage = this.source.sourceName;
             await this.refreshLive();
             this.startPolling();
-        } else {
+        } else if (this.allowDemo) {
             this._statusMessage = "Demo-Daten";
             await this._loadDemo();
+        } else {
+            // Kein Demo-Rückfall (z.B. Militär-Layer): leer bleiben statt
+            // mit erfundenen Daten zu füllen – der statusText() der Sidebar
+            // erklärt, warum.
+            this._statusMessage = this.source.lastError || "Keine Live-Daten verfügbar.";
         }
         this._notify();
     }
@@ -122,7 +166,7 @@ export class AircraftLayer extends BaseLayer {
         for (const record of records) {
             this._upsert(record);
         }
-        console.info(`[Aircraft] ${this.objects.length} Demo-Flugzeuge geladen.`);
+        console.info(`[${this.name}] ${this.objects.length} Demo-Flugzeuge geladen.`);
     }
 
     /* ═══════════ Live-Abruf ═══════════ */
@@ -136,7 +180,7 @@ export class AircraftLayer extends BaseLayer {
         ) * 1000;
 
         this._timer = setInterval(() => this.refreshLive(), interval);
-        console.info(`[Aircraft] Live-Abruf alle ${Math.round(interval / 1000)} s.`);
+        console.info(`[${this.name}] Live-Abruf alle ${Math.round(interval / 1000)} s.`);
     }
 
     stopPolling() {
@@ -207,6 +251,12 @@ export class AircraftLayer extends BaseLayer {
         };
     }
 
+    /** Liegt ein Datensatz innerhalb der Bounding-Box? (für weltweite Feeds) */
+    _insideBounds(record, bounds) {
+        return record.latitude >= bounds.south && record.latitude <= bounds.north
+            && record.longitude >= bounds.west && record.longitude <= bounds.east;
+    }
+
     /**
      * Holt frische Live-Daten und gleicht sie mit der Anzeige ab.
      * @param {boolean} force  true = Mindestabstand ignorieren
@@ -231,22 +281,31 @@ export class AircraftLayer extends BaseLayer {
         this._notify();
 
         try {
-            const result = await this.source.fetchLive(bounds);
+            const result = await this.source.fetchLive(this.boundsInQuery ? bounds : undefined);
             if (!result) {
-                // Live fehlgeschlagen – beim ersten Mal auf Demo umschalten,
-                // damit die Karte nicht leer bleibt
                 if (this.objects.length === 0) {
-                    console.warn("[Aircraft] Live-Daten nicht verfügbar:",
+                    console.warn(`[${this.name}] Live-Daten nicht verfügbar:`,
                         this.source.lastError);
-                    this.mode = "demo";
-                    this.stopPolling();
-                    await this._loadDemo();
+                    if (this.allowDemo) {
+                        // Live fehlgeschlagen – beim ersten Mal auf Demo
+                        // umschalten, damit die Karte nicht leer bleibt
+                        this.mode = "demo";
+                        this.stopPolling();
+                        await this._loadDemo();
+                    }
                 }
                 return;
             }
 
             this.lastFetchAt = result.fetchedAt;
-            this._reconcile(result.aircraft);
+
+            let list = result.aircraft;
+            if (!this.boundsInQuery) list = list.filter(a => this._insideBounds(a, bounds));
+            if (this.dedupeAgainst) {
+                list = list.filter(a => !this.dedupeAgainst.entityById.has(a.id));
+            }
+
+            this._reconcile(list);
 
         } finally {
             this.fetchPending = false;
@@ -351,7 +410,8 @@ export class AircraftLayer extends BaseLayer {
             modelClass: modelClassFor(rawType),
             // Für die Bildsuche: Wikipedia-Artikel zum Flugzeugtyp
             wikipedia: record.wikipedia || typeWikipedia(rawType) || readable || "",
-            live: this.mode === "live"
+            live: this.mode === "live",
+            military: !!record.military
         };
     }
 
@@ -402,7 +462,7 @@ export class AircraftLayer extends BaseLayer {
             },
             label: this._makeLabel(
                 meta.callsign ?? obj.name,
-                Cesium.Color.fromCssColorString("#ffd166")
+                Cesium.Color.fromCssColorString(this._color)
             )
         };
 
@@ -504,6 +564,26 @@ export class AircraftLayer extends BaseLayer {
             obj.__modelHeading = slewHeading(
                 obj.__modelHeading ?? obj.heading, obj.heading, MODEL_HEADING_SLEW_DPS * delta);
         }
+    }
+
+    /**
+     * Hinweistext in der Sidebar für Layer ohne eigenes Status-Panel
+     * (z.B. den Militär-Layer, der kein flight-status-Element wie der
+     * zivile Aircraft-Layer hat) – sauberer Leer-/Fehlerzustand statt
+     * einer stillen, unerklärten leeren Ebene.
+     */
+    statusText() {
+        if (this.allowDemo) return null;   // ziviler Layer hat eigenes Panel
+        if (this.outOfRange) return "Zu weit herausgezoomt – näher heranzoomen.";
+        if (this.mode === "live" && this.objects.length === 0 && !this.fetchPending) {
+            return this.source.lastError
+                ? `Keine Daten: ${this.source.lastError}`
+                : "Aktuell keine sichtbaren Maschinen im Ausschnitt.";
+        }
+        if (this.mode !== "live" && this.source.lastError) {
+            return this.source.lastError;
+        }
+        return null;
     }
 
     /* ═══════════ Aufräumen ═══════════ */
