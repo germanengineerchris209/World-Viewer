@@ -18,6 +18,7 @@ export const LAYER_CATEGORIES = [
 
 const CATEGORY_BY_LAYER_ID = {
     aircraft: "movement",
+    militaryAircraft: "movement",
     ships: "movement",
     satellites: "movement",
 

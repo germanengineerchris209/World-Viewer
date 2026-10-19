@@ -28,6 +28,8 @@
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
+ *   7. /api/flights/military – Militärflüge weltweit über adsb.lol/v2/mil,
+ *      unabhängig vom zivilen FLIGHT_PROVIDER, kein Schlüssel nötig (WEB-90)
  *
  * Warum überhaupt ein Server? Weil weder Flightradar24 noch OpenSky noch
  * die Claude API CORS-Header senden – ein Browser darf sie also nicht
@@ -61,7 +63,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { fetchFlights, parseBounds } from "./flightProviders.mjs";
+import { fetchFlights, parseBounds, fetchAdsbLolMilitary } from "./flightProviders.mjs";
 import { handleCameraProxy, buildAllowlist, getAllowlist } from "./cameraProxy.mjs";
 import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
@@ -96,6 +98,11 @@ const MIN_FETCH_INTERVAL_MS = Number(process.env.FLIGHT_CACHE_MS
     ?? (FLIGHT_PROVIDER === "fr24" ? 30_000 : 12_000));
 
 const MAX_AIRCRAFT = Number(process.env.FLIGHT_MAX ?? 400);
+
+// Militärflüge (WEB-90): eigener, immer schlüsselfreier adsb.lol-Endpunkt,
+// unabhängig vom zivilen FLIGHT_PROVIDER. Liefert weltweit, deshalb reicht
+// ein gröberes Intervall als beim zivilen Verkehr (siehe DATENQUELLEN.md).
+const MILITARY_FLIGHT_CACHE_MS = Number(process.env.MILITARY_FLIGHT_CACHE_MS ?? 20_000);
 
 // Schiffsdaten (AIS) über AISStream.io – kostenloser Key, siehe .env.example
 const AISSTREAM_API_KEY = process.env.AISSTREAM_API_KEY ?? "";
@@ -279,6 +286,54 @@ function handleFlightStatus(res) {
             : !!(OPENSKY_ID && OPENSKY_SECRET),
         minIntervalMs: MIN_FETCH_INTERVAL_MS,
         maxAircraft: MAX_AIRCRAFT
+    });
+}
+
+/* ═══════════ Militärflüge (adsb.lol, WEB-90) ═══════════ */
+
+// Weltweiter Feed ohne Bounding-Box → ein einzelner Cache-Eintrag reicht,
+// anders als beim zivilen Verkehr mit seinem Bounding-Box-Cache.
+let militaryFlightCache = { at: 0, payload: null };
+
+async function handleMilitaryFlights(req, res) {
+    if (militaryFlightCache.payload
+        && Date.now() - militaryFlightCache.at < MILITARY_FLIGHT_CACHE_MS) {
+        sendJson(res, 200, { ...militaryFlightCache.payload, cached: true });
+        return;
+    }
+
+    try {
+        const aircraft = await fetchAdsbLolMilitary();
+        const payload = {
+            provider: "adsblol",
+            source: "adsb.lol",
+            fetchedAt: Date.now(),
+            count: aircraft.length,
+            aircraft,
+            cached: false
+        };
+        militaryFlightCache = { at: Date.now(), payload };
+        sendJson(res, 200, payload);
+
+    } catch (err) {
+        console.error("[military]", err.message);
+        if (militaryFlightCache.payload) {
+            sendJson(res, 200, {
+                ...militaryFlightCache.payload, cached: true, stale: true, warning: err.message
+            });
+            return;
+        }
+        sendJson(res, err.status ?? 502, { error: err.message, provider: "adsblol" });
+    }
+}
+
+/** Kein Schlüssel nötig – immer verfügbar, solange adsb.lol antwortet. */
+function handleMilitaryFlightStatus(res) {
+    sendJson(res, 200, {
+        provider: "adsblol",
+        configured: true,
+        authenticated: false,
+        minIntervalMs: MILITARY_FLIGHT_CACHE_MS
     });
 }
 
@@ -479,6 +534,13 @@ export function createServer() {
             case "/api/flights/status":
                 return handleFlightStatus(res);
 
+            case "/api/flights/military":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleMilitaryFlights(req, res);
+
+            case "/api/flights/military/status":
+                return handleMilitaryFlightStatus(res);
+
             case "/api/ships":
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleShips(req, res, searchParams);
@@ -570,6 +632,7 @@ export function createServer() {
                     storms: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
+                    militaryFlights: true,
                     mapillary: mapillaryAvailable(),
                     tleGroups: TLE_GROUPS
                 });
@@ -628,6 +691,8 @@ if (isMain) {
                 + "     OPENSKY_CLIENT_ID / OPENSKY_CLIENT_SECRET setzen.");
         }
         console.log(`     Abrufintervall mind. ${MIN_FETCH_INTERVAL_MS / 1000}s, max. ${MAX_AIRCRAFT} Flugzeuge`);
+        console.log(`  🎖️  Militärflüge (adsb.lol, kein Schlüssel nötig): bereit, `
+            + `Cache ${MILITARY_FLIGHT_CACHE_MS / 1000}s`);
 
         console.log("  🛰️  Bahndaten (CelesTrak) und Raketenstarts: bereit");
         console.log(process.env.NASA_API_KEY

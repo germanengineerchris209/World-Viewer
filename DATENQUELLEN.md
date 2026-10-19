@@ -42,6 +42,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | Reliefkarte | Esri World Topo | |
 | ✈️ Flugzeuge | OpenSky Network | anonym 400 Abrufe/Tag |
 | ✈️ Flugzeuge (Alternative) | adsb.lol | regional um einen Punkt |
+| 🎖️ Militärflüge (eigener Layer) | adsb.lol `/v2/mil` | weltweit, unabhängig vom zivilen `FLIGHT_PROVIDER` |
 | 🛰️ Satelliten (echte Bahnen) | CelesTrak + SGP4 | |
 | 🌋 Erdbeben | USGS | letzte 24 Stunden |
 | 🗻 Vulkane | Smithsonian GVP (Weltkatalog + laufende Ausbrüche), USGS Volcano Hazards Program (amtliche Warnstufen) | 438 seit 1900 aktive Vulkane, Ampel live über `/api/volcanoes`; GVP sendet kein CORS → Server-Proxy. Rückfallebene: `data/volcanoes.json` (erzeugt via `npm run build:volcanoes`) |
@@ -178,6 +179,28 @@ Ab 6 km Kameraabstand wechseln fünf Typen (787, ATR-72, Cessna
 Citation/Gulfstream/Phenom, Hubschrauber, MQ-9/RQ-9) vom Glyph auf ein
 3D-Modell (`js/aircraftModels.js`); alle anderen Typen bleiben beim
 Glyph. Lizenz- und Herkunftsnachweis der GLB-Dateien: Abschnitt 5.
+
+#### 🎖️ Militärflüge (eigener Layer, WEB-90)
+
+Eigener, bernsteinfarbener Layer unter „Bewegung" in der Layer-Konsole,
+getrennt vom zivilen Verkehr oben. Nutzt **immer** `api.adsb.lol/v2/mil`
+(weltweite Militär-Transponder), unabhängig vom eingestellten
+`FLIGHT_PROVIDER` – kein Schlüssel nötig, kein eigenes `.env`-Flag.
+
+- **Endpunkt (Server → adsb.lol):** `GET https://api.adsb.lol/v2/mil`
+  (keine Parameter, liefert weltweit). Server-Proxy unter `/api/flights/military`,
+  Status unter `/api/flights/military/status`.
+- **Cache:** ein einzelner Server-Cache-Eintrag (kein Bounding-Box-Schlüssel
+  nötig, da der Feed ohnehin weltweit liefert), Intervall über
+  `MILITARY_FLIGHT_CACHE_MS` einstellbar (Default 20 s).
+- **Sparsamkeit:** die Begrenzung auf den sichtbaren Kartenausschnitt
+  passiert clientseitig nach dem Abruf (`AircraftLayer.boundsInQuery=false`),
+  da adsb.lol für `/mil` keine Bounding-Box kennt. Kein Abruf, solange der
+  Layer ausgeschaltet ist (siehe `AircraftLayer.show()/hide()`).
+- **Keine Doppelanzeige:** Maschinen, deren ID auch im zivilen Feed auftaucht
+  (gleicher ICAO-Hex), werden im Militär-Layer nicht zusätzlich gezeichnet
+  (`dedupeAgainst` in `js/app.js`).
+- **Lizenz:** ODbL 1.0 wie beim regulären adsb.lol-Feed oben.
 
 ### 🛰️ Satelliten
 

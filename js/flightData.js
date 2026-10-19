@@ -7,19 +7,27 @@
  *   2. Fällt der Server aus oder läuft keiner: Demo-Daten aus
  *      data/aircraft.json mit der bisherigen Simulation
  *
+ * Dieselbe Klasse bedient über den konfigurierbaren `configKey` auch den
+ * Militärflüge-Layer (WEB-90, /api/flights/military → adsb.lol): weltweit,
+ * ohne Bounding-Box, ohne Demo-Rückfall (siehe AircraftLayer `allowDemo`).
+ *
  * Warum nicht direkt aus dem Browser? Weder Flightradar24 noch OpenSky
- * senden CORS-Header – ein direkter fetch() aus der Seite wird vom
- * Browser blockiert. Und der API-Schlüssel hätte im Browser ohnehin
- * nichts zu suchen.
+ * noch adsb.lol senden CORS-Header – ein direkter fetch() aus der Seite
+ * würde vom Browser blockiert. Und der API-Schlüssel hätte im Browser
+ * ohnehin nichts zu suchen.
  */
 
 import { loadJSON } from "./dataManager.js";
 
-const CFG = () => window.WORLD_VIEWER_CONFIG?.flights ?? {};
-
 export class FlightDataSource {
 
-    constructor() {
+    /**
+     * @param {string} configKey  Schlüssel in window.WORLD_VIEWER_CONFIG,
+     *        z.B. "flights" (Zivilverkehr) oder "militaryFlights" (WEB-90).
+     */
+    constructor(configKey = "flights") {
+        this._configKey = configKey;
+
         /** "live" | "demo" | "unknown" */
         this.mode = "unknown";
         this.sourceName = "";
@@ -30,8 +38,12 @@ export class FlightDataSource {
         this._statusChecked = false;
     }
 
+    get _cfg() {
+        return window.WORLD_VIEWER_CONFIG?.[this._configKey] ?? {};
+    }
+
     get baseUrl() {
-        return CFG().apiUrl || "/api/flights";
+        return this._cfg.apiUrl || "/api/flights";
     }
 
     /**
@@ -39,7 +51,7 @@ export class FlightDataSource {
      * Kostet kein Guthaben (eigener Status-Endpunkt).
      */
     async checkAvailability() {
-        if (CFG().mode === "demo") {
+        if (this._cfg.mode === "demo") {
             this.mode = "demo";
             this.sourceName = "Demo-Daten";
             this._statusChecked = true;
@@ -60,8 +72,8 @@ export class FlightDataSource {
 
             if (status.configured) {
                 this.mode = "live";
-                this.sourceName = status.provider === "fr24"
-                    ? "Flightradar24"
+                this.sourceName = status.provider === "fr24" ? "Flightradar24"
+                    : status.provider === "adsblol" ? "adsb.lol"
                     : (status.authenticated ? "OpenSky (angemeldet)" : "OpenSky Network");
             } else {
                 this.mode = "demo";
@@ -81,9 +93,12 @@ export class FlightDataSource {
     }
 
     /**
-     * Holt Live-Flugzeuge für einen Kartenausschnitt.
+     * Holt Live-Flugzeuge, optional für einen Kartenausschnitt.
      *
-     * @param {{north:number, south:number, west:number, east:number}} bounds
+     * @param {{north:number, south:number, west:number, east:number}} [bounds]
+     *        weggelassen = weltweiter Abruf (z.B. Militär-Endpunkt, der
+     *        ohnehin keine Bounding-Box kennt; die Begrenzung auf den
+     *        sichtbaren Ausschnitt übernimmt dann der Layer selbst)
      * @returns {Promise<{aircraft:Array, source:string, fetchedAt:number}|null>}
      *          null, wenn keine Live-Daten verfügbar sind
      */
@@ -92,11 +107,13 @@ export class FlightDataSource {
         if (this.mode !== "live") return null;
 
         const url = new URL(this.baseUrl, window.location.origin);
-        url.searchParams.set("north", bounds.north.toFixed(4));
-        url.searchParams.set("south", bounds.south.toFixed(4));
-        url.searchParams.set("west", bounds.west.toFixed(4));
-        url.searchParams.set("east", bounds.east.toFixed(4));
-        const limit = CFG().maxAircraft;
+        if (bounds) {
+            url.searchParams.set("north", bounds.north.toFixed(4));
+            url.searchParams.set("south", bounds.south.toFixed(4));
+            url.searchParams.set("west", bounds.west.toFixed(4));
+            url.searchParams.set("east", bounds.east.toFixed(4));
+        }
+        const limit = this._cfg.maxAircraft;
         if (limit) url.searchParams.set("limit", String(limit));
 
         try {
@@ -133,7 +150,7 @@ export class FlightDataSource {
 
     /** Lädt die Demo-Daten aus data/aircraft.json. */
     async fetchDemo() {
-        const raw = await loadJSON(CFG().demoUrl || "./data/aircraft.json");
+        const raw = await loadJSON(this._cfg.demoUrl || "./data/aircraft.json");
         return raw.map(a => ({
             id: a.id,
             callsign: a.callsign ?? a.name,
