@@ -29,6 +29,8 @@ import { StreetLevelPanel } from "./streetLevelPanel.js";
 import { KeyStatusPanel } from "./keyStatusPanel.js";
 import { SceneDirector } from "./sceneDirector.js";
 import { SceneDirectorPanel } from "./sceneDirectorPanel.js";
+import { ContactsRoster } from "./contactsRoster.js";
+import { ContactsPanel } from "./contactsPanel.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
@@ -156,6 +158,12 @@ async function main() {
 
     new WatchlistPanel(watchlist, worldViewer, ui, anomalyAlerts);
 
+    /* Kontakte-Liste: alle Objekte aktiver Layer im Radius um das
+       Kamerazentrum, nach Entfernung sortiert (WEB-91). Klick auf eine
+       Zeile nutzt die Auswahl-/Tracking-Logik von ui.js (ui.selectEntity). */
+    const contactsRoster = new ContactsRoster(worldViewer, layerManager);
+    const contactsPanel = new ContactsPanel(contactsRoster, ui);
+
     /* Zeichnen & Messen: Freihand/Grenzen/Punkte zeichnen, Distanzen messen;
        Route Fuß/Rad/Auto über den öffentlichen OSRM-Demo-Server (WEB-71) */
     const drawTools = new DrawTools(worldViewer);
@@ -201,6 +209,13 @@ async function main() {
         header: document.getElementById("ai-header"),
         minWidth: 280, minHeight: 240,
         close: () => assistant.close()
+    });
+    panelDock.register({
+        id: "contacts",
+        el: document.getElementById("contacts-panel"),
+        header: document.getElementById("contacts-header"),
+        minWidth: 240, minHeight: 200,
+        close: () => contactsPanel.hide()
     });
 
     /* Street-Level (Mapillary): Abdeckungslinien + Bildkegel, eingebetteter
@@ -412,6 +427,10 @@ async function main() {
             anomalyAlerts.check();
             lastWatchlistCheck = now;
         }
+
+        // Kontakte-Liste: drosselt sich selbst, wenn sichtbar (siehe
+        // ContactsPanel.refresh) – kein voller Listen-Rebuild pro Frame.
+        contactsPanel.refresh(false, now);
 
         requestAnimationFrame(updateWorld);
     }
