@@ -24,6 +24,7 @@ const CATEGORY_BY_LAYER_ID = {
 
     cameras: "cameras",
     allsky: "cameras",
+    alpr: "cameras",
     streetlevel: "cameras",
 
     infrastructure: "infrastructure",

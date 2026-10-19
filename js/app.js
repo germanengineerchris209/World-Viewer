@@ -43,6 +43,7 @@ import { ShipLayer } from "./layers/ShipLayer.js";
 import { SatelliteLayer } from "./layers/SatelliteLayer.js";
 import { CameraLayer } from "./layers/CameraLayer.js";
 import { AllskyLayer } from "./layers/AllskyLayer.js";
+import { ALPRLayer } from "./layers/ALPRLayer.js";
 import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { EarthquakeLayer } from "./layers/EarthquakeLayer.js";
 import { VolcanoLayer } from "./layers/VolcanoLayer.js";
@@ -87,6 +88,7 @@ async function main() {
     });
     const shipLayer = new ShipLayer(worldViewer);
     const satelliteLayer = new SatelliteLayer(worldViewer);
+    const alprLayer = new ALPRLayer(worldViewer);
 
     layerManager.register(aircraftLayer);
     layerManager.register(militaryAircraftLayer);
@@ -94,6 +96,7 @@ async function main() {
     layerManager.register(satelliteLayer);
     layerManager.register(new CameraLayer(worldViewer));
     layerManager.register(new AllskyLayer(worldViewer));
+    layerManager.register(alprLayer);
     layerManager.register(new InfrastructureLayer(worldViewer));
     layerManager.register(new CableLayer(worldViewer));
     layerManager.register(new EarthquakeLayer(worldViewer));
@@ -349,6 +352,7 @@ async function main() {
         aircraftLayer.refreshLive();
         militaryAircraftLayer.refreshLive();
         shipLayer.refreshLive();
+        alprLayer.refresh();
         streetLevelLayer.refreshForView();
     });
 

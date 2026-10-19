@@ -36,7 +36,7 @@ const LINK_TYPE_ICONS = {
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
     fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠",
-    worldweather: "🌡️"
+    worldweather: "🌡️", alpr: "🪪"
 };
 
 /** Formatierungs-Helfer */
@@ -143,6 +143,40 @@ const DETAIL_SCHEMAS = {
             ["Breite", F.coord(o.position.latitude)],
             ["Länge", F.coord(o.position.longitude)]
         ]
+    },
+    alpr: {
+        badge: "Kennzeichenleser (ALPR)",
+        title: () => "Kennzeichenleser",
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Typ", F.text(m.surveillanceType)],
+                ["Zone", F.text(m.zone)]
+            ];
+            if (m.manufacturer) rows.push(["Hersteller", F.text(m.manufacturer)]);
+            if (m.model) rows.push(["Modell", F.text(m.model)]);
+            if (m.operator) rows.push(["Betreiber", F.text(m.operator), true]);
+            if (m.direction != null) rows.push(["Blickrichtung", F.deg(m.direction)]);
+            if (m.startDate) rows.push(["Erfasst seit", F.text(m.startDate)]);
+            rows.push(
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        },
+        extraHtml: (o) => {
+            const m = o.metadata;
+            const osmUrl = m.osmType && m.osmId
+                ? `https://www.openstreetmap.org/${m.osmType}/${m.osmId}`
+                : null;
+            return `<div class="detail-field wide"><label>Hinweis</label>
+                <span>Community-Kartierung (OSM/DeFlock) – unvollständig, nur
+                Standort- und Gerätedaten, keine Kennzeichen-, Fahrzeug- oder
+                Personendaten.${osmUrl
+                    ? ` <a href="${osmUrl}" target="_blank" rel="noopener"
+                        style="color:#38bdf8">Auf OpenStreetMap ansehen/korrigieren ↗</a>`
+                    : ""}</span></div>`;
+        }
     },
     allsky: {
         badge: "Allsky-Kamera",

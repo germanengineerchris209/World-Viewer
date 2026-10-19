@@ -22,6 +22,8 @@
  *      /api/asteroids         Erdnahe Asteroiden der nächsten 7 Tage (NASA NeoWs)
  *      /api/comets            Kometen mit Bahnelementen (NASA JPL SBDB)
  *      /api/deepspace         Aktive Raumsonden (NASA JPL Horizons)
+ *      /api/alpr              ALPR-Kamerastandorte (OSM/DeFlock via Overpass,
+ *                              nur sichtbarer Ausschnitt, nur Standortdaten)
  *      /api/mapillary/status  Ist ein MAPILLARY_TOKEN gesetzt?
  *      /api/mapillary/images  Street-Level-Bilder in einer bbox (Key nötig)
  *      /api/mapillary/token   Token für den eingebetteten Betrachter (Key nötig)
@@ -69,7 +71,7 @@ import {
     handleCelestrak, handleLaunches, handleLaunchesHistory,
     handleFires, handleFiresHistory, handleCctvCatalog, handleAllskyCatalog, handleEvents,
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
-    handleComets, TLE_GROUPS,
+    handleComets, handleAlprCameras, TLE_GROUPS,
     handleMapillaryStatus, handleMapillaryToken, handleMapillaryImages, mapillaryAvailable
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
@@ -607,6 +609,10 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleDeepSpace(res);
 
+            case "/api/alpr":
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleAlprCameras(res, searchParams);
+
             case "/api/mapillary/status":
                 return handleMapillaryStatus(res);
 
@@ -629,6 +635,7 @@ export function createServer() {
                     asteroids: true,
                     comets: true,
                     deepspace: true,
+                    alpr: true,
                     storms: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
