@@ -36,7 +36,7 @@ export const LINK_TYPE_ICONS = {
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
     fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠",
-    worldweather: "🌡️", transit: "🚌", alpr: "🪪"
+    worldweather: "🌡️", transit: "🚌", alpr: "🪪", vehicle: "🚗"
 };
 
 /** Formatierungs-Helfer */
@@ -108,6 +108,32 @@ const DETAIL_SCHEMAS = {
             ["Breite", F.coord(o.position.latitude)],
             ["Länge", F.coord(o.position.longitude)]
         ]
+    },
+    vehicle: {
+        badge: "Verkehr (Simulation)",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Straßentyp", F.text(m.roadClass)],
+                ["Geschwindigkeit", F.kmh(o.speed)],
+                ["Kurs", F.deg(o.heading)]
+            ];
+            if (m.live) {
+                rows.push(
+                    ["Aktuelles Tempo (TomTom)", F.kmh(m.currentSpeedKmh)],
+                    ["Freie Fahrt (TomTom)", F.kmh(m.freeFlowSpeedKmh)]
+                );
+            }
+            rows.push(
+                ["Quelle", m.live
+                    ? "Straßensimulation, eingefärbt mit TomTom-Live-Flussdaten"
+                    : "Straßensimulation – kein echtes Fahrzeug", true],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        }
     },
     transit: {
         badge: "ÖPNV-Fahrzeug",

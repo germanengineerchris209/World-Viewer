@@ -207,6 +207,25 @@ window.WORLD_VIEWER_CONFIG = {
     },
 
 
+    /* ═══════════ Verkehr (WEB-93) ═══════════ */
+
+    traffic: {
+        // Läuft IMMER als Simulation auf einem Straßenraster, ganz ohne
+        // Schlüssel – echte OSM-Straßengeometrie scheitert aus vielen
+        // Sandbox-Umgebungen an einer IP-Sperre der Overpass API (siehe
+        // docs/WEB-83-...), daher der prozedurale Ersatz.
+        statusUrl: "/api/traffic/status",
+        flowUrl: "/api/traffic/flow",
+
+        // Ab dieser Kamerahöhe schaltet sich die Simulation ab (reine
+        // Straßenebene, auf Weltansicht sinnlos und teuer)
+        maxHeightKm: 8,
+
+        // Größter abgefragter Kartenausschnitt in Grad
+        maxSpanDegrees: 0.9
+    },
+
+
     /* ═══════════ Satelliten, Erdbeben, Starts, Brände ═══════════ */
 
     satellites: {

@@ -17,6 +17,7 @@ kostenpflichtig und rein optional.
 | Google Maps | ⬜ offen | `config.js` | fotorealistische 3D-Gebäude |
 | Anthropic | ⬜ offen | `.env` (Server) | ✨ KI-Assistent |
 | Flightradar24 | ⬜ offen | `.env` (Server) | Route, Registrierung, Flugnummer |
+| TomTom Traffic | ⬜ offen | `.env` (Server) | 🚦 Echte Verkehrsfluss-Geschwindigkeiten |
 
 **Warum an zwei verschiedenen Orten?** Der Cesium-Ion-Token muss im
 Browser stehen – die Kartenbibliothek lädt die Kacheln selbst. Alle
@@ -65,6 +66,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | ☁️ GOES-Wolken (Infrarot) | NASA GIBS (WMTS) | geostationär, deckt nur Amerika/Pazifik/Atlantik ab; CORS-frei, direkter Browser-Zugriff |
 | 🌦️ Weltwetter-Raster | Open-Meteo Forecast API | weltweites Gradnetz, 1 Sammelanfrage pro Aktualisierung – zählt aber pro Zelle gegen das Tageskontingent (siehe Abschnitt „Weltwetter-Raster" unten) |
 | 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Build-Schritt `npm run build:infrastructure-mass` nötig, Ergebnis aktuell **nicht committet** (Issue WEB-142), siehe Abschnitt unten |
+| 🚗 Verkehr (Simulation) | eigenes prozedurales Straßenraster | im sichtbaren Kartenausschnitt, klar als Simulation gekennzeichnet; echte OSM-Straßengeometrie via Overpass API scheitert in vielen Sandbox-Umgebungen an einer IP-Sperre (siehe `docs/WEB-83-...`, Abschnitt 1a) |
 
 ### 🟡 Kostenloser Schlüssel nötig
 
@@ -78,6 +80,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | ☄️ Mehr Asteroiden-Kontingent | NASA api.nasa.gov | <https://api.nasa.gov> → sofort per E-Mail (1000 Abrufe/Stunde) |
 | 📷 Mehr TfL-Kontingent | TfL Open Data | <https://api-portal.tfl.gov.uk> |
 | 📸 Street-Level-Fotos (Abdeckung + Bildkegel) | Mapillary | <https://www.mapillary.com/dashboard/developers> → "Register application" |
+| 🚦 Echte Verkehrsfluss-Geschwindigkeiten | TomTom Traffic | <https://developer.tomtom.com> → 2.500 Abrufe/Tag gratis |
 
 ### 🔴 Kostenpflichtig, rein optional
 

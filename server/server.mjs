@@ -29,6 +29,8 @@
  *      /api/mapillary/status  Ist ein MAPILLARY_TOKEN gesetzt?
  *      /api/mapillary/images  Street-Level-Bilder in einer bbox (Key nötig)
  *      /api/mapillary/token   Token für den eingebetteten Betrachter (Key nötig)
+ *      /api/traffic/flow      TomTom-Flussgeschwindigkeiten (optional, Key nötig)
+ *      /api/traffic/status    Tageskontingent des Verkehrs-Layers
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -74,7 +76,8 @@ import {
     handleFires, handleFiresHistory, handleCctvCatalog, handleAllskyCatalog, handleEvents,
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
     handleComets, handleAlprCameras, TLE_GROUPS, handleTransit, handleTransitStatus,
-    handleMapillaryStatus, handleMapillaryToken, handleMapillaryImages, mapillaryAvailable
+    handleMapillaryStatus, handleMapillaryToken, handleMapillaryImages, mapillaryAvailable,
+    handleTrafficFlow, handleTrafficStatus
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
@@ -635,6 +638,17 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleMapillaryToken(res);
 
+            case "/api/traffic/flow":
+                // Verkehrs-Layer (WEB-93): TomTom-Flussgeschwindigkeiten,
+                // nur mit TOMTOM_API_KEY. Ohne Schlüssel simuliert der
+                // Layer vollständig im Browser weiter.
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleTrafficFlow(res, searchParams.get("points"));
+
+            case "/api/traffic/status":
+                // Tageskontingent fürs POWER-UP-Panel (WEB-87/U3) – kein Schlüssel nötig.
+                return handleTrafficStatus(res);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
@@ -653,6 +667,7 @@ export function createServer() {
                     militaryFlights: true,
                     transit: true,
                     mapillary: mapillaryAvailable(),
+                    traffic: !!process.env.TOMTOM_API_KEY,
                     tleGroups: TLE_GROUPS
                 });
 
@@ -724,6 +739,11 @@ if (isMain) {
             + "     Kostenlos: https://firms.modaps.eosdis.nasa.gov/api/map_key/");
         console.log("  📹 Verkehrskameras (TfL, Caltrans, Austin): bereit");
         console.log("  📰 Ereignisse (GDELT GEO 2.0): bereit");
+        console.log("  🚗 Verkehr (Simulation auf Straßenraster): bereit, kein Schlüssel nötig");
+        console.log(process.env.TOMTOM_API_KEY
+            ? "  🚦 Verkehrsfluss (TomTom): Key erkannt"
+            : "  ℹ️  Verkehrsfluss (TomTom): kein TOMTOM_API_KEY – Verkehr bleibt reine Simulation\n"
+            + "     Kostenlos: https://developer.tomtom.com");
 
         console.log(AISSTREAM_API_KEY
             ? "  🚢 Schiffsdaten (AISStream): Key erkannt, verbinde per WebSocket …"

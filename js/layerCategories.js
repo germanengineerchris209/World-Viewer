@@ -22,6 +22,7 @@ const CATEGORY_BY_LAYER_ID = {
     ships: "movement",
     satellites: "movement",
     transit: "movement",
+    traffic: "movement",
 
     cameras: "cameras",
     allsky: "cameras",

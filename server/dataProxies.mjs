@@ -2035,6 +2035,124 @@ export async function handleTransit(res, cityId) {
     }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   16. Verkehrsfluss (TomTom, optional – WEB-93)
+   ═══════════════════════════════════════════════════════════ */
+/**
+ * TomTom Traffic Flow Segment Data – liefert pro Punkt die aktuelle
+ * Geschwindigkeit verglichen mit freier Fahrt. Nur mit TOMTOM_API_KEY
+ * aktiv; der Basis-Verkehrs-Layer (js/layers/TrafficLayer.js) simuliert
+ * ohne diesen Schlüssel vollständig lokal im Browser weiter.
+ *
+ * Gratis-Tier: 2.500 Abrufe/Tag (TomTom-Preisseite, vor Produktivbetrieb
+ * gegenprüfen). TOMTOM_DAILY_BUDGET lässt bewusst Luft darunter, damit
+ * ein einzelner Tag mit mehreren offenen Browser-Tabs das Kontingent
+ * nicht sprengt. Nur ECHTE Oberlauf-Abrufe zählen aufs Budget – Treffer
+ * aus dem 5-Minuten-Cache sind kostenlos.
+ */
+const TOMTOM_TTL_MS = 5 * 60_000;
+const TOMTOM_MAX_POINTS = 15;
+
+const trafficBudget = { day: utcDateString(), used: 0 };
+
+function utcDateString() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function trafficBudgetStatus() {
+    const today = utcDateString();
+    if (trafficBudget.day !== today) { trafficBudget.day = today; trafficBudget.used = 0; }
+    const dayBudget = Number(process.env.TOMTOM_DAILY_BUDGET ?? 2000);
+    return { dayUsed: trafficBudget.used, dayBudget, remaining: Math.max(0, dayBudget - trafficBudget.used) };
+}
+
+export function handleTrafficStatus(res) {
+    const key = process.env.TOMTOM_API_KEY;
+    sendJson(res, 200, { configured: !!key, ...trafficBudgetStatus() });
+}
+
+/** Parst "lat,lon|lat,lon|..." aus der Query, verwirft ungültige/zu viele Punkte. */
+function parseTrafficPoints(raw) {
+    if (!raw) return [];
+    return raw.split("|").slice(0, TOMTOM_MAX_POINTS).map((pair) => {
+        const [lat, lon] = pair.split(",").map(Number);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+        return { lat, lon };
+    }).filter(Boolean);
+}
+
+export async function handleTrafficFlow(res, pointsParam) {
+    const key = process.env.TOMTOM_API_KEY;
+    if (!key) {
+        sendJson(res, 503, {
+            error: "no_key",
+            message: "TOMTOM_API_KEY ist nicht gesetzt. Kostenlos anfordern: "
+                + "https://developer.tomtom.com"
+        });
+        return;
+    }
+
+    const points = parseTrafficPoints(pointsParam);
+    if (!points.length) {
+        sendJson(res, 400, { error: "Ungültige oder fehlende Punkte. Erwartet: ?points=lat,lon|lat,lon" });
+        return;
+    }
+
+    const results = [];
+    for (const point of points) {
+        results.push(await fetchTrafficFlowPoint(point, key));
+    }
+
+    sendJson(res, 200, { fetchedAt: Date.now(), results, budget: trafficBudgetStatus() });
+}
+
+async function fetchTrafficFlowPoint(point, key) {
+    const { remaining } = trafficBudgetStatus();
+    // Rundung auf ~1,1m – bündelt Abfragen, die praktisch denselben Punkt treffen.
+    const cacheKey = `traffic:${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
+
+    if (remaining <= 0) {
+        // Tagesbudget erschöpft: lieber ein klares "budget" liefern als
+        // stillschweigend auf alte Daten zurückfallen (die könnten Stunden alt sein).
+        return { lat: point.lat, lon: point.lon, ok: false, reason: "budget" };
+    }
+
+    const result = await cachedFetch(cacheKey, TOMTOM_TTL_MS, async () => {
+        trafficBudget.used += 1; // zählt pro Cache-Fenster genau einmal, auch bei Fehlern
+        try {
+            const url = `https://api.tomtom.com/traffic/services/4/flowSegmentData/`
+                + `absolute/10/json?point=${point.lat},${point.lon}&key=${encodeURIComponent(key)}`;
+            const upstream = await fetchWithTimeout(url, {}, 10_000);
+            if (!upstream.ok) throw new Error(`TomTom antwortete mit ${upstream.status}`);
+            const body = await upstream.json();
+            const flow = body.flowSegmentData;
+            if (!flow) throw new Error("TomTom-Antwort ohne flowSegmentData");
+
+            return {
+                data: JSON.stringify({
+                    ok: true,
+                    currentSpeed: flow.currentSpeed,
+                    freeFlowSpeed: flow.freeFlowSpeed,
+                    confidence: flow.confidence ?? null,
+                    roadClosure: !!flow.roadClosure
+                }),
+                contentType: "application/json"
+            };
+        } catch (err) {
+            // Den FEHLER selbst auch für TOMTOM_TTL_MS cachen (nicht werfen!) –
+            // sonst feuert ein abgelaufener Key oder eine TomTom-Störung bei
+            // jedem Poll erneut gegen das Tagesbudget, ohne dass die
+            // 5-Minuten-Bremse je greift.
+            return {
+                data: JSON.stringify({ ok: false, reason: err.message }),
+                contentType: "application/json"
+            };
+        }
+    });
+    return { lat: point.lat, lon: point.lon, ...JSON.parse(result.data) };
+}
+
 /* ═══════════ Hilfsfunktion ═══════════ */
 
 function sendJson(res, status, data) {
