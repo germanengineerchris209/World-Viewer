@@ -120,24 +120,28 @@ out center tags;`;
 /* ───────────────────────────── Dämme ───────────────────────────── */
 
 async function fetchDams() {
-    console.log("Dämme: Overpass-Abfrage pro Kontinent (waterway/man_made=dam, mit Wikidata-Verknüpfung) …");
+    console.log("Dämme: Overpass-Abfrage pro Kontinent (waterway/man_made=dam, mit Wikipedia-Artikel) …");
     const seen = new Map();
     for (const region of REGIONS) {
         const [s, w, n, e] = region.bbox;
-        // ["wikidata"] grenzt auf Dämme mit eigenem Wikidata-Eintrag ein,
-        // also tatsächlich bedeutsame Bauwerke. Ohne Filter liefert Overpass
-        // in Nordamerika allein >100.000 Treffer, auch mit ["name"] noch
-        // ~60.000 (Massenimport der National Hydrography Dataset benennt
-        // auch kleinste Rückhaltebecken/Teichdämme, z.B. "Pond Dam") – weit
-        // jenseits der mit dem GEV-Referenzprojekt vergleichbaren
-        // Größenordnung (~700 Dämme weltweit) und als eingecheckte Datei
-        // nicht mehr vertretbar.
+        // ["wikidata"] allein filtert NICHT auf bedeutsame Bauwerke: ein
+        // Massenimport hat jedem Eintrag des US National Inventory of Dams
+        // (NID) automatisch eine eigene Wikidata-ID verpasst, auch für
+        // kleinste Teich-/Hatchery-Dämme (z.B. "Feather River Hatchery
+        // 1-047 Dam", Q35701576 – das Rauschbeispiel aus WEB-150 bleibt
+        // mit ["wikidata"] erhalten). Allein Nordamerika liefert damit
+        // >13.000 Treffer, mehr als die weltweite Zielgröße.
+        // ["wikipedia"] verlangt stattdessen einen tatsächlich verlinkten
+        // Wikipedia-Artikel (von Hand verfasste Prosa, kein Bulk-Import) –
+        // Nordamerika kommt damit auf ~280 Treffer, in der mit dem
+        // GEV-Referenzprojekt vergleichbaren Größenordnung (~700 Dämme
+        // weltweit). Siehe WEB-151.
         const ql = `[out:json][timeout:120];
 (
-  node["waterway"="dam"]["wikidata"](${s},${w},${n},${e});
-  way["waterway"="dam"]["wikidata"](${s},${w},${n},${e});
-  node["man_made"="dam"]["wikidata"](${s},${w},${n},${e});
-  way["man_made"="dam"]["wikidata"](${s},${w},${n},${e});
+  node["waterway"="dam"]["wikipedia"](${s},${w},${n},${e});
+  way["waterway"="dam"]["wikipedia"](${s},${w},${n},${e});
+  node["man_made"="dam"]["wikipedia"](${s},${w},${n},${e});
+  way["man_made"="dam"]["wikipedia"](${s},${w},${n},${e});
 );
 out center tags;`;
         const data = await overpassQuery(ql);
