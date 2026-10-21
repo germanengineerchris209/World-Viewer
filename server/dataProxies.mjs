@@ -2153,6 +2153,137 @@ async function fetchTrafficFlowPoint(point, key) {
     return { lat: point.lat, lon: point.lon, ...JSON.parse(result.data) };
 }
 
+/* ═══════════════════════════════════════════════════════════
+   17. Safecast – Globales Strahlungsmessnetz (Umweltmessung, WEB-154)
+   ═══════════════════════════════════════════════════════════
+
+   Quelle: Safecast API (api.safecast.org/en-US/measurements.json) –
+   Bürger-/Community-Messnetz (u.a. Nachwirkung Fukushima), CC0-Lizenz,
+   kein Key, kein Account (siehe WEB-140 Kandidat A).
+
+   CORS ist auf "safecast.org" beschränkt (per curl verifiziert), ein
+   Browser darf die API also nicht direkt abfragen → Server-Proxy.
+
+   Die Antwort ist fest auf 25 Einträge/Seite begrenzt, liefert keine
+   Gesamtzahl und ist nicht nach Zeit sortiert. Wir filtern daher über
+   "captured_after" auf ein Zeitfenster und blättern vorwärts, bis eine
+   Seite leer/kleiner als 25 ist (Fensterende) oder ein Sicherheitslimit
+   greift. Viele Messungen stammen von fahrenden bGeigie-Loggern (dichte
+   GPS-Spuren entlang einer Straße) statt festen Stationen – pro
+   Gerät/Standort wird daher nur der jüngste Wert behalten, damit die
+   Karte ein Netz aus Sensoren zeigt statt GPS-Würmern. Die Rohdaten
+   mischen neben Strahlung (cpm/usv) auch Temperatur- und Statuskanäle
+   über dieselbe Liste – die werden hier verworfen. */
+
+const SAFECAST_API = "https://api.safecast.org/en-US/measurements.json";
+const RADIATION_TTL_MS = 10 * 60 * 1000;   // Daten laufen ohnehin mit ~10 Min. Verzug ein
+const RADIATION_WINDOW_HOURS = 6;          // "aktuell" = letzte 6 Stunden
+const RADIATION_MAX_PAGES = 60;            // Sicherheitslimit: max. 1500 Rohmessungen/Abruf
+const RADIATION_UNITS = new Set(["cpm", "usv"]);
+
+// Grobe Umrechnung CPM → µSv/h nur für die Farbskala (LND-7317-Pancake-
+// Tube, wie in den meisten Safecast-/bGeigie-Geräten verbaut: ca. 334 CPM
+// je µSv/h Hintergrundstrahlung). Der Originalwert/-einheit bleibt im
+// Detailpanel erhalten – die echte Dosisleistung hängt vom Gerät/Isotop ab.
+const CPM_PER_USV = 334;
+
+function toUsvEquivalent(value, unit) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return null;
+    if (unit === "usv") return num;
+    if (unit === "cpm") return num / CPM_PER_USV;
+    return null;
+}
+
+export async function handleRadiation(res) {
+    try {
+        const result = await cachedFetch("radiation", RADIATION_TTL_MS, async () => {
+            const since = new Date(Date.now() - RADIATION_WINDOW_HOURS * 3_600_000);
+            const raw = [];
+
+            for (let page = 1; page <= RADIATION_MAX_PAGES; page++) {
+                const url = new URL(SAFECAST_API);
+                url.searchParams.set("captured_after", since.toISOString());
+                url.searchParams.set("page", String(page));
+
+                const upstream = await fetchWithTimeout(url, { headers: { Accept: "application/json" } }, 15_000);
+                if (!upstream.ok) throw new Error(`Safecast antwortete mit ${upstream.status}`);
+
+                const batch = await upstream.json();
+                if (!Array.isArray(batch) || !batch.length) break;
+                raw.push(...batch);
+                if (batch.length < 25) break;   // letzte Seite des Fensters erreicht
+            }
+            if (!raw.length) throw new Error("Keine Messungen im Zeitfenster");
+
+            const points = normalizeRadiation(raw);
+            return {
+                data: JSON.stringify({
+                    fetchedAt: Date.now(),
+                    windowHours: RADIATION_WINDOW_HOURS,
+                    count: points.length,
+                    points
+                }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Strahlungsdaten nicht abrufbar: ${err.message}` });
+    }
+}
+
+/**
+ * Nur echte Strahlungskanäle (cpm/usv) behalten und pro Gerät/Standort
+ * die jüngste Messung. Nutzer-/Geräte-IDs bleiben draußen (kein
+ * Personenbezug, siehe WEB-140-Abgrenzung).
+ */
+function normalizeRadiation(raw) {
+    const latest = new Map();   // Gruppenschlüssel → { lat, lon, capturedAt, m }
+
+    for (const m of raw) {
+        const unit = String(m.unit ?? "").toLowerCase();
+        if (!RADIATION_UNITS.has(unit)) continue;
+
+        const lat = Number(m.latitude);
+        const lon = Number(m.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+        if (!Number.isFinite(Number(m.value))) continue;
+
+        const capturedAt = Date.parse(m.captured_at ?? "");
+        if (!Number.isFinite(capturedAt)) continue;
+
+        const key = m.device_id != null
+            ? `device:${m.device_id}`
+            : `loc:${lat.toFixed(2)},${lon.toFixed(2)}`;
+
+        const previous = latest.get(key);
+        if (previous && previous.capturedAt >= capturedAt) continue;
+        latest.set(key, { lat, lon, capturedAt, unit, value: Number(m.value), locationName: m.location_name ?? null });
+    }
+
+    const points = [];
+    for (const [key, entry] of latest) {
+        points.push({
+            id: `radiation-${key}`,
+            latitude: entry.lat,
+            longitude: entry.lon,
+            value: entry.value,
+            unit: entry.unit,
+            usvEquivalent: toUsvEquivalent(entry.value, entry.unit),
+            locationName: entry.locationName,
+            capturedAt: entry.capturedAt
+        });
+    }
+    return points;
+}
+
 /* ═══════════ Hilfsfunktion ═══════════ */
 
 function sendJson(res, status, data) {
