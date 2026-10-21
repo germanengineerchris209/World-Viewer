@@ -310,6 +310,13 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 1200    // 20 Min., siehe NHC-Aktualisierungsrhythmus
     },
 
+    tsunamiAlerts: {
+        // Tsunami-Warnungen, NOAA/NWS PTWC (Honolulu) + NTWC (Palmer, AK).
+        // Warnmeldung statt Routine-Datenquelle, deshalb kürzeres Intervall.
+        apiUrl: "/api/tsunami",
+        refreshSeconds: 120
+    },
+
     fires: {
         apiUrl: "/api/fires",
         refreshSeconds: 900,

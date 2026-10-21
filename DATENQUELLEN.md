@@ -53,6 +53,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🌠 Kometen | NASA JPL Small-Body Database | kein Schlüssel; Bahnelemente, Positionen rechnet der Browser |
 | 🛰️ Deep-Space-Missionen (Voyager 1/2, New Horizons, JWST, Parker Solar Probe, Juno) | NASA JPL Horizons | echte Ephemeriden, kein Schlüssel; liefert Klartextblöcke → Server-Proxy parst sie, cacht 6 h |
 | 🌀 Wirbelstürme | NOAA National Hurricane Center | nur Atlantik/Ost-/Zentralpazifik; sendet kein CORS → Server-Proxy für Übersicht + Vorhersagekegel |
+| 🌊 Tsunami-Warnungen | NOAA/NWS PTWC (Honolulu) + NTWC (Palmer, AK) | weltweit über zwei Atom-Feeds; sendet kein CORS, kein JSON → Server-Proxy parst Atom/XML; Aktualisierung alle 2 Min. |
 | 📷 Verkehrskameras | TfL London, Caltrans, Austin | mehrere hundert Kameras |
 | 📷 Einzelne Webcams | feratel, terra-hd, YouTube, NOAA | |
 | 🌌 Allsky-Kameras | 20 bekannte Sternwarten + öffentliche Allsky-Karte | Ganzhimmelkameras weltweit, rund 380 Standorte |
@@ -381,6 +382,34 @@ einzubinden.
 Außerhalb der Hurrikansaison ist `activeStorms` meist leer – das ist der
 Normalfall. Die Sidebar zeigt dann "derzeit keine aktiven Systeme" statt
 einer stillschweigend leeren Ebene.
+
+### 🌊 Tsunami-Warnungen
+
+**NOAA/NWS Tsunami Warning Centers**, öffentliche US-Regierungsdaten,
+kein Schlüssel nötig. Zwei Atom-Feeds decken gemeinsam alle
+Weltregionen ab:
+- `tsunami.gov/events/xml/PHEBAtom.xml` – Pacific Tsunami Warning
+  Center (Honolulu), zuständig für den internationalen Pazifikraum.
+- `tsunami.gov/events/xml/PAAQAtom.xml` – National Tsunami Warning
+  Center (Palmer, Alaska), zuständig für US-/Kanada-Küsten inkl.
+  Atlantik/Golf/Karibik.
+
+Beide Feeds senden kein CORS und liefern Atom/XML statt JSON, daher
+läuft der Abruf über den eigenen Server (`/api/tsunami`). Weil das
+Projekt bewusst ohne npm-Pakete auskommt, parst `server/dataProxies.mjs`
+das Atom-Format per Regex statt mit einer XML-Bibliothek (genau wie
+`server/kmz.mjs` das KML-Format selbst ausliest). Fällt eines der
+beiden Zentren aus, zeigt der Layer weiterhin die Meldungen des
+anderen – nur wenn beide ausfallen, gilt die Quelle als nicht
+abrufbar.
+
+Jede Meldung trägt eine amtliche Kategorie (Information/Watch/
+Advisory/Warning), die der Layer als Ampel wie bei Vulkanen/Erdbeben
+darstellt. Der Feed enthält die meiste Zeit nur unbedrohliche
+Informationsmeldungen zu Erdbeben ohne Tsunami-Gefahr – das ist der
+Normalfall, nicht zu verwechseln mit der reinen Erdbeben-Magnitude
+(`EarthquakeLayer.js`). Aktualisierung alle 2 Minuten statt der sonst
+üblichen 15-20 Minuten, weil es sich um Warnmeldungen handelt.
 
 ### 🚌 ÖPNV (Busse, Bahnen, Fähren)
 
