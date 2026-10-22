@@ -36,7 +36,8 @@ export const LINK_TYPE_ICONS = {
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
     fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠",
-    worldweather: "🌡️", transit: "🚌", alpr: "🪪", vehicle: "🚗", radiation: "☢️"
+    worldweather: "🌡️", transit: "🚌", alpr: "🪪", vehicle: "🚗", radiation: "☢️",
+    bikeshare: "🚲"
 };
 
 /** Formatierungs-Helfer */
@@ -158,6 +159,35 @@ const DETAIL_SCHEMAS = {
             );
             return rows;
         }
+    },
+    bikeshare: {
+        badge: "Leihrad-Station",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["System", F.text(m.systemName)],
+                ["Räder verfügbar", F.text(m.bikesAvailable)]
+            ];
+            if (m.ebikesAvailable != null) rows.push(["davon E-Bikes", F.text(m.ebikesAvailable)]);
+            rows.push(
+                ["Docks frei", m.docksAvailable != null ? F.text(m.docksAvailable) : "–"],
+                ["Kapazität", m.capacity != null ? F.text(m.capacity) : "–"],
+                ["Status", (m.isRenting || m.isReturning) ? "In Betrieb" : "Außer Betrieb"]
+            );
+            if (m.reportedAt) rows.push(["Stand", new Date(m.reportedAt).toLocaleString("de-DE"), true]);
+            rows.push(
+                ["Stadt", `${F.text(m.city)} (${F.text(m.country)})`],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        },
+        extraHtml: (o) => o.metadata.homepage
+            ? `<div class="detail-field wide"><label>Betreiber</label>
+                 <span><a href="${o.metadata.homepage}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">Homepage öffnen ↗</a></span></div>`
+            : ""
     },
     satellite: {
         badge: "Satelliten-Details",

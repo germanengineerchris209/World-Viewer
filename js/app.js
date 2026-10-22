@@ -65,6 +65,7 @@ import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
 import { EventLayer } from "./layers/EventLayer.js";
 import { SpaceWeatherLayer } from "./layers/SpaceWeatherLayer.js";
 import { TransitLayer } from "./layers/TransitLayer.js";
+import { BikeShareLayer } from "./layers/BikeShareLayer.js";
 import { StreetLevelLayer } from "./layers/StreetLevelLayer.js";
 import { TrafficLayer } from "./layers/TrafficLayer.js";
 import { RadiationLayer } from "./layers/RadiationLayer.js";
@@ -123,6 +124,7 @@ async function main() {
     const spaceWeatherLayer = new SpaceWeatherLayer(worldViewer);
     layerManager.register(spaceWeatherLayer);
     layerManager.register(new TransitLayer(worldViewer));
+    layerManager.register(new BikeShareLayer(worldViewer));
     layerManager.register(new TrafficLayer(worldViewer));
     const streetLevelLayer = new StreetLevelLayer(worldViewer);
     layerManager.register(streetLevelLayer);
