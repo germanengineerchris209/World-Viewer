@@ -401,6 +401,16 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 600
     },
 
+    bikeshare: {
+        // General Bikeshare Feed Specification (GBFS) – offener Standard,
+        // kein Key. Städteliste liegt in data/bikeshare-systems.json; nur
+        // Systeme mit offenem CORS und ohne Anmeldung sind aufgenommen
+        // (je Stadt per curl verifiziert, WEB-70). Stationsnamen/-koordinaten
+        // werden einmalig geladen, nur die Verfügbarkeit wird regelmäßig
+        // neu abgefragt – 60-120s laut GBFS-Spezifikationsempfehlung.
+        refreshSeconds: 90
+    },
+
 
     /* ═══════════ Kameras ═══════════ */
 

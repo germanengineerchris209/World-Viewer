@@ -63,6 +63,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | ⛽ Kraftstoffreserven | modelliert nach IEA-Bevorratungsregeln / nationalen Mindestbevorratungsgesetzen | 20 größte Volkswirtschaften, statische Modellwerte, keine Live-Meldung |
 | 📰 Ereignisse | GDELT Project GEO 2.0 API | geokodierte Weltnachrichten, Aktualisierung alle 15 Min. |
 | 🚌 ÖPNV (Busse/Bahnen/Fähren) | GTFS-Realtime: MBTA (Boston), OVapi (Niederlande) | Protobuf, serverseitig dekodiert; nur diese zwei Regionen abgedeckt |
+| 🚲 Leihräder/E-Scooter (GBFS) | 9 Bikeshare-Systeme (nextbike Berlin/Köln/München, Citi Bike, Divvy, Capital Bikeshare, Bike Share Toronto, Bicing, BiciMAD) | handkuratiert, nur je Stadt auf offenes CORS geprüfte Systeme |
 | ☁️ GOES-Wolken (Infrarot) | NASA GIBS (WMTS) | geostationär, deckt nur Amerika/Pazifik/Atlantik ab; CORS-frei, direkter Browser-Zugriff |
 | 🌦️ Weltwetter-Raster | Open-Meteo Forecast API | weltweites Gradnetz, 1 Sammelanfrage pro Aktualisierung – zählt aber pro Zelle gegen das Tageskontingent (siehe Abschnitt „Weltwetter-Raster" unten) |
 | 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Snapshot ist **eingecheckt** (4.813 Rechenzentren, 16.630 Dämme, 195 Seekabel); neu erzeugen per `npm run build:infrastructure-mass`, siehe Abschnitt unten |
@@ -407,6 +408,33 @@ sich selbst alle ~20-30s). Außerhalb dieser zwei Regionen bleibt die
 Ebene leer – das ist eine Dateneigenschaft (zwei ausgewählte offene
 Feeds von vielen tausend GTFS-Betreibern weltweit), die Sidebar erklärt
 das über `statusText()` statt stillschweigend leer zu bleiben.
+
+### 🚲 Leihräder/E-Scooter (GBFS)
+
+**General Bikeshare Feed Specification (GBFS)** – offener Standard für
+Shared-Mobility-Betreiber, öffentliche Systemliste unter
+[MobilityData/gbfs](https://github.com/MobilityData/gbfs/blob/master/systems.csv).
+Analog zu Kameras/AQI: eine handkuratierte Städteliste
+(`data/bikeshare-systems.json`) statt Auto-Discovery, da nicht jedes
+der tausenden GBFS-Systeme ohne Anmeldung und mit offenem CORS
+erreichbar ist – jede Stadt wurde einzeln per curl gegen
+`station_information`/`station_status` geprüft, bevor sie aufgenommen
+wurde.
+
+Aufgenommen sind 9 Systeme mit bestätigtem `Access-Control-Allow-Origin: *`
+und ohne Registrierung: **nextbike** in Berlin, Köln (KVB Rad) und
+München (MyRadl), **Citi Bike** (New York), **Divvy** (Chicago),
+**Capital Bikeshare** (Washington, D.C.), **Bike Share Toronto**,
+**Bicing** (Barcelona) und **BiciMAD** (Madrid). Die Systeme laufen auf
+zwei GBFS-Versionen (2.3 und 3.0) mit leicht unterschiedlichen
+Feldnamen – der Layer gleicht das selbst an.
+
+`station_information` (Stationsnamen/-koordinaten) ändert sich
+praktisch nie und wird nur einmal geladen; `station_status`
+(Verfügbarkeit) wird alle 90 Sekunden neu abgefragt – innerhalb der von
+der Spezifikation empfohlenen 60-120s. Dargestellt werden ausschließlich
+aggregierte Stationsdaten (Anzahl verfügbarer Räder/Docks), keine
+Fahrzeug- oder Nutzerverfolgung.
 
 ### 🕰️ Zeitleisten-Replay
 
