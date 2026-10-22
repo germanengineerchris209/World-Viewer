@@ -186,6 +186,25 @@
             <p id="deepspace-hint" class="draw-hint">Lade Ephemeriden …</p>
         </section>
 
+        <!-- Live-Niederschlagsradar (RainViewer): Kachel-Overlay mit Zeitschieberegler
+             für die letzten ~2 Stunden, siehe js/layers/RadarLayer.js (WEB-67) -->
+        <section id="radar-section" class="sidebar-section">
+            <h2 class="section-title">Niederschlagsradar</h2>
+            <div class="button-row">
+                <button id="radar-play" class="tool-btn" title="Abspielen">▶ Abspielen</button>
+                <button id="radar-pause" class="tool-btn" title="Pause">⏸ Pause</button>
+            </div>
+            <div class="button-row">
+                <input type="range" id="radar-scrub" min="0" max="0" value="0" step="1"
+                       title="Zeitschritt wählen" style="flex:1">
+            </div>
+            <div class="flight-status-line">
+                <span id="radar-clock">–</span> · <span id="radar-status">Lade Zeitschritte …</span>
+            </div>
+            <p class="draw-hint">Daten: <a href="https://www.rainviewer.com/" target="_blank"
+                rel="noopener noreferrer">RainViewer API</a> ↗</p>
+        </section>
+
         <!-- Beobachtungszonen (Geofence-Alarme) -->
         <section class="sidebar-section">
             <h2 class="section-title">Beobachtung</h2>

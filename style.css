@@ -869,6 +869,13 @@ body.wv-dragging-panel, body.wv-dragging-panel * { user-select: none !important;
 .live-badge.paused { color: var(--amber); border-color: var(--amber); animation: none; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
 
+/* ── Niederschlagsradar (RainViewer, WEB-67) ── */
+
+#radar-scrub {
+    width: 100%; accent-color: var(--accent);
+    background: transparent; cursor: pointer;
+}
+
 /* ── Zeitleisten-Replay ── */
 
 .history-check {
