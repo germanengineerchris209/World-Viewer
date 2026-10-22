@@ -80,7 +80,10 @@
         },
         "latitude": 40.758,
         "longitude": -73.9855,
-        "altitude": 40
+        "altitude": 40,
+        "heading": 180,
+        "fovDegrees": 70,
+        "rangeMeters": 400
     },
     {
         "id": "cam-004",
@@ -97,7 +100,10 @@
         },
         "latitude": 45.4383,
         "longitude": 12.3326,
-        "altitude": 15
+        "altitude": 15,
+        "heading": 45,
+        "fovDegrees": 60,
+        "rangeMeters": 250
     },
     {
         "id": "cam-005",
@@ -167,7 +173,10 @@
         },
         "latitude": 35.6595,
         "longitude": 139.7005,
-        "altitude": 45
+        "altitude": 45,
+        "heading": 200,
+        "fovDegrees": 80,
+        "rangeMeters": 220
     },
     {
         "id": "cam-009",
