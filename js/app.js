@@ -67,6 +67,7 @@ import { SpaceWeatherLayer } from "./layers/SpaceWeatherLayer.js";
 import { TransitLayer } from "./layers/TransitLayer.js";
 import { StreetLevelLayer } from "./layers/StreetLevelLayer.js";
 import { TrafficLayer } from "./layers/TrafficLayer.js";
+import { RadiationLayer } from "./layers/RadiationLayer.js";
 
 async function main() {
     /* 1 ── 3D-Globus mit Satellitenansicht */
@@ -112,6 +113,7 @@ async function main() {
     layerManager.register(new FireLayer(worldViewer));
     layerManager.register(new RadioLayer(worldViewer));
     layerManager.register(new AQILayer(worldViewer));
+    layerManager.register(new RadiationLayer(worldViewer));
     layerManager.register(new WeatherLayer(worldViewer));
     layerManager.register(new GoesCloudLayer(worldViewer));
     layerManager.register(new WorldWeatherLayer(worldViewer));

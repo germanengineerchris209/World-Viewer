@@ -67,6 +67,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🌦️ Weltwetter-Raster | Open-Meteo Forecast API | weltweites Gradnetz, 1 Sammelanfrage pro Aktualisierung – zählt aber pro Zelle gegen das Tageskontingent (siehe Abschnitt „Weltwetter-Raster" unten) |
 | 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Build-Schritt `npm run build:infrastructure-mass` nötig, Ergebnis aktuell **nicht committet** (Issue WEB-142), siehe Abschnitt unten |
 | 🚗 Verkehr (Simulation) | eigenes prozedurales Straßenraster | im sichtbaren Kartenausschnitt, klar als Simulation gekennzeichnet; echte OSM-Straßengeometrie via Overpass API scheitert in vielen Sandbox-Umgebungen an einer IP-Sperre (siehe `docs/WEB-83-...`, Abschnitt 1a) |
+| ☢️ Strahlungsmessnetz | Safecast API | CC0, Community-Messnetz, letzte 6 Stunden, sendet CORS nur für `safecast.org` → Server-Proxy |
 
 ### 🟡 Kostenloser Schlüssel nötig
 
@@ -555,6 +556,34 @@ CORS ist gesetzt (`Access-Control-Allow-Origin: *`, per curl
 verifiziert), ein Server-Proxy ist daher nicht nötig. Werte
 aktualisieren sich bei Open-Meteo stündlich, die App fragt alle 30
 Minuten nach. Reine Umweltdaten ohne Personenbezug.
+
+### ☢️ Strahlungsmessnetz (Safecast, WEB-154)
+
+**Safecast API** (`api.safecast.org/en-US/measurements.json`) –
+Bürger-/Community-Messnetz (u.a. Nachwirkung Fukushima), **CC0-Lizenz,
+kein Key, kein Account**. Live getestet: liefert aktuelle JSON-
+Messpunkte mit `latitude`, `longitude`, `value`, `unit` (`cpm` oder
+`usv`) und `captured_at`; dieselbe Liste enthält daneben auch
+Temperatur- und Statuskanäle, die der Server verwirft.
+
+CORS ist auf `safecast.org` beschränkt (per curl verifiziert,
+`Access-Control-Allow-Origin: safecast.org`) – ein Browser darf die
+API also nicht direkt abfragen. `/api/radiation` übernimmt deshalb den
+Abruf: Die Antwort ist fest auf 25 Einträge/Seite begrenzt, liefert
+keine Gesamtzahl und ist nicht nach Zeit sortiert, daher wird über
+`captured_after` auf die letzten 6 Stunden gefiltert und seitenweise
+vorwärts geblättert (Sicherheitslimit 60 Seiten). Pro Gerät/Standort
+bleibt nur die jüngste Messung übrig – viele Einträge stammen von
+fahrenden bGeigie-Loggern, ohne diese Dedupe würde die Karte dichte
+GPS-Spuren statt eines Sensornetzes zeigen. Ergebnis wird 10 Minuten
+serverseitig gecacht.
+
+Die Farbampel rechnet CPM-Werte grob in µSv/h um (Faktor 334, Richtwert
+für die verbreitete LND-7317-Pancake-Tube) – nur zur einheitlichen
+Einfärbung, der Originalwert bleibt im Detailpanel sichtbar, da die
+echte Dosisleistung vom jeweiligen Gerät/Isotop abhängt. Reine
+Umweltmessstationen, kein Personenbezug: Geräte-/User-IDs aus der API
+erscheinen nicht in der UI.
 
 ### ⛽ Kraftstoffreserven
 

@@ -36,7 +36,7 @@ export const LINK_TYPE_ICONS = {
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
     fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠",
-    worldweather: "🌡️", transit: "🚌", alpr: "🪪", vehicle: "🚗"
+    worldweather: "🌡️", transit: "🚌", alpr: "🪪", vehicle: "🚗", radiation: "☢️"
 };
 
 /** Formatierungs-Helfer */
@@ -287,6 +287,25 @@ const DETAIL_SCHEMAS = {
             if (m.measuredAt) rows.push(["Stand", new Date(m.measuredAt).toLocaleString("de-DE"), true]);
             rows.push(
                 ["Land", F.text(m.country)],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        }
+    },
+    radiation: {
+        badge: "Strahlungsmessnetz",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Messwert", m.unit === "usv" ? `${fmt.format(m.value)} µSv/h` : `${fmt.format(m.value)} CPM`]
+            ];
+            if (m.unit === "cpm" && m.usvEquivalent != null) {
+                rows.push(["≈ Dosisleistung", `${fmt.format(m.usvEquivalent)} µSv/h (Näherung)`]);
+            }
+            if (m.capturedAt) rows.push(["Gemessen", new Date(m.capturedAt).toLocaleString("de-DE"), true]);
+            rows.push(
                 ["Breite", F.coord(o.position.latitude)],
                 ["Länge", F.coord(o.position.longitude)]
             );

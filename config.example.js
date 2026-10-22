@@ -351,6 +351,15 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 1800
     },
 
+    radiation: {
+        // Safecast API – frei, CC0, kein Key, kein Account (WEB-154).
+        // Läuft über /api/radiation: Safecast sendet CORS nur für
+        // "safecast.org", ein direkter Browser-Abruf scheitert daher.
+        // Der Server filtert ein 6-Stunden-Zeitfenster und cacht 10 Min.
+        apiUrl: "/api/radiation",
+        refreshSeconds: 600
+    },
+
     weather: {
         // Open-Meteo Forecast API – dieselbe Quelle wie der AQI-Layer,
         // frei, kein Key für nicht-kommerzielle Nutzung. Städteliste liegt
