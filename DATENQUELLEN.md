@@ -65,7 +65,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🚌 ÖPNV (Busse/Bahnen/Fähren) | GTFS-Realtime: MBTA (Boston), OVapi (Niederlande) | Protobuf, serverseitig dekodiert; nur diese zwei Regionen abgedeckt |
 | ☁️ GOES-Wolken (Infrarot) | NASA GIBS (WMTS) | geostationär, deckt nur Amerika/Pazifik/Atlantik ab; CORS-frei, direkter Browser-Zugriff |
 | 🌦️ Weltwetter-Raster | Open-Meteo Forecast API | weltweites Gradnetz, 1 Sammelanfrage pro Aktualisierung – zählt aber pro Zelle gegen das Tageskontingent (siehe Abschnitt „Weltwetter-Raster" unten) |
-| 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Build-Schritt `npm run build:infrastructure-mass` nötig, Ergebnis aktuell **nicht committet** (Issue WEB-142), siehe Abschnitt unten |
+| 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Snapshot ist **eingecheckt** (4.813 Rechenzentren, 16.630 Dämme, 195 Seekabel); neu erzeugen per `npm run build:infrastructure-mass`, siehe Abschnitt unten |
 | 🚗 Verkehr (Simulation) | eigenes prozedurales Straßenraster | im sichtbaren Kartenausschnitt, klar als Simulation gekennzeichnet; echte OSM-Straßengeometrie via Overpass API scheitert in vielen Sandbox-Umgebungen an einer IP-Sperre (siehe `docs/WEB-83-...`, Abschnitt 1a) |
 | ☢️ Strahlungsmessnetz | Safecast API | CC0, Community-Messnetz, letzte 6 Stunden, sendet CORS nur für `safecast.org` → Server-Proxy |
 
@@ -684,13 +684,12 @@ gibt kein festes Overpass-Rate-Limit, aber die üblichen Fair-Use-Regeln
 des öffentlichen Overpass-Servers gelten (nicht parallelisieren, nicht in
 kurzen Abständen wiederholen).
 
-> ⚠️ **Rate-Limit in der Praxis = 0, weil der Build nicht gelaufen ist:**
-> Die drei erzeugten Dateien (`data/datacenters.json`, `data/dams.json`,
-> `data/cables-osm.json`) liegen aktuell nicht im Repository (Issue
-> WEB-142). Ein frischer Checkout lädt sie mit 404 und zeigt nur die
-> wenigen handkuratierten Einträge aus `data/infrastructure.json` /
-> `data/cables.json` – kein Absturz, aber die versprochene Masse an
-> Objekten fehlt, bis der Build-Schritt nachgeholt und committet wird.
+> **Rate-Limit betrifft im Normalbetrieb niemanden:** Die drei erzeugten
+> Dateien (`data/datacenters.json`, `data/dams.json`, `data/cables-osm.json`)
+> sind seit WEB-142 im Repository eingecheckt. Overpass wird also nur
+> angefragt, wenn jemand den Snapshot mit
+> `npm run build:infrastructure-mass` bewusst neu erzeugt — nicht im
+> laufenden Betrieb und nicht beim Start.
 
 ### 🗺️ Karten und Gelände
 
