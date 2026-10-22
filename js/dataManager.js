@@ -19,8 +19,14 @@
  * (OpenSky, AIS, TLE-Daten …) oder WebSockets ergänzt werden.
  */
 
+import { showLoadError, showLoadInfo } from "./statusToast.js";
+
 /**
- * Lädt eine JSON-Datei mit Fehlerbehandlung.
+ * Lädt eine JSON-Datei mit Fehlerbehandlung. Ein Fehlschlag landet nicht
+ * nur in der Konsole, sondern auch als Hinweis in statusToast.js (WEB-159)
+ * – sonst ist "Quelle kaputt" von "gerade nichts los" nicht zu unterscheiden.
+ * Das zurückgegebene leere Array trägt dafür `__loadFailed = true`, damit
+ * aufrufende Layer (siehe BaseLayer.load()) ihren Status setzen können.
  * @returns {Promise<Array>} leeres Array bei Fehlern (App läuft weiter)
  */
 export async function loadJSON(url) {
@@ -32,7 +38,10 @@ export async function loadJSON(url) {
         return await response.json();
     } catch (err) {
         console.error(`[dataManager] Konnte ${url} nicht laden:`, err);
-        return [];
+        showLoadError(`Datenquelle nicht erreichbar: ${url}`);
+        const empty = [];
+        empty.__loadFailed = true;
+        return empty;
     }
 }
 
@@ -40,7 +49,9 @@ export async function loadJSON(url) {
  * Wie loadJSON, aber für Quellen, die bewusst fehlen dürfen (generierte
  * Massendatensätze, siehe scripts/build-infrastructure-mass.mjs). Ein 404
  * ist dort ein erwarteter Zustand vor dem ersten Build-Lauf, kein Fehler –
- * daher kein console.error, nur eine info-Zeile.
+ * daher nur ein dezenter Hinweis (statusToast.showLoadInfo), kein
+ * Fehler-Toast und kein `__loadFailed`. Ein echter Fehler (z.B. Proxy aus,
+ * 500er, Netzwerkfehler) bleibt dagegen ein Fehler.
  * @returns {Promise<Array>} leeres Array, wenn die Quelle (noch) nicht existiert
  */
 export async function loadJSONOptional(url) {
@@ -48,7 +59,10 @@ export async function loadJSONOptional(url) {
         const response = await fetch(url);
         if (response.status === 404) {
             console.info(`[dataManager] ${url} nicht vorhanden – optionale Quelle wird übersprungen.`);
-            return [];
+            showLoadInfo(`Optionale Datenquelle (noch) nicht vorhanden: ${url}`);
+            const empty = [];
+            empty.__optionalMissing = true;
+            return empty;
         }
         if (!response.ok) {
             throw new Error(`HTTP ${response.status} für ${url}`);
@@ -56,7 +70,10 @@ export async function loadJSONOptional(url) {
         return await response.json();
     } catch (err) {
         console.error(`[dataManager] Konnte ${url} nicht laden:`, err);
-        return [];
+        showLoadError(`Datenquelle nicht erreichbar: ${url}`);
+        const empty = [];
+        empty.__loadFailed = true;
+        return empty;
     }
 }
 

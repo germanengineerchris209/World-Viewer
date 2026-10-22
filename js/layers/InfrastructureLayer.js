@@ -71,6 +71,7 @@ export class InfrastructureLayer extends BaseLayer {
 
     /** Lädt die handkuratierte Liste plus die generierten Massendatensätze additiv. */
     async load() {
+        this.status = "laden";
         this.objects = [];
         const curated = await loadJSON(this.dataUrl);
         const massRaw = await Promise.all(MASS_SOURCES.map(loadJSONOptional));
@@ -87,6 +88,12 @@ export class InfrastructureLayer extends BaseLayer {
                 this.objects.push(obj);
             }
         }
+        // Ein Fehlschlag irgendeiner Quelle zählt als Fehler für den ganzen
+        // Layer (WEB-159) – die bewusst fehlenden Massendatensätze
+        // (__optionalMissing, siehe loadJSONOptional) dagegen nicht.
+        this.status = sourceLists.some(raw => raw.__loadFailed)
+            ? "fehler"
+            : (this.objects.length === 0 ? "leer" : "ok");
         console.info(`[${this.name}] ${this.objects.length} Objekte geladen.`);
     }
 
