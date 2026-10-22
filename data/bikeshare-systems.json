@@ -1,0 +1,83 @@
+[
+    {
+        "id": "bikeshare-berlin",
+        "city": "Berlin",
+        "country": "DE",
+        "name": "nextbike Berlin",
+        "homepage": "https://www.nextbike.de/berlin/",
+        "stationInformationUrl": "https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bn/en/station_information.json",
+        "stationStatusUrl": "https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bn/en/station_status.json"
+    },
+    {
+        "id": "bikeshare-cologne",
+        "city": "Köln",
+        "country": "DE",
+        "name": "KVB Rad",
+        "homepage": "https://www.kvb-rad.de/",
+        "stationInformationUrl": "https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_kg/en/station_information.json",
+        "stationStatusUrl": "https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_kg/en/station_status.json"
+    },
+    {
+        "id": "bikeshare-munich",
+        "city": "München",
+        "country": "DE",
+        "name": "MyRadl",
+        "homepage": "https://myradl.de/de",
+        "stationInformationUrl": "https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_ml/en/station_information.json",
+        "stationStatusUrl": "https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_ml/en/station_status.json"
+    },
+    {
+        "id": "bikeshare-newyork",
+        "city": "New York",
+        "country": "US",
+        "name": "Citi Bike",
+        "homepage": "https://www.citibikenyc.com",
+        "stationInformationUrl": "https://gbfs.lyft.com/gbfs/2.3/bkn/en/station_information.json",
+        "stationStatusUrl": "https://gbfs.lyft.com/gbfs/2.3/bkn/en/station_status.json"
+    },
+    {
+        "id": "bikeshare-chicago",
+        "city": "Chicago",
+        "country": "US",
+        "name": "Divvy",
+        "homepage": "https://www.divvybikes.com",
+        "stationInformationUrl": "https://gbfs.lyft.com/gbfs/2.3/chi/en/station_information.json",
+        "stationStatusUrl": "https://gbfs.lyft.com/gbfs/2.3/chi/en/station_status.json"
+    },
+    {
+        "id": "bikeshare-washington",
+        "city": "Washington, D.C.",
+        "country": "US",
+        "name": "Capital Bikeshare",
+        "homepage": "https://www.capitalbikeshare.com",
+        "stationInformationUrl": "https://gbfs.lyft.com/gbfs/2.3/dca-cabi/en/station_information.json",
+        "stationStatusUrl": "https://gbfs.lyft.com/gbfs/2.3/dca-cabi/en/station_status.json"
+    },
+    {
+        "id": "bikeshare-toronto",
+        "city": "Toronto",
+        "country": "CA",
+        "name": "Bike Share Toronto",
+        "homepage": "https://www.bikesharetoronto.com/",
+        "stationInformationUrl": "https://toronto.publicbikesystem.net/customer/gbfs/v3.0/station_information",
+        "stationStatusUrl": "https://toronto.publicbikesystem.net/customer/gbfs/v3.0/station_status"
+    },
+    {
+        "id": "bikeshare-barcelona",
+        "city": "Barcelona",
+        "country": "ES",
+        "name": "Bicing",
+        "homepage": "https://www.bicing.barcelona/",
+        "stationInformationUrl": "https://barcelona.publicbikesystem.net/customer/gbfs/v3.0/station_information",
+        "stationStatusUrl": "https://barcelona.publicbikesystem.net/customer/gbfs/v3.0/station_status"
+    },
+    {
+        "id": "bikeshare-madrid",
+        "city": "Madrid",
+        "country": "ES",
+        "name": "BiciMAD",
+        "homepage": "https://www.bicimad.com",
+        "stationInformationUrl": "https://madrid.publicbikesystem.net/customer/gbfs/v3.0/station_information",
+        "stationStatusUrl": "https://madrid.publicbikesystem.net/customer/gbfs/v3.0/station_status"
+    }
+]

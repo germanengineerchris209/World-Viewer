@@ -31,6 +31,7 @@
  *      /api/mapillary/token   Token für den eingebetteten Betrachter (Key nötig)
  *      /api/traffic/flow      TomTom-Flussgeschwindigkeiten (optional, Key nötig)
  *      /api/traffic/status    Tageskontingent des Verkehrs-Layers
+ *      /api/radiation         Strahlungsmessnetz weltweit (Safecast, kein Key, WEB-154)
  *      /api/tsunami            Tsunami-Warnungen (NOAA/NWS PTWC+NTWC, Atom-Feeds)
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
@@ -78,7 +79,7 @@ import {
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
     handleComets, handleAlprCameras, TLE_GROUPS, handleTransit, handleTransitStatus,
     handleMapillaryStatus, handleMapillaryToken, handleMapillaryImages, mapillaryAvailable,
-    handleTrafficFlow, handleTrafficStatus, handleTsunamiAlerts
+    handleTrafficFlow, handleTrafficStatus, handleRadiation, handleTsunamiAlerts
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
@@ -650,6 +651,11 @@ export function createServer() {
                 // Tageskontingent fürs POWER-UP-Panel (WEB-87/U3) – kein Schlüssel nötig.
                 return handleTrafficStatus(res);
 
+            case "/api/radiation":
+                // Strahlungsmessnetz (WEB-154): Safecast, kein Schlüssel nötig.
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleRadiation(res);
+
             case "/api/tsunami":
                 // Tsunami-Warnungen (WEB-155): NOAA/NWS PTWC + NTWC, kein Schlüssel nötig.
                 if (req.method !== "GET") return res.writeHead(405).end();
@@ -675,6 +681,7 @@ export function createServer() {
                     transit: true,
                     mapillary: mapillaryAvailable(),
                     traffic: !!process.env.TOMTOM_API_KEY,
+                    radiation: true,
                     tleGroups: TLE_GROUPS
                 });
 

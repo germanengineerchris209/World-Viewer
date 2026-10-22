@@ -59,6 +59,7 @@ import { RadioLayer } from "./layers/RadioLayer.js";
 import { CableLayer } from "./layers/CableLayer.js";
 import { AQILayer } from "./layers/AQILayer.js";
 import { WeatherLayer } from "./layers/WeatherLayer.js";
+import { RadarLayer } from "./layers/RadarLayer.js";
 import { GoesCloudLayer } from "./layers/GoesCloudLayer.js";
 import { WorldWeatherLayer } from "./layers/WorldWeatherLayer.js";
 import { HeatmapLayer } from "./layers/HeatmapLayer.js";
@@ -66,8 +67,10 @@ import { FuelReserveLayer } from "./layers/FuelReserveLayer.js";
 import { EventLayer } from "./layers/EventLayer.js";
 import { SpaceWeatherLayer } from "./layers/SpaceWeatherLayer.js";
 import { TransitLayer } from "./layers/TransitLayer.js";
+import { BikeShareLayer } from "./layers/BikeShareLayer.js";
 import { StreetLevelLayer } from "./layers/StreetLevelLayer.js";
 import { TrafficLayer } from "./layers/TrafficLayer.js";
+import { RadiationLayer } from "./layers/RadiationLayer.js";
 
 async function main() {
     /* 1 ── 3D-Globus mit Satellitenansicht */
@@ -114,7 +117,9 @@ async function main() {
     layerManager.register(new FireLayer(worldViewer));
     layerManager.register(new RadioLayer(worldViewer));
     layerManager.register(new AQILayer(worldViewer));
+    layerManager.register(new RadiationLayer(worldViewer));
     layerManager.register(new WeatherLayer(worldViewer));
+    layerManager.register(new RadarLayer(worldViewer));
     layerManager.register(new GoesCloudLayer(worldViewer));
     layerManager.register(new WorldWeatherLayer(worldViewer));
     layerManager.register(new FuelReserveLayer(worldViewer));
@@ -123,6 +128,7 @@ async function main() {
     const spaceWeatherLayer = new SpaceWeatherLayer(worldViewer);
     layerManager.register(spaceWeatherLayer);
     layerManager.register(new TransitLayer(worldViewer));
+    layerManager.register(new BikeShareLayer(worldViewer));
     layerManager.register(new TrafficLayer(worldViewer));
     const streetLevelLayer = new StreetLevelLayer(worldViewer);
     layerManager.register(streetLevelLayer);

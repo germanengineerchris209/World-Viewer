@@ -425,6 +425,17 @@ wie die PWA aus WEB-60) bleiben Drag/Resize deaktiviert, da dort weiterhin
 die Vollbild-Darstellung gilt. Escape schließt das oberste Panel – außer im
 Cockpit-Modus, der Escape bereits für „Kamera verlassen" nutzt.
 
+**Kontakte-Roster.** `js/contactsRoster.js` berechnet aus allen *aktiven*
+Layern die Objekte in einem Radius um das Kamerazentrum
+(`worldViewer.getCameraPosition()`), jeweils mit Entfernung und Peilung über
+eine Haversine-Rechnung; deaktivierte Layer bleiben außen vor. Der Radius ist
+im Panel einstellbar (Standard 250 km, 10–5000 km).
+`js/contactsPanel.js` ist die Panel-UI: sie hängt als `dock-panel` in der
+Rail aus `panelDock.js` und ist dort wie Detail-, Graph- und KI-Panel
+verschieb- und skalierbar. Die Liste wird gedrosselt neu aufgebaut, nicht pro
+Frame. Dass bei engem Radius über offenem Meer null Kontakte erscheinen, ist
+der erwartete Fall und kein Fehler.
+
 **POWER-UP-Panel.** `js/keyStatusPanel.js` zeigt im Panel „Schlüssel &
 Dienste" für jeden Dienst aus `server/keyRegistry.mjs` den Status
 (`set`/`external`/`missing`), was er freischaltet, den Kostenhinweis und
@@ -515,12 +526,14 @@ durch `scripts/build-infrastructure-mass.mjs` (`npm run
 build:infrastructure-mass`) – **ausdrücklich nicht** TeleGeography für
 Seekabel, deren Submarine Cable Map unter CC BY-NC-SA 3.0 steht.
 
-**Bekannte Lücke (Issue WEB-142):** Die drei generierten JSON-Dateien
-(`data/datacenters.json`, `data/dams.json`, `data/cables-osm.json`) liegen
-nicht im Repository und wurden vor dem Merge nicht erzeugt – ein frischer
-Checkout lädt sie mit 404, zeigt aber dank `loadJSON()`-Fehlertoleranz
-weiterhin die handkuratierten Einträge. Der Clustering-Code ist vorhanden
-und getestet, die Datenmenge dafür fehlt bis zur Nacharbeit.
+**Behoben mit WEB-142:** Die drei generierten JSON-Dateien
+(`data/datacenters.json` mit 4.813 Objekten, `data/dams.json` mit 16.630,
+`data/cables-osm.json` mit 195) sind eingecheckt. Vorher fehlten sie im
+Repository und ein frischer Checkout lud sie mit 404 — dank
+`loadJSON()`-Fehlertoleranz ohne Absturz, aber auch ohne die Masse, für die
+das Clustering gebaut wurde. Offene Restarbeit: WEB-151 erzeugt die
+Dammdaten mit einem Wikidata-Filter neu, weil 16.630 Treffer auch
+Kleinstwehre enthalten.
 
 ## 2. Architektur
 
@@ -729,12 +742,16 @@ fliegt zum Objekt, Zone entfernen räumt Kreis und Zustand auf.
   (`js/layers/WorldWeatherLayer.js`), Infrastruktur/Seekabel in Masse mit
   Clustering (`js/layers/InfrastructureLayer.js`, `CableLayer.js`,
   `BaseLayer.enableClustering()`)
-- Details, vollständige PR-Liste, drei Integrationsregressionen und offene
-  Folgearbeit (WEB-91, WEB-142) in `docs/WEB-81-gev-features-ui-overhaul.md`
-  und `docs/WEB-81-integrationswelle.md`
-- Noch nicht umgesetzt aus demselben Epic: Militärflüge, Verkehrs-/ÖPNV-/
-  Street-Level-Layer, ALPR-Kamerastandorte, erweiterte SGP4-Katalog-Anbindung
-  (WEB-89, 90, 93–95, 99) – eigene Dokumentation folgt, wenn sie landen
+- Details und vollständige PR-Liste in
+  `docs/WEB-81-gev-features-ui-overhaul.md` und
+  `docs/WEB-81-integrationswelle.md`
+- **Das Epic ist vollständig umgesetzt.** Auch die zunächst offenen Teile sind
+  inzwischen gemerged: Militärflüge (WEB-90), Verkehrs-, ÖPNV- und
+  Street-Level-Layer (WEB-93/94/95), ALPR-Kamerastandorte (WEB-99),
+  Contacts-Roster (WEB-91) und der erweiterte Satelliten-Katalog (WEB-89)
+- Offene Folgearbeit aus dem Epic: WEB-151 (Dammdaten nachfiltern),
+  WEB-154/155 (zwei neue Layer-Kandidaten aus der R4-Recherche),
+  WEB-131 (Blitzdichte — Quelle verifiziert, Aufwand groß, im `backlog`)
 
 **20.09.2026 – v2.7** — Objekt-Dossier
 - Neuer Button „📄 Dossier" im Detailpanel: lädt eine Textdatei mit

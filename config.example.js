@@ -358,6 +358,15 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 1800
     },
 
+    radiation: {
+        // Safecast API – frei, CC0, kein Key, kein Account (WEB-154).
+        // Läuft über /api/radiation: Safecast sendet CORS nur für
+        // "safecast.org", ein direkter Browser-Abruf scheitert daher.
+        // Der Server filtert ein 6-Stunden-Zeitfenster und cacht 10 Min.
+        apiUrl: "/api/radiation",
+        refreshSeconds: 600
+    },
+
     weather: {
         // Open-Meteo Forecast API – dieselbe Quelle wie der AQI-Layer,
         // frei, kein Key für nicht-kommerzielle Nutzung. Städteliste liegt
@@ -365,6 +374,16 @@ window.WORLD_VIEWER_CONFIG = {
         // Anfrage abgefragt (kommaseparierte Listen).
         apiUrl: "https://api.open-meteo.com/v1/forecast",
         refreshSeconds: 900
+    },
+
+    radar: {
+        // RainViewer Weather Maps API – frei, kein Account/Key nötig, CORS
+        // ist laut Doku gesetzt. Liefert Kachel-URLs für die Niederschlags-
+        // radar-Animation der letzten ~2 Stunden (WEB-67). Fällt die API
+        // aus, bleibt der Punkt-Wetter-Layer (weather, s.o.) unberührt.
+        apiUrl: "https://api.rainviewer.com/public/weather-maps.json",
+        refreshSeconds: 300,    // wie oft neue Zeitschritte nachgeladen werden
+        frameIntervalMs: 700    // Abspielgeschwindigkeit beim Zeitschieberegler
     },
 
     goesClouds: {
@@ -387,6 +406,16 @@ window.WORLD_VIEWER_CONFIG = {
         // NOAA Space Weather Prediction Center – öffentliche US-Regierungsdaten
         // (public domain), kein Key, CORS gesetzt (per curl verifiziert, WEB-68).
         refreshSeconds: 600
+    },
+
+    bikeshare: {
+        // General Bikeshare Feed Specification (GBFS) – offener Standard,
+        // kein Key. Städteliste liegt in data/bikeshare-systems.json; nur
+        // Systeme mit offenem CORS und ohne Anmeldung sind aufgenommen
+        // (je Stadt per curl verifiziert, WEB-70). Stationsnamen/-koordinaten
+        // werden einmalig geladen, nur die Verfügbarkeit wird regelmäßig
+        // neu abgefragt – 60-120s laut GBFS-Spezifikationsempfehlung.
+        refreshSeconds: 90
     },
 
 

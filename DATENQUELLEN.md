@@ -64,10 +64,13 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | ⛽ Kraftstoffreserven | modelliert nach IEA-Bevorratungsregeln / nationalen Mindestbevorratungsgesetzen | 20 größte Volkswirtschaften, statische Modellwerte, keine Live-Meldung |
 | 📰 Ereignisse | GDELT Project GEO 2.0 API | geokodierte Weltnachrichten, Aktualisierung alle 15 Min. |
 | 🚌 ÖPNV (Busse/Bahnen/Fähren) | GTFS-Realtime: MBTA (Boston), OVapi (Niederlande) | Protobuf, serverseitig dekodiert; nur diese zwei Regionen abgedeckt |
+| 🚲 Leihräder/E-Scooter (GBFS) | 9 Bikeshare-Systeme (nextbike Berlin/Köln/München, Citi Bike, Divvy, Capital Bikeshare, Bike Share Toronto, Bicing, BiciMAD) | handkuratiert, nur je Stadt auf offenes CORS geprüfte Systeme |
 | ☁️ GOES-Wolken (Infrarot) | NASA GIBS (WMTS) | geostationär, deckt nur Amerika/Pazifik/Atlantik ab; CORS-frei, direkter Browser-Zugriff |
 | 🌦️ Weltwetter-Raster | Open-Meteo Forecast API | weltweites Gradnetz, 1 Sammelanfrage pro Aktualisierung – zählt aber pro Zelle gegen das Tageskontingent (siehe Abschnitt „Weltwetter-Raster" unten) |
-| 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Build-Schritt `npm run build:infrastructure-mass` nötig, Ergebnis aktuell **nicht committet** (Issue WEB-142), siehe Abschnitt unten |
+| 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Snapshot ist **eingecheckt** (4.813 Rechenzentren, 16.630 Dämme, 195 Seekabel); neu erzeugen per `npm run build:infrastructure-mass`, siehe Abschnitt unten |
 | 🚗 Verkehr (Simulation) | eigenes prozedurales Straßenraster | im sichtbaren Kartenausschnitt, klar als Simulation gekennzeichnet; echte OSM-Straßengeometrie via Overpass API scheitert in vielen Sandbox-Umgebungen an einer IP-Sperre (siehe `docs/WEB-83-...`, Abschnitt 1a) |
+| ☢️ Strahlungsmessnetz | Safecast API | CC0, Community-Messnetz, letzte 6 Stunden, sendet CORS nur für `safecast.org` → Server-Proxy |
+| 🌧️ Niederschlagsradar | RainViewer Weather Maps API | Kachel-Overlay statt Punktwerten, letzte ~2 Stunden, CORS offen, kein Key; Pflicht-Namensnennung "RainViewer API" |
 
 ### 🟡 Kostenloser Schlüssel nötig
 
@@ -435,6 +438,33 @@ Ebene leer – das ist eine Dateneigenschaft (zwei ausgewählte offene
 Feeds von vielen tausend GTFS-Betreibern weltweit), die Sidebar erklärt
 das über `statusText()` statt stillschweigend leer zu bleiben.
 
+### 🚲 Leihräder/E-Scooter (GBFS)
+
+**General Bikeshare Feed Specification (GBFS)** – offener Standard für
+Shared-Mobility-Betreiber, öffentliche Systemliste unter
+[MobilityData/gbfs](https://github.com/MobilityData/gbfs/blob/master/systems.csv).
+Analog zu Kameras/AQI: eine handkuratierte Städteliste
+(`data/bikeshare-systems.json`) statt Auto-Discovery, da nicht jedes
+der tausenden GBFS-Systeme ohne Anmeldung und mit offenem CORS
+erreichbar ist – jede Stadt wurde einzeln per curl gegen
+`station_information`/`station_status` geprüft, bevor sie aufgenommen
+wurde.
+
+Aufgenommen sind 9 Systeme mit bestätigtem `Access-Control-Allow-Origin: *`
+und ohne Registrierung: **nextbike** in Berlin, Köln (KVB Rad) und
+München (MyRadl), **Citi Bike** (New York), **Divvy** (Chicago),
+**Capital Bikeshare** (Washington, D.C.), **Bike Share Toronto**,
+**Bicing** (Barcelona) und **BiciMAD** (Madrid). Die Systeme laufen auf
+zwei GBFS-Versionen (2.3 und 3.0) mit leicht unterschiedlichen
+Feldnamen – der Layer gleicht das selbst an.
+
+`station_information` (Stationsnamen/-koordinaten) ändert sich
+praktisch nie und wird nur einmal geladen; `station_status`
+(Verfügbarkeit) wird alle 90 Sekunden neu abgefragt – innerhalb der von
+der Spezifikation empfohlenen 60-120s. Dargestellt werden ausschließlich
+aggregierte Stationsdaten (Anzahl verfügbarer Räder/Docks), keine
+Fahrzeug- oder Nutzerverfolgung.
+
 ### 🕰️ Zeitleisten-Replay
 
 Spielt Erdbeben/Brände/Raketenstarts der letzten 7 oder 30 Tage zeitlich ab
@@ -585,6 +615,34 @@ verifiziert), ein Server-Proxy ist daher nicht nötig. Werte
 aktualisieren sich bei Open-Meteo stündlich, die App fragt alle 30
 Minuten nach. Reine Umweltdaten ohne Personenbezug.
 
+### ☢️ Strahlungsmessnetz (Safecast, WEB-154)
+
+**Safecast API** (`api.safecast.org/en-US/measurements.json`) –
+Bürger-/Community-Messnetz (u.a. Nachwirkung Fukushima), **CC0-Lizenz,
+kein Key, kein Account**. Live getestet: liefert aktuelle JSON-
+Messpunkte mit `latitude`, `longitude`, `value`, `unit` (`cpm` oder
+`usv`) und `captured_at`; dieselbe Liste enthält daneben auch
+Temperatur- und Statuskanäle, die der Server verwirft.
+
+CORS ist auf `safecast.org` beschränkt (per curl verifiziert,
+`Access-Control-Allow-Origin: safecast.org`) – ein Browser darf die
+API also nicht direkt abfragen. `/api/radiation` übernimmt deshalb den
+Abruf: Die Antwort ist fest auf 25 Einträge/Seite begrenzt, liefert
+keine Gesamtzahl und ist nicht nach Zeit sortiert, daher wird über
+`captured_after` auf die letzten 6 Stunden gefiltert und seitenweise
+vorwärts geblättert (Sicherheitslimit 60 Seiten). Pro Gerät/Standort
+bleibt nur die jüngste Messung übrig – viele Einträge stammen von
+fahrenden bGeigie-Loggern, ohne diese Dedupe würde die Karte dichte
+GPS-Spuren statt eines Sensornetzes zeigen. Ergebnis wird 10 Minuten
+serverseitig gecacht.
+
+Die Farbampel rechnet CPM-Werte grob in µSv/h um (Faktor 334, Richtwert
+für die verbreitete LND-7317-Pancake-Tube) – nur zur einheitlichen
+Einfärbung, der Originalwert bleibt im Detailpanel sichtbar, da die
+echte Dosisleistung vom jeweiligen Gerät/Isotop abhängt. Reine
+Umweltmessstationen, kein Personenbezug: Geräte-/User-IDs aus der API
+erscheinen nicht in der UI.
+
 ### ⛽ Kraftstoffreserven
 
 Vorbild ist Neuseelands öffentliche Übersicht über Dieselreserven
@@ -669,6 +727,18 @@ feineres 10°-Raster (576 Zellen) würde das Tageslimit schon im
 Einzelbetrieb sprengen. Wer einen eigenen API-Schlüssel/Server nutzt, kann
 die Schrittweite in der Konfiguration (`worldWeather`) verkleinern.
 
+### 🌧️ Niederschlagsradar
+
+**RainViewer Weather Maps API** (`api.rainviewer.com/public/weather-maps.json`)
+– frei, kein Account/Key nötig, CORS laut Doku gesetzt. Liefert Kachel-URLs
+für ein Cesium-`ImageryLayer`-Overlay der Niederschlagsradar-Animation der
+letzten ~2 Stunden, mit Zeitschieberegler + Play/Pause in der Sidebar
+(`js/layers/RadarLayer.js`). Ersetzt nicht den bestehenden Punkt-Wetter-
+Layer (`weather`), sondern ergänzt ihn um eine flächendeckende Ansicht;
+schlägt der Abruf fehl, bleibt `weather` unberührt nutzbar. Pflicht-
+Namensnennung "RainViewer API" ist im Sidebar-Abschnitt verlinkt und
+erscheint zusätzlich automatisch in Cesiums Credit-Leiste.
+
 ### 🏗️ Infrastruktur/Seekabel in Masse
 
 **OpenStreetMap via Overpass API** – Rechenzentren und Dämme
@@ -684,13 +754,12 @@ gibt kein festes Overpass-Rate-Limit, aber die üblichen Fair-Use-Regeln
 des öffentlichen Overpass-Servers gelten (nicht parallelisieren, nicht in
 kurzen Abständen wiederholen).
 
-> ⚠️ **Rate-Limit in der Praxis = 0, weil der Build nicht gelaufen ist:**
-> Die drei erzeugten Dateien (`data/datacenters.json`, `data/dams.json`,
-> `data/cables-osm.json`) liegen aktuell nicht im Repository (Issue
-> WEB-142). Ein frischer Checkout lädt sie mit 404 und zeigt nur die
-> wenigen handkuratierten Einträge aus `data/infrastructure.json` /
-> `data/cables.json` – kein Absturz, aber die versprochene Masse an
-> Objekten fehlt, bis der Build-Schritt nachgeholt und committet wird.
+> **Rate-Limit betrifft im Normalbetrieb niemanden:** Die drei erzeugten
+> Dateien (`data/datacenters.json`, `data/dams.json`, `data/cables-osm.json`)
+> sind seit WEB-142 im Repository eingecheckt. Overpass wird also nur
+> angefragt, wenn jemand den Snapshot mit
+> `npm run build:infrastructure-mass` bewusst neu erzeugt — nicht im
+> laufenden Betrieb und nicht beim Start.
 
 ### 🗺️ Karten und Gelände
 

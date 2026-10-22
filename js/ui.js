@@ -18,6 +18,7 @@ import { findLinkedObjects } from "./linkAnalysis.js";
 import { buildDossierText, dossierFilename, downloadTextFile } from "./dossier.js";
 import { GraphView } from "./graphView.js";
 import { LAYER_CATEGORIES, categoryForLayer } from "./layerCategories.js";
+import { CameraViewshed } from "./cameraViewshed.js";
 
 /** localStorage-Key für den Auf-/Zu-Zustand der Layer-Kategorien (WEB-85) */
 const LAYER_CATEGORY_STATE_KEY = "wv-layer-category-open";
@@ -36,7 +37,8 @@ export const LINK_TYPE_ICONS = {
     camera: "📷", infrastructure: "🏗️", earthquake: "🌋",
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
     fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠",
-    worldweather: "🌡️", transit: "🚌", alpr: "🪪", vehicle: "🚗", tsunamiAlert: "🌊"
+    worldweather: "🌡️", transit: "🚌", alpr: "🪪", vehicle: "🚗", radiation: "☢️",
+    bikeshare: "🚲", tsunamiAlert: "🌊"
 };
 
 /** Formatierungs-Helfer */
@@ -158,6 +160,35 @@ const DETAIL_SCHEMAS = {
             );
             return rows;
         }
+    },
+    bikeshare: {
+        badge: "Leihrad-Station",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["System", F.text(m.systemName)],
+                ["Räder verfügbar", F.text(m.bikesAvailable)]
+            ];
+            if (m.ebikesAvailable != null) rows.push(["davon E-Bikes", F.text(m.ebikesAvailable)]);
+            rows.push(
+                ["Docks frei", m.docksAvailable != null ? F.text(m.docksAvailable) : "–"],
+                ["Kapazität", m.capacity != null ? F.text(m.capacity) : "–"],
+                ["Status", (m.isRenting || m.isReturning) ? "In Betrieb" : "Außer Betrieb"]
+            );
+            if (m.reportedAt) rows.push(["Stand", new Date(m.reportedAt).toLocaleString("de-DE"), true]);
+            rows.push(
+                ["Stadt", `${F.text(m.city)} (${F.text(m.country)})`],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        },
+        extraHtml: (o) => o.metadata.homepage
+            ? `<div class="detail-field wide"><label>Betreiber</label>
+                 <span><a href="${o.metadata.homepage}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">Homepage öffnen ↗</a></span></div>`
+            : ""
     },
     satellite: {
         badge: "Satelliten-Details",
@@ -287,6 +318,25 @@ const DETAIL_SCHEMAS = {
             if (m.measuredAt) rows.push(["Stand", new Date(m.measuredAt).toLocaleString("de-DE"), true]);
             rows.push(
                 ["Land", F.text(m.country)],
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        }
+    },
+    radiation: {
+        badge: "Strahlungsmessnetz",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Messwert", m.unit === "usv" ? `${fmt.format(m.value)} µSv/h` : `${fmt.format(m.value)} CPM`]
+            ];
+            if (m.unit === "cpm" && m.usvEquivalent != null) {
+                rows.push(["≈ Dosisleistung", `${fmt.format(m.usvEquivalent)} µSv/h (Näherung)`]);
+            }
+            if (m.capturedAt) rows.push(["Gemessen", new Date(m.capturedAt).toLocaleString("de-DE"), true]);
+            rows.push(
                 ["Breite", F.coord(o.position.latitude)],
                 ["Länge", F.coord(o.position.longitude)]
             );
@@ -736,6 +786,7 @@ export class UI {
         this.labelsVisible = true;
         this.trailsVisible = false;
         this.assistant = null;         // wird von app.js gesetzt
+        this.cameraViewshed = new CameraViewshed(worldViewer);
 
         // Verhindert, dass ein spät eintreffendes Bild ins falsche Panel läuft
         this._mediaToken = 0;
@@ -1129,6 +1180,7 @@ export class UI {
         if (changed || !isRefresh) {
             this._loadMedia(object);
             this._renderLinks(object);
+            this.cameraViewshed.show(object);
         }
     }
 
@@ -1273,6 +1325,7 @@ export class UI {
         this._el.links.classList.add("hidden");
         this.closeGraphView();
         this.selectedObject = null;
+        this.cameraViewshed.hide();
         this._clearHighlight();
         this.worldViewer.stopFollowing();
         this.assistant?.notifySelectionChanged();

@@ -190,19 +190,24 @@ Neue Layer landen automatisch unter „Werkzeuge", bis sie in
 `layerCategories.js` eingetragen werden – das verhindert, dass die Konsole
 durch einen vergessenen Eintrag unsichtbar wird.
 
-> ⚠️ **Bekannte Lücke:** Die Massendatensätze für Rechenzentren, Dämme und
-> OSM-Seekabel (`data/datacenters.json`, `data/dams.json`,
-> `data/cables-osm.json`) liegen nicht im Repo, sondern werden per
-> `npm run build:infrastructure-mass` aus der Overpass API erzeugt (dauert
-> mehrere Minuten, braucht Internet). Ohne diesen Lauf bleiben die Layer
-> bei den wenigen handkuratierten Einträgen – kein Fehler, nur leere
-> Massendaten (Nacharbeit siehe Issue WEB-142).
+> **Massendatensätze liegen im Repo.** Rechenzentren (`data/datacenters.json`,
+> 4.813 Objekte), Dämme (`data/dams.json`, 16.630) und OSM-Seekabel
+> (`data/cables-osm.json`, 195) sind eingecheckt, ein frischer Checkout zeigt
+> sie also sofort. Neu erzeugen lassen sie sich mit
+> `npm run build:infrastructure-mass` (dauert mehrere Minuten, braucht
+> Internet). Bis WEB-142 war das anders — die Dateien fehlten und die Layer
+> blieben bei den handkuratierten Einträgen.
 
 **🪟 Andockbare Panels rechts.** Detail-, Verknüpfungs- und KI-Panel sitzen
 in einer rechten Panel-Rail, lassen sich dort verschieben, in der Größe
 ändern und stapeln; der Zustand bleibt über `localStorage` erhalten
 (`js/panelDock.js`). Unterhalb von 821px Breite (mobil) bleibt es bei der
 bisherigen Vollbild-Darstellung.
+
+**📡 Kontakte-Roster.** Listet alle Objekte aus den aktiven Layern in einem
+einstellbaren Radius um das Kamerazentrum, mit Entfernung und Peilung, nach
+Entfernung sortiert (Standard 250 km). Sitzt als eigenes Panel in derselben
+rechten Rail und aktualisiert sich beim Schwenken mit.
 
 **🎬 Szenen-Regisseur.** Kamerapositionen als Stationen einer Fahrt
 aufnehmen, Reihenfolge/Haltedauer bearbeiten und weich abspielen lassen
@@ -299,6 +304,8 @@ world-viewer/
 │   ├── keyStatusPanel.js    POWER-UP-Chip + Panel „Schlüssel & Dienste"
 │   ├── keyboardShortcuts.js Zentrale Verwaltung aller globalen Tastenkürzel
 │   ├── keyboardReference.js Einblendbare Kurzreferenz (Taste „?")
+│   ├── contactsRoster.js      Kontakte-Roster: Objekte im Radius, Distanz + Peilung
+│   ├── contactsPanel.js       Panel-UI dazu (in der rechten Rail)
 │   ├── sceneDirector.js       Szenen-Regisseur: Kamerafahrten aufnehmen/abspielen
 │   ├── sceneDirectorPanel.js  Sidebar-UI dazu
 │   ├── aircraftModels.js      3D-Flugzeugmodelle je Klasse (Glyph-Wechsel)

@@ -23,6 +23,7 @@ const CATEGORY_BY_LAYER_ID = {
     satellites: "movement",
     transit: "movement",
     traffic: "movement",
+    bikeshare: "movement",
 
     cameras: "cameras",
     allsky: "cameras",
@@ -44,7 +45,9 @@ const CATEGORY_BY_LAYER_ID = {
     tsunamiAlerts: "events",
 
     weather: "weather",
+    radar: "weather",
     aqi: "weather",
+    radiation: "weather",
     cyclones: "weather",
     spaceWeather: "weather",
     goesClouds: "weather",
