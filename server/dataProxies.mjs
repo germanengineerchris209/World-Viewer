@@ -2284,6 +2284,150 @@ function normalizeRadiation(raw) {
     return points;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   18. NOAA/NWS Tsunami-Warnungen (PTWC Honolulu + NTWC Palmer)
+   ═══════════════════════════════════════════════════════════
+
+   Quelle: NOAA/NWS Tsunami Warning Centers, öffentliche US-Regierungs-
+   daten, kein Key nötig. Zwei Atom-Feeds decken gemeinsam alle Welt-
+   regionen ab: PTWC (Honolulu) ist für den internationalen Pazifikraum
+   zuständig, NTWC (Palmer, Alaska) für die US-/Kanada-Küsten inkl.
+   Atlantik/Golf/Karibik.
+
+   Die Feeds senden kein CORS, außerdem liefern sie Atom/XML statt
+   JSON – der Server parst beides zu einheitlichem JSON. Weil das
+   Projekt bewusst ohne npm-Pakete auskommt, geschieht das Parsing per
+   Regex statt mit einem XML-Parser (genau wie kmz.mjs das KML-Format
+   selbst ausliest).
+
+   Kurzes Cache-TTL (2 Min.) statt der sonst üblichen 15-20 Minuten,
+   weil es sich um Warnmeldungen handelt. */
+
+const TSUNAMI_FEEDS = [
+    {
+        center: "PTWC", name: "Pacific Tsunami Warning Center (Honolulu)",
+        url: "https://www.tsunami.gov/events/xml/PHEBAtom.xml"
+    },
+    {
+        center: "NTWC", name: "National Tsunami Warning Center (Palmer, AK)",
+        url: "https://www.tsunami.gov/events/xml/PAAQAtom.xml"
+    }
+];
+const TSUNAMI_TTL_MS = 2 * 60 * 1000;
+
+/** Ampel wie bei Vulkanen/Erdbeben: Information → Watch → Advisory → Warning. */
+const TSUNAMI_SEVERITY = {
+    information: { level: "information", color: "#34d399", rank: 3, label: "Information (keine Tsunami-Gefahr)" },
+    watch:       { level: "watch",       color: "#fbbf24", rank: 2, label: "Tsunami-Watch" },
+    advisory:    { level: "advisory",    color: "#fb923c", rank: 1, label: "Tsunami-Advisory" },
+    warning:     { level: "warning",     color: "#f87171", rank: 0, label: "Tsunami-Warning" }
+};
+const DEFAULT_TSUNAMI_SEVERITY = { level: "unknown", color: "#a3a3a3", rank: 4, label: "Unbekannt" };
+
+function decodeXmlEntities(text) {
+    return String(text ?? "")
+        .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+        .replace(/&amp;/g, "&")
+        .trim();
+}
+
+/** Liest ein "<strong>Label:</strong> Wert"-Paar aus dem XHTML-Summary-Block. */
+function extractSummaryField(summaryHtml, label) {
+    const match = summaryHtml.match(new RegExp(`<strong>\\s*${label}:?\\s*</strong>\\s*([^<]*)`, "i"));
+    return match ? decodeXmlEntities(match[1]) : "";
+}
+
+function severityForCategory(categoryRaw) {
+    return TSUNAMI_SEVERITY[categoryRaw.trim().toLowerCase()] ?? DEFAULT_TSUNAMI_SEVERITY;
+}
+
+/** href einer bestimmten <link .../>-Variante, attributreihenfolge-unabhängig. */
+function findLinkHref(entryXml, mustContain) {
+    for (const [tag] of entryXml.matchAll(/<link\b[^>]*\/>/g)) {
+        if (tag.includes(mustContain)) return tag.match(/href="([^"]*)"/)?.[1] ?? "";
+    }
+    return "";
+}
+
+function parseTsunamiAtomFeed(xml, feed) {
+    const alerts = [];
+    for (const [, entryXml] of xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
+        const lat = Number(entryXml.match(/<geo:lat>([\s\S]*?)<\/geo:lat>/)?.[1]);
+        const lon = Number(entryXml.match(/<geo:long>([\s\S]*?)<\/geo:long>/)?.[1]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+        const summaryHtml = entryXml.match(/<summary[^>]*>([\s\S]*?)<\/summary>/)?.[1] ?? "";
+        const category = extractSummaryField(summaryHtml, "Category") || "Unbekannt";
+        const severity = severityForCategory(category);
+
+        alerts.push({
+            id: decodeXmlEntities(entryXml.match(/<id>([\s\S]*?)<\/id>/)?.[1] ?? `${feed.center}-${lat}-${lon}`),
+            center: feed.center,
+            centerName: feed.name,
+            title: decodeXmlEntities(entryXml.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "Tsunami-Meldung"),
+            updated: entryXml.match(/<updated>([\s\S]*?)<\/updated>/)?.[1] ?? null,
+            latitude: lat,
+            longitude: lon,
+            category,
+            severity: severity.level,
+            severityColor: severity.color,
+            severityRank: severity.rank,
+            severityLabel: severity.label,
+            magnitude: extractSummaryField(summaryHtml, "Preliminary Magnitude") || "",
+            affectedRegion: extractSummaryField(summaryHtml, "Affected Region") || "",
+            note: extractSummaryField(summaryHtml, "Note") || "",
+            bulletinIssueTime: extractSummaryField(summaryHtml, "Bulletin Issue Time") || "",
+            bulletinUrl: findLinkHref(entryXml, 'rel="alternate"'),
+            capUrl: findLinkHref(entryXml, "application/cap+xml")
+        });
+    }
+    return alerts;
+}
+
+export async function handleTsunamiAlerts(res) {
+    try {
+        const result = await cachedFetch("tsunami", TSUNAMI_TTL_MS, async () => {
+            const settled = await Promise.allSettled(TSUNAMI_FEEDS.map(async (feed) => {
+                const upstream = await fetchWithTimeout(feed.url, { headers: { Accept: "application/atom+xml" } }, 15_000);
+                if (!upstream.ok) throw new Error(`${feed.center} antwortete mit ${upstream.status}`);
+                return parseTsunamiAtomFeed(await upstream.text(), feed);
+            }));
+
+            const alerts = [];
+            const failures = [];
+            settled.forEach((outcome, i) => {
+                if (outcome.status === "fulfilled") alerts.push(...outcome.value);
+                else failures.push(`${TSUNAMI_FEEDS[i].center}: ${outcome.reason.message}`);
+            });
+            // Nur wenn BEIDE Zentren ausfallen ist das ein echter Fehler –
+            // sonst lieber die Hälfte der Welt zeigen als gar nichts.
+            if (alerts.length === 0 && failures.length === TSUNAMI_FEEDS.length) {
+                throw new Error(failures.join("; "));
+            }
+
+            alerts.sort((a, b) => a.severityRank - b.severityRank);
+            return {
+                data: JSON.stringify({
+                    fetchedAt: Date.now(),
+                    count: alerts.length,
+                    alerts,
+                    ...(failures.length ? { warnings: failures } : {})
+                }),
+                contentType: "application/json"
+            };
+        });
+
+        res.writeHead(200, {
+            "content-type": "application/json; charset=utf-8",
+            "x-cache": result.cacheStatus
+        });
+        res.end(result.data);
+
+    } catch (err) {
+        sendJson(res, 502, { error: `Tsunami-Warnungen nicht abrufbar: ${err.message}` });
+    }
+}
 /* ═══════════ Hilfsfunktion ═══════════ */
 
 function sendJson(res, status, data) {

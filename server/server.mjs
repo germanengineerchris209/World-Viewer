@@ -32,6 +32,7 @@
  *      /api/traffic/flow      TomTom-Flussgeschwindigkeiten (optional, Key nötig)
  *      /api/traffic/status    Tageskontingent des Verkehrs-Layers
  *      /api/radiation         Strahlungsmessnetz weltweit (Safecast, kein Key, WEB-154)
+ *      /api/tsunami            Tsunami-Warnungen (NOAA/NWS PTWC+NTWC, Atom-Feeds)
  *   6. /api/ships    – echte Schiffspositionen (AIS) über AISStream.io,
  *      per dauerhafter Server-WebSocket-Verbindung mit Wachhund
  *      (server/aisStream.mjs) empfangen und zwischengespeichert
@@ -78,7 +79,7 @@ import {
     handleVolcanoes, handleStorms, handleStormCone, handleAsteroids,
     handleComets, handleAlprCameras, TLE_GROUPS, handleTransit, handleTransitStatus,
     handleMapillaryStatus, handleMapillaryToken, handleMapillaryImages, mapillaryAvailable,
-    handleTrafficFlow, handleTrafficStatus, handleRadiation
+    handleTrafficFlow, handleTrafficStatus, handleRadiation, handleTsunamiAlerts
 } from "./dataProxies.mjs";
 import { handleDeepSpace } from "./deepSpace.mjs";
 import { startAisStream, getShips, getAisStatus } from "./aisStream.mjs";
@@ -655,6 +656,11 @@ export function createServer() {
                 if (req.method !== "GET") return res.writeHead(405).end();
                 return handleRadiation(res);
 
+            case "/api/tsunami":
+                // Tsunami-Warnungen (WEB-155): NOAA/NWS PTWC + NTWC, kein Schlüssel nötig.
+                if (req.method !== "GET") return res.writeHead(405).end();
+                return handleTsunamiAlerts(res);
+
             case "/api/sources":
                 // Welche Zusatzquellen sind einsatzbereit?
                 return sendJson(res, 200, {
@@ -668,6 +674,7 @@ export function createServer() {
                     deepspace: true,
                     alpr: true,
                     storms: true,
+                    tsunami: true,
                     fires: !!process.env.FIRMS_MAP_KEY,
                     ships: !!AISSTREAM_API_KEY,
                     militaryFlights: true,

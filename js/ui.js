@@ -38,7 +38,7 @@ export const LINK_TYPE_ICONS = {
     launch: "🚀", asteroid: "☄️", fire: "🔥", radio: "📻", cable: "🔌", aqi: "🌫️", volcano: "🗻",
     fuelReserve: "⛽", weather: "🌦️", cyclone: "🌀", event: "📰", comet: "🌠",
     worldweather: "🌡️", transit: "🚌", alpr: "🪪", vehicle: "🚗", radiation: "☢️",
-    bikeshare: "🚲"
+    bikeshare: "🚲", tsunamiAlert: "🌊"
 };
 
 /** Formatierungs-Helfer */
@@ -734,6 +734,30 @@ const DETAIL_SCHEMAS = {
             ? `<div class="detail-field wide"><label>Quelle</label>
                  <span><a href="${o.metadata.publicAdvisoryUrl}" target="_blank" rel="noopener"
                     style="color:#38bdf8">NHC-Bulletin öffnen ↗</a></span></div>`
+            : ""
+    },
+    tsunamiAlert: {
+        badge: "Tsunami-Warnung",
+        title: (o) => o.name,
+        fields: (o) => {
+            const m = o.metadata;
+            const rows = [
+                ["Stufe", F.text(m.severityLabel)],
+                ["Zentrum", F.text(m.centerName)]
+            ];
+            if (m.magnitude) rows.push(["Vorläufige Magnitude", F.text(m.magnitude)]);
+            if (m.bulletinIssueTime) rows.push(["Bulletin-Zeit", F.text(m.bulletinIssueTime)]);
+            if (m.note) rows.push(["Hinweis", F.text(m.note)]);
+            rows.push(
+                ["Breite", F.coord(o.position.latitude)],
+                ["Länge", F.coord(o.position.longitude)]
+            );
+            return rows;
+        },
+        extraHtml: (o) => o.metadata.bulletinUrl
+            ? `<div class="detail-field wide"><label>Quelle</label>
+                 <span><a href="${o.metadata.bulletinUrl}" target="_blank" rel="noopener"
+                    style="color:#38bdf8">Bulletin öffnen ↗</a></span></div>`
             : ""
     },
     // Fallback für unbekannte Typen

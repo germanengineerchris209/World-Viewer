@@ -50,6 +50,7 @@ import { InfrastructureLayer } from "./layers/InfrastructureLayer.js";
 import { EarthquakeLayer } from "./layers/EarthquakeLayer.js";
 import { VolcanoLayer } from "./layers/VolcanoLayer.js";
 import { CycloneLayer } from "./layers/CycloneLayer.js";
+import { TsunamiAlertLayer } from "./layers/TsunamiAlertLayer.js";
 import { LaunchLayer } from "./layers/LaunchLayer.js";
 import { AsteroidLayer } from "./layers/AsteroidLayer.js";
 import { CometLayer } from "./layers/CometLayer.js";
@@ -109,6 +110,7 @@ async function main() {
     layerManager.register(new EarthquakeLayer(worldViewer));
     layerManager.register(new VolcanoLayer(worldViewer));
     layerManager.register(new CycloneLayer(worldViewer));
+    layerManager.register(new TsunamiAlertLayer(worldViewer));
     layerManager.register(new LaunchLayer(worldViewer));
     layerManager.register(new AsteroidLayer(worldViewer));
     layerManager.register(new CometLayer(worldViewer));

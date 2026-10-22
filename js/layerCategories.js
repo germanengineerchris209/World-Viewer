@@ -42,6 +42,7 @@ const CATEGORY_BY_LAYER_ID = {
     events: "events",
     asteroids: "events",
     comets: "events",
+    tsunamiAlerts: "events",
 
     weather: "weather",
     radar: "weather",
