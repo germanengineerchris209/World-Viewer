@@ -369,6 +369,16 @@ window.WORLD_VIEWER_CONFIG = {
         refreshSeconds: 900
     },
 
+    radar: {
+        // RainViewer Weather Maps API – frei, kein Account/Key nötig, CORS
+        // ist laut Doku gesetzt. Liefert Kachel-URLs für die Niederschlags-
+        // radar-Animation der letzten ~2 Stunden (WEB-67). Fällt die API
+        // aus, bleibt der Punkt-Wetter-Layer (weather, s.o.) unberührt.
+        apiUrl: "https://api.rainviewer.com/public/weather-maps.json",
+        refreshSeconds: 300,    // wie oft neue Zeitschritte nachgeladen werden
+        frameIntervalMs: 700    // Abspielgeschwindigkeit beim Zeitschieberegler
+    },
+
     goesClouds: {
         // NASA GIBS WMTS – frei, kein Key, CORS freigegeben (siehe
         // GoesCloudLayer.js). Kein apiUrl-Override vorgesehen: Layer-IDs

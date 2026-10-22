@@ -68,6 +68,7 @@ Nach dem Start meldet der Server, was er gefunden hat:
 | 🏗️ Infrastruktur/Seekabel in Masse | OpenStreetMap via Overpass API (statischer Snapshot) | Snapshot ist **eingecheckt** (4.813 Rechenzentren, 16.630 Dämme, 195 Seekabel); neu erzeugen per `npm run build:infrastructure-mass`, siehe Abschnitt unten |
 | 🚗 Verkehr (Simulation) | eigenes prozedurales Straßenraster | im sichtbaren Kartenausschnitt, klar als Simulation gekennzeichnet; echte OSM-Straßengeometrie via Overpass API scheitert in vielen Sandbox-Umgebungen an einer IP-Sperre (siehe `docs/WEB-83-...`, Abschnitt 1a) |
 | ☢️ Strahlungsmessnetz | Safecast API | CC0, Community-Messnetz, letzte 6 Stunden, sendet CORS nur für `safecast.org` → Server-Proxy |
+| 🌧️ Niederschlagsradar | RainViewer Weather Maps API | Kachel-Overlay statt Punktwerten, letzte ~2 Stunden, CORS offen, kein Key; Pflicht-Namensnennung "RainViewer API" |
 
 ### 🟡 Kostenloser Schlüssel nötig
 
@@ -668,6 +669,18 @@ Koordinaten-Aufrufe/Tag beim 15°-Raster – noch im kostenlosen Rahmen. Ein
 feineres 10°-Raster (576 Zellen) würde das Tageslimit schon im
 Einzelbetrieb sprengen. Wer einen eigenen API-Schlüssel/Server nutzt, kann
 die Schrittweite in der Konfiguration (`worldWeather`) verkleinern.
+
+### 🌧️ Niederschlagsradar
+
+**RainViewer Weather Maps API** (`api.rainviewer.com/public/weather-maps.json`)
+– frei, kein Account/Key nötig, CORS laut Doku gesetzt. Liefert Kachel-URLs
+für ein Cesium-`ImageryLayer`-Overlay der Niederschlagsradar-Animation der
+letzten ~2 Stunden, mit Zeitschieberegler + Play/Pause in der Sidebar
+(`js/layers/RadarLayer.js`). Ersetzt nicht den bestehenden Punkt-Wetter-
+Layer (`weather`), sondern ergänzt ihn um eine flächendeckende Ansicht;
+schlägt der Abruf fehl, bleibt `weather` unberührt nutzbar. Pflicht-
+Namensnennung "RainViewer API" ist im Sidebar-Abschnitt verlinkt und
+erscheint zusätzlich automatisch in Cesiums Credit-Leiste.
 
 ### 🏗️ Infrastruktur/Seekabel in Masse
 

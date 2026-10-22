@@ -43,6 +43,7 @@ const CATEGORY_BY_LAYER_ID = {
     comets: "events",
 
     weather: "weather",
+    radar: "weather",
     aqi: "weather",
     radiation: "weather",
     cyclones: "weather",
