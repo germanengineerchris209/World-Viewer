@@ -52,7 +52,6 @@ export class CycloneLayer extends BaseLayer {
 
         this.available = false;
         this.lastError = "";
-        this._timer = null;
         this._iconCache = new Map();
         this._coneCache = new Map();   // coneUrl → [[lon,lat], ...] oder null
     }
@@ -60,7 +59,7 @@ export class CycloneLayer extends BaseLayer {
     async load() {
         await this.refresh();
         const seconds = CFG().refreshSeconds ?? 1200;   // 20 Min., siehe WEB-69
-        this._timer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     async refresh() {
@@ -198,22 +197,8 @@ export class CycloneLayer extends BaseLayer {
         return null;
     }
 
-    show() {
-        super.show();
-        if (!this._timer) this.load();
-    }
-
-    hide() {
-        super.hide();
-        this._stopTimer();
-    }
-
     clear() {
-        this._stopTimer();
+        this.stopTimer("poll");
         super.clear();
-    }
-
-    _stopTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
     }
 }
