@@ -45,8 +45,6 @@ export class RadarLayer extends BaseLayer {
         this._frameIndex = -1;
         this._imageryLayer = null;  // aktuell sichtbare Cesium.ImageryLayer
         this._playing = false;
-        this._timer = null;         // Abspiel-Timer (Frame-Wechsel)
-        this._refreshTimer = null;  // periodisches Neuladen der Zeitschritte
         this.lastError = "";
         this.lastFetchAt = 0;
 
@@ -74,7 +72,7 @@ export class RadarLayer extends BaseLayer {
         // Neue Zeitschritte kommen alle ~10 Minuten dazu – ähnlich wie beim
         // Wetter-Layer reicht ein moderates Intervall zum Nachladen.
         const seconds = CFG().refreshSeconds ?? 300;
-        this._refreshTimer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     async refresh() {
@@ -162,31 +160,22 @@ export class RadarLayer extends BaseLayer {
         this._playing = true;
         this._el.play?.classList.add("active");
         this._el.pause?.classList.remove("active");
-        this._stopPlayTimer();
-        this._timer = setInterval(() => {
+        this.startTimer("play", CFG().frameIntervalMs ?? 700, () => {
             const next = this._frameIndex + 1 >= this._frames.length ? 0 : this._frameIndex + 1;
             this._showFrame(next);
-        }, CFG().frameIntervalMs ?? 700);
+        });
     }
 
     pause() {
         this._playing = false;
         this._el.play?.classList.remove("active");
         this._el.pause?.classList.add("active");
-        this._stopPlayTimer();
+        this.stopTimer("play");
     }
 
     seek(index) {
         this.pause();
         this._showFrame(index);
-    }
-
-    _stopPlayTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
-    }
-
-    _stopRefreshTimer() {
-        if (this._refreshTimer) { clearInterval(this._refreshTimer); this._refreshTimer = null; }
     }
 
     show() {
@@ -204,8 +193,8 @@ export class RadarLayer extends BaseLayer {
     }
 
     clear() {
-        this._stopPlayTimer();
-        this._stopRefreshTimer();
+        this.stopTimer("play");
+        this.stopTimer("poll");
         if (this._imageryLayer) {
             this.viewer.imageryLayers.remove(this._imageryLayer, true);
             this._imageryLayer = null;
