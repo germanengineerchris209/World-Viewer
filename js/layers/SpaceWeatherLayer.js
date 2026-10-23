@@ -84,7 +84,6 @@ export class SpaceWeatherLayer extends BaseLayer {
         this.bz = null;
         this.lastFetchAt = 0;
         this.lastError = "";
-        this._timer = null;
         this._onStatusChange = null;
 
         this._northBand = null;
@@ -112,7 +111,7 @@ export class SpaceWeatherLayer extends BaseLayer {
         await this.refresh();
 
         const seconds = CFG().refreshSeconds ?? 600;
-        this._timer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     async refresh() {
@@ -272,25 +271,11 @@ export class SpaceWeatherLayer extends BaseLayer {
         });
     }
 
-    show() {
-        super.show();
-        if (!this._timer) this.load();
-    }
-
-    hide() {
-        super.hide();
-        this._stopTimer();
-    }
-
     clear() {
-        this._stopTimer();
+        this.stopTimer("poll");
         this._northBand = null;
         this._southBand = null;
         super.clear();
-    }
-
-    _stopTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
     }
 }
 

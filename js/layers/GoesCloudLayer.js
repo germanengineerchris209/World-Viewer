@@ -51,7 +51,6 @@ export class GoesCloudLayer extends BaseLayer {
 
         this._imageryLayers = [];   // Cesium.ImageryLayer je Satellit
         this._timestampUtc = null;  // echter Bild-Zeitstempel aus GIBS-Header
-        this._timer = null;
         this.lastError = "";
     }
 
@@ -63,7 +62,7 @@ export class GoesCloudLayer extends BaseLayer {
         // Response-Header meist 30–60 Min. Verzögerung (NRT-Verarbeitung) –
         // öfter als alle 10 Minuten nachsehen bringt daher nichts.
         const seconds = CFG().refreshSeconds ?? 600;
-        this._timer = setInterval(() => this._refreshTimestamp(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this._refreshTimestamp());
     }
 
     _addImagery() {
@@ -124,25 +123,19 @@ export class GoesCloudLayer extends BaseLayer {
     show() {
         super.show();
         for (const layer of this._imageryLayers) layer.show = true;
-        if (!this._timer) this.load();
     }
 
     hide() {
         super.hide();
         for (const layer of this._imageryLayers) layer.show = false;
-        this._stopTimer();
     }
 
     clear() {
-        this._stopTimer();
+        this.stopTimer("poll");
         for (const layer of this._imageryLayers) this.viewer.imageryLayers.remove(layer, true);
         this._imageryLayers = [];
         this._timestampUtc = null;
         super.clear();
-    }
-
-    _stopTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
     }
 
     /** Zähler neben dem Schalter: Anzahl aktiver Satelliten-Kacheldienste (0 oder 2). */

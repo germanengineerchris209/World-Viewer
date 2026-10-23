@@ -85,7 +85,6 @@ export class CometLayer extends BaseLayer {
         this.available = false;
         this.lastError = "";
         this.totalMatched = 0;
-        this._timer = null;
         this._accum = 0;
         this._iconCache = new Map();
     }
@@ -94,7 +93,7 @@ export class CometLayer extends BaseLayer {
         await this.refresh();
         // Bahnelemente ändern sich kaum – ein Abruf pro Tag genügt
         const seconds = CFG().refreshSeconds ?? 86_400;
-        this._timer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     async refresh() {
@@ -254,28 +253,19 @@ export class CometLayer extends BaseLayer {
         }
     }
 
-    show() {
-        super.show();
-        if (!this._timer) this.load();
-    }
-
     hide() {
         super.hide();
-        this._stopTimer();
+        this._accum = 0;
     }
 
     clear() {
-        this._stopTimer();
+        this.stopTimer("poll");
+        this._accum = 0;
         super.clear();
     }
 
     statusText() {
         if (!this.available && this.lastError) return `nicht verfügbar: ${this.lastError}`;
         return "Richtung echt (Zenitpunkt), Entfernung gestaucht – echte Werte im Detailpanel";
-    }
-
-    _stopTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
-        this._accum = 0;
     }
 }
