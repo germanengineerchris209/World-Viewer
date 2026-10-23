@@ -114,7 +114,6 @@ export class AircraftLayer extends BaseLayer {
         this.fetchPending = false;
         this.outOfRange = false;     // true = zu weit herausgezoomt
 
-        this._timer = null;
         this._lastRequestAt = 0;
         this._onStatusChange = null; // Callback für das UI
     }
@@ -173,18 +172,17 @@ export class AircraftLayer extends BaseLayer {
 
     /** Startet den regelmäßigen Abruf. */
     startPolling() {
-        this.stopPolling();
         const interval = Math.max(
             this.config.refreshSeconds ?? 20,
             (this.source.serverMinIntervalMs || 0) / 1000
         ) * 1000;
 
-        this._timer = setInterval(() => this.refreshLive(), interval);
+        this.startTimer("poll", interval, () => this.refreshLive());
         console.info(`[${this.name}] Live-Abruf alle ${Math.round(interval / 1000)} s.`);
     }
 
     stopPolling() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
+        this.stopTimer("poll");
     }
 
     /**
@@ -587,19 +585,6 @@ export class AircraftLayer extends BaseLayer {
     }
 
     /* ═══════════ Aufräumen ═══════════ */
-
-    show() {
-        super.show();
-        if (this.mode === "live" && !this._timer) {
-            this.startPolling();
-            this.refreshLive();
-        }
-    }
-
-    hide() {
-        super.hide();
-        this.stopPolling();      // ausgeblendet = keine Abrufe = kein Verbrauch
-    }
 
     clear() {
         this.stopPolling();

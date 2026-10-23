@@ -54,7 +54,6 @@ export class ALPRLayer extends BaseLayer {
 
         this.outOfRange = false;
         this.fetchPending = false;
-        this._timer = null;
         this._lastRequestAt = 0;
         this._queriedBoxes = [];   // bereits abgefragte bbox, um Wiederholungen zu vermeiden
     }
@@ -70,13 +69,12 @@ export class ALPRLayer extends BaseLayer {
     }
 
     startPolling() {
-        this.stopPolling();
         const seconds = Math.max(this.config.refreshSeconds ?? 10, 5);
-        this._timer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     stopPolling() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
+        this.stopTimer("poll");
     }
 
     /**
