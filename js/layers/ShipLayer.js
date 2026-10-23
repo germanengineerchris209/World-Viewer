@@ -45,7 +45,6 @@ export class ShipLayer extends BaseLayer {
         this.fetchPending = false;
         this.outOfRange = false;
 
-        this._timer = null;
         this._lastRequestAt = 0;
         this._onStatusChange = null;
     }
@@ -95,14 +94,13 @@ export class ShipLayer extends BaseLayer {
     /* ═══════════ Live-Abruf ═══════════ */
 
     startPolling() {
-        this.stopPolling();
         const interval = Math.max(this.config.refreshSeconds ?? 15, 5) * 1000;
-        this._timer = setInterval(() => this.refreshLive(), interval);
+        this.startTimer("poll", interval, () => this.refreshLive());
         console.info(`[Ships] Live-Abruf alle ${Math.round(interval / 1000)} s.`);
     }
 
     stopPolling() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
+        this.stopTimer("poll");
     }
 
     /**
@@ -345,19 +343,6 @@ export class ShipLayer extends BaseLayer {
     }
 
     /* ═══════════ Aufräumen ═══════════ */
-
-    show() {
-        super.show();
-        if (this.mode === "live" && !this._timer) {
-            this.startPolling();
-            this.refreshLive();
-        }
-    }
-
-    hide() {
-        super.hide();
-        this.stopPolling();
-    }
 
     clear() {
         this.stopPolling();

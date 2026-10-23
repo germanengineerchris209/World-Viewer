@@ -34,13 +34,12 @@ export class FireLayer extends BaseLayer {
         this.available = false;
         this.needsKey = false;
         this.lastError = "";
-        this._timer = null;
     }
 
     async load() {
         await this.refresh();
         const seconds = CFG().refreshSeconds ?? 900;
-        this._timer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     async refresh() {
@@ -135,23 +134,9 @@ export class FireLayer extends BaseLayer {
         });
     }
 
-    show() {
-        super.show();
-        if (!this._timer) this.load();
-    }
-
-    hide() {
-        super.hide();
-        this._stopTimer();
-    }
-
     clear() {
-        this._stopTimer();
+        this.stopTimer("poll");
         super.clear();
-    }
-
-    _stopTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
     }
 
     /** Erklärt in der Layer-Konsole, warum die Ebene ohne FIRMS_MAP_KEY leer bleibt (WEB-87). */

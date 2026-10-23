@@ -91,7 +91,6 @@ export class WorldWeatherLayer extends BaseLayer {
         this._cells = null;      // Rasterzellen, einmalig berechnet
         this.lastFetchAt = 0;
         this.lastError = "";
-        this._timer = null;
     }
 
     /**
@@ -128,7 +127,7 @@ export class WorldWeatherLayer extends BaseLayer {
         // (siehe DEFAULT_STEP_DEG). Punktgenaue Minutenwerte liefert weiter
         // WeatherLayer.js an seinen Städten.
         const seconds = CFG().refreshSeconds ?? 3600;
-        this._timer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     async refresh() {
@@ -245,23 +244,9 @@ export class WorldWeatherLayer extends BaseLayer {
         });
     }
 
-    show() {
-        super.show();
-        if (!this._timer) this.load();
-    }
-
-    hide() {
-        super.hide();
-        this._stopTimer();
-    }
-
     clear() {
-        this._stopTimer();
+        this.stopTimer("poll");
         super.clear();
-    }
-
-    _stopTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
     }
 }
 

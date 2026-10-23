@@ -65,7 +65,6 @@ export class AQILayer extends BaseLayer {
         this._iconByColor = new Map();
         this.lastFetchAt = 0;
         this.lastError = "";
-        this._timer = null;
     }
 
     async load() {
@@ -74,7 +73,7 @@ export class AQILayer extends BaseLayer {
 
         // Luftqualität ändert sich stündlich – häufiger nachfragen bringt nichts.
         const seconds = CFG().refreshSeconds ?? 1800;
-        this._timer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     async refresh() {
@@ -186,23 +185,9 @@ export class AQILayer extends BaseLayer {
         });
     }
 
-    show() {
-        super.show();
-        if (!this._timer) this.load();
-    }
-
-    hide() {
-        super.hide();
-        this._stopTimer();
-    }
-
     clear() {
-        this._stopTimer();
+        this.stopTimer("poll");
         super.clear();
-    }
-
-    _stopTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
     }
 }
 

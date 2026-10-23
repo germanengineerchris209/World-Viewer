@@ -81,7 +81,6 @@ export class TransitLayer extends BaseLayer {
         this.lastFetchAt = 0;
         this.fetchPending = false;
 
-        this._timer = null;
         this._onStatusChange = null;
     }
 
@@ -131,15 +130,14 @@ export class TransitLayer extends BaseLayer {
     /* ═══════════ Live-Abruf ═══════════ */
 
     startPolling() {
-        this.stopPolling();
         const interval = Math.max(CFG().refreshSeconds ?? 20, 10) * 1000;
-        this._timer = setInterval(() => this.refreshLive(), interval);
+        this.startTimer("poll", interval, () => this.refreshLive());
         console.info(`[Transit] Live-Abruf alle ${Math.round(interval / 1000)} s `
             + `für ${this.cities.map(c => c.label).join(", ")}.`);
     }
 
     stopPolling() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
+        this.stopTimer("poll");
     }
 
     /** Holt alle konfigurierten Städte parallel und führt sie zusammen. */
@@ -340,19 +338,6 @@ export class TransitLayer extends BaseLayer {
     }
 
     /* ═══════════ Aufräumen ═══════════ */
-
-    show() {
-        super.show();
-        if (this.available && !this._timer) {
-            this.startPolling();
-            this.refreshLive();
-        }
-    }
-
-    hide() {
-        super.hide();
-        this.stopPolling();
-    }
 
     clear() {
         this.stopPolling();

@@ -46,14 +46,13 @@ export class TsunamiAlertLayer extends BaseLayer {
 
         this.available = false;
         this.lastError = "";
-        this._timer = null;
         this._iconCache = new Map();
     }
 
     async load() {
         await this.refresh();
         const seconds = CFG().refreshSeconds ?? 120;   // Warnmeldung: kurzes Intervall
-        this._timer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     async refresh() {
@@ -144,22 +143,8 @@ export class TsunamiAlertLayer extends BaseLayer {
         return null;
     }
 
-    show() {
-        super.show();
-        if (!this._timer) this.load();
-    }
-
-    hide() {
-        super.hide();
-        this._stopTimer();
-    }
-
     clear() {
-        this._stopTimer();
+        this.stopTimer("poll");
         super.clear();
-    }
-
-    _stopTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
     }
 }
