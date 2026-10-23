@@ -23,6 +23,18 @@ import { CameraViewshed } from "./cameraViewshed.js";
 /** localStorage-Key für den Auf-/Zu-Zustand der Layer-Kategorien (WEB-85) */
 const LAYER_CATEGORY_STATE_KEY = "wv-layer-category-open";
 
+/**
+ * Beschriftung für den Status-Punkt am Layer-Schalter (WEB-159), Fallback
+ * falls der Layer selbst keinen `statusDetail`-Text setzt.
+ */
+const LAYER_STATUS_LABEL = {
+    laden: "Lädt …",
+    ok: "Daten geladen",
+    leer: "Keine Objekte gefunden",
+    fehler: "Datenquelle nicht erreichbar",
+    schluessel_fehlt: "API-Schlüssel fehlt"
+};
+
 const fmt = new Intl.NumberFormat("de-DE");
 
 /** Roh-Text aus nicht vertrauenswürdigen Quellen HTML-sicher machen. */
@@ -872,6 +884,7 @@ export class UI {
                 this._refreshLayerCategoryCounts();
             });
             item.appendChild(label);
+            this._renderLayerStatusDot(label, layer);
 
             // Hinweistext für saisonal leere Layer (z.B. Wirbelstürme
             // außerhalb der Hurrikansaison), statt einer stillen leeren Ebene
@@ -924,21 +937,56 @@ export class UI {
             let badge = toggle.querySelector(".layer-key-badge");
             if (!svc) {
                 badge?.remove();
-                continue;
+            } else {
+                if (!badge) {
+                    badge = document.createElement("span");
+                    badge.className = "layer-key-badge";
+                    badge.textContent = "🔑";
+                    badge.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.keyPanel?.open();
+                    });
+                    toggle.appendChild(badge);
+                }
+                badge.title = svc.layerImpact ?? `Benötigt ${svc.name} – siehe „Schlüssel & Dienste"`;
             }
-            if (!badge) {
-                badge = document.createElement("span");
-                badge.className = "layer-key-badge";
-                badge.textContent = "🔑";
-                badge.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.keyPanel?.open();
-                });
-                toggle.appendChild(badge);
-            }
-            badge.title = svc.layerImpact ?? `Benötigt ${svc.name} – siehe „Schlüssel & Dienste"`;
+
+            // Status-Punkt neu bewerten – ein fehlender Key überschreibt
+            // den vom Layer selbst gemeldeten Status (siehe _layerStatusInfo).
+            this._renderLayerStatusDot(toggle, layer);
         }
+    }
+
+    /**
+     * Ermittelt Statuscode + Erklärtext für den Status-Punkt am
+     * Layer-Schalter (WEB-159). Ein fehlender API-Schlüssel (aus /api/keys,
+     * siehe keyStatusPanel.js) hat Vorrang vor dem vom Layer selbst
+     * gemeldeten Lade-/Fehlerstatus, da er die eigentliche Ursache ist.
+     */
+    _layerStatusInfo(layer) {
+        const svc = this._keyStatusByLayer?.[layer.id];
+        if (svc) {
+            return {
+                code: "schluessel_fehlt",
+                title: svc.layerImpact ?? `Benötigt ${svc.name} – siehe „Schlüssel & Dienste"`
+            };
+        }
+        const code = layer.status ?? "ok";
+        return { code, title: layer.statusDetail ?? LAYER_STATUS_LABEL[code] ?? "" };
+    }
+
+    /** Erzeugt/aktualisiert den Status-Punkt neben der Objektzahl eines Layer-Schalters. */
+    _renderLayerStatusDot(toggleEl, layer) {
+        if (!toggleEl) return;
+        const { code, title } = this._layerStatusInfo(layer);
+        let dot = toggleEl.querySelector(".layer-status-dot");
+        if (!dot) {
+            dot = document.createElement("span");
+            toggleEl.appendChild(dot);
+        }
+        dot.className = `layer-status-dot layer-status-dot--${code}`;
+        dot.title = title;
     }
 
     /** Zähler und Statustexte der Layer-Schalter aktuell halten (z.B. bei Live-Daten). */
@@ -951,6 +999,8 @@ export class UI {
 
             const counter = item.querySelector(".layer-count");
             if (counter) counter.textContent = layer.count;
+
+            this._renderLayerStatusDot(item.querySelector(".layer-toggle"), layer);
 
             const statusText = layer.statusText?.();
             let status = item.querySelector(".layer-status");

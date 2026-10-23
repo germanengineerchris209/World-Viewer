@@ -36,6 +36,14 @@ export class BaseLayer {
         this.objects = [];                    // normalisierte Datensätze
         this.entityById = new Map();          // id → Cesium.Entity
 
+        // Sichtbarer Lade-/Fehlerstatus für den Layer-Schalter (WEB-159):
+        // 'laden' | 'ok' | 'fehler' | 'leer' | 'schluessel_fehlt'. Fehlende
+        // API-Schlüssel werden nicht hier, sondern von UI._renderKeyBadges
+        // anhand von /api/keys gesetzt (siehe ui.js), da dieser Status aus
+        // einer separaten Server-Abfrage kommt, nicht aus dem Laden selbst.
+        this.status = this.dataUrl ? "laden" : "leer";
+        this.statusDetail = null;             // optionaler Zusatztext fürs title-Attribut
+
         // Eigene DataSource → Layer komplett unabhängig steuerbar
         this.dataSource = new Cesium.CustomDataSource(this.id);
         this.viewer.dataSources.add(this.dataSource);
@@ -144,7 +152,8 @@ export class BaseLayer {
 
     /** Daten laden und Entities erzeugen. */
     async load() {
-        if (!this.dataUrl) return;
+        if (!this.dataUrl) { this.status = "leer"; return; }
+        this.status = "laden";
         const raw = await loadJSON(this.dataUrl);
         this.objects = raw.map(r => normalizeRecord(r, this.type));
         for (const obj of this.objects) {
@@ -155,7 +164,21 @@ export class BaseLayer {
                 this.entityById.set(obj.id, entity);
             }
         }
+        this.status = this._statusFromRaw(raw);
         console.info(`[${this.name}] ${this.objects.length} Objekte geladen.`);
+    }
+
+    /**
+     * Leitet den Status aus einem (ggf. von loadJSON/loadJSONOptional mit
+     * `__loadFailed` markierten) Rohdaten-Array ab. Auch von Unterklassen
+     * mit eigenem load()-Override nutzbar (z.B. InfrastructureLayer, das
+     * mehrere Quellen kombiniert), damit der Status überall gleich berechnet
+     * wird.
+     * @returns {"fehler"|"leer"|"ok"}
+     */
+    _statusFromRaw(raw) {
+        if (raw?.__loadFailed) return "fehler";
+        return this.objects.length === 0 ? "leer" : "ok";
     }
 
     /**

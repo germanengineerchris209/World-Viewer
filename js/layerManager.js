@@ -31,7 +31,9 @@ export class LayerManager {
         );
         results.forEach((res, i) => {
             if (res.status === "rejected") {
-                console.error(`Layer '${this.getAll()[i].id}' konnte nicht geladen werden:`, res.reason);
+                const layer = this.getAll()[i];
+                console.error(`Layer '${layer.id}' konnte nicht geladen werden:`, res.reason);
+                layer.status = "fehler";
             }
         });
     }
