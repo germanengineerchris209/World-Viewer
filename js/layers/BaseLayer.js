@@ -25,6 +25,7 @@ export class BaseLayer {
     constructor(worldViewer, options) {
         this.worldViewer = worldViewer;
         this.viewer = worldViewer.viewer;
+        this.layerManager = null;             // von LayerManager.register() gesetzt (WEB-160)
 
         this.id = options.id;                 // z.B. "aircraft"
         this.name = options.name;             // Anzeigename, z.B. "Aircraft"
@@ -226,10 +227,34 @@ export class BaseLayer {
         // Standard: statische Layer tun nichts
     }
 
+    /* ─── Zentrale Timer-Registrierung (WEB-160) ───
+     * Ersetzt eigenes setInterval je Layer: der LayerManager taktet, pausiert
+     * im Hintergrund-Tab und solange der Layer ausgeblendet ist, und löst bei
+     * Rückkehr/Einblenden sofort einen Tick aus statt das Intervall abzuwarten.
+     * `name` unterscheidet mehrere Timer desselben Layers. */
+
+    startTimer(name, intervalMs, callback) {
+        this.layerManager?.registerTimer(this.id, name, intervalMs, callback);
+    }
+
+    stopTimer(name) {
+        this.layerManager?.unregisterTimer(this.id, name);
+    }
+
     /* ─── Sichtbarkeit ─── */
 
-    show() { this.enabled = true; this.dataSource.show = true; }
-    hide() { this.enabled = false; this.dataSource.show = false; }
+    show() {
+        this.enabled = true;
+        this.dataSource.show = true;
+        this.layerManager?._setLayerTimersActive(this.id, true);
+    }
+
+    hide() {
+        this.enabled = false;
+        this.dataSource.show = false;
+        this.layerManager?._setLayerTimersActive(this.id, false);
+    }
+
     toggle() { this.enabled ? this.hide() : this.show(); return this.enabled; }
 
     /** Beschriftungen ein-/ausblenden. */
