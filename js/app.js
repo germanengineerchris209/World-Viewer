@@ -34,6 +34,7 @@ import { ContactsPanel } from "./contactsPanel.js";
 
 import { CockpitView } from "./cockpit.js";
 import { applyShareLinkFromUrl, buildShareUrl } from "./shareLink.js";
+import { loadSession, clearSession, applySessionState, createSessionSaver } from "./session.js";
 import { SensorStyles } from "./sensorStyles.js";
 import { TacticalHUD } from "./hud.js";
 import { KeyboardShortcuts } from "./keyboardShortcuts.js";
@@ -151,7 +152,12 @@ async function main() {
     spaceWeatherLayer.onStatusChange((status) => ui.updateSpaceWeatherStatus(status));
 
     await layerManager.loadAll();
-    await applyShareLinkFromUrl(worldViewer, layerManager);
+    // Sitzungssicherung (WEB-161): ein Share-Link aus der URL hat Vorrang vor
+    // der gespeicherten Sitzung. Layer+Kamera werden hier sofort angewandt,
+    // offene Panels erst unten, sobald panelDock/assistant/contactsPanel stehen.
+    const savedSession = loadSession();
+    const hadShareLink = await applyShareLinkFromUrl(worldViewer, layerManager);
+    if (!hadShareLink) applySessionState(savedSession, worldViewer, layerManager, null);
     ui.buildLayerToggles();
     ui.updateFlightStatus(aircraftLayer.getStatus());
     ui.updateSpaceWeatherStatus(spaceWeatherLayer.getStatus());
@@ -220,14 +226,16 @@ async function main() {
         el: document.getElementById("ai-panel"),
         header: document.getElementById("ai-header"),
         minWidth: 280, minHeight: 240,
-        close: () => assistant.close()
+        close: () => assistant.close(),
+        open: () => assistant.open()
     });
     panelDock.register({
         id: "contacts",
         el: document.getElementById("contacts-panel"),
         header: document.getElementById("contacts-header"),
         minWidth: 240, minHeight: 200,
-        close: () => contactsPanel.hide()
+        close: () => contactsPanel.hide(),
+        open: () => contactsPanel.show()
     });
 
     /* Street-Level (Mapillary): Abdeckungslinien + Bildkegel, eingebetteter
@@ -244,6 +252,21 @@ async function main() {
     });
 
     panelDock.applySavedOrder();
+
+    // Sitzungssicherung Teil 2: offene Panels erst jetzt wiederherstellen,
+    // da ihre open()-Callbacks oben assistant/contactsPanel brauchen. Danach
+    // entprellt weiterschreiben, statt bei jeder Kamerabewegung/jedem
+    // Layer-/Panel-Klick sofort in localStorage zu schreiben.
+    if (!hadShareLink && Array.isArray(savedSession?.panels)) {
+        panelDock.openPanels(savedSession.panels);
+    }
+    const sessionSaver = createSessionSaver(worldViewer, layerManager, panelDock);
+    ui.onLayerToggle = () => sessionSaver.schedule();
+    panelDock.onChange = () => sessionSaver.schedule();
+    ui.onResetSession = () => {
+        clearSession();
+        window.location.reload();
+    };
 
     // POWER-UP: Schlüssel & Dienste (Chip unten rechts, WEB-87)
     ui.keyPanel = new KeyStatusPanel(ui);
@@ -381,6 +404,7 @@ async function main() {
         shipLayer.refreshLive();
         alprLayer.refresh();
         streetLevelLayer.refreshForView();
+        sessionSaver.schedule();
     });
 
     /* 4 ── Zentrale Update-Schleife */

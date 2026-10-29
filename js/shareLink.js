@@ -14,26 +14,69 @@
  * Serialisierungsformat oder einen Server-Endpunkt zu bauen.
  */
 
-/** Baut die aktuelle Ansicht als teilbare URL. */
-export function buildShareUrl(worldViewer, layerManager) {
+/**
+ * Kamera + aktive Layer in reiner Objektform lesen/anwenden – von
+ * buildShareUrl/applyShareLinkFromUrl unten UND von session.js (WEB-161,
+ * automatische Sitzungssicherung) genutzt, damit es nur eine Kodierlogik
+ * für "welche Ansicht ist das" gibt.
+ */
+
+/** Liest die aktuelle Kamera, oder null, falls (noch) keine Position vorliegt. */
+export function getCameraState(worldViewer) {
     const pos = worldViewer.getCameraPosition();
     const rot = worldViewer.getCameraOrientation();
+    if (!pos || !rot) return null;
+    return {
+        longitude: pos.longitude,
+        latitude: pos.latitude,
+        height: pos.height,
+        heading: rot.heading,
+        pitch: rot.pitch,
+        roll: rot.roll
+    };
+}
+
+/** Setzt die Kamera aus einem von getCameraState() gelieferten Objekt. */
+export function applyCameraState(worldViewer, camera) {
+    if (!camera || !Number.isFinite(camera.longitude) || !Number.isFinite(camera.latitude) || !Number.isFinite(camera.height)) return;
+    worldViewer.setCameraView({
+        longitude: camera.longitude,
+        latitude: camera.latitude,
+        height: camera.height,
+        heading: camera.heading || 0,
+        pitch: camera.pitch || -90,
+        roll: camera.roll || 0
+    });
+}
+
+/** IDs der aktuell aktiven Layer. */
+export function getActiveLayerIds(layerManager) {
+    return layerManager.getAll().filter(layer => layer.enabled).map(layer => layer.id);
+}
+
+/** Schaltet genau die übergebenen Layer-IDs ein, alle anderen aus. */
+export function applyActiveLayerIds(layerManager, ids) {
+    const wanted = new Set(ids);
+    for (const layer of layerManager.getAll()) {
+        if (wanted.has(layer.id) !== layer.enabled) layer.toggle();
+    }
+}
+
+/** Baut die aktuelle Ansicht als teilbare URL. */
+export function buildShareUrl(worldViewer, layerManager) {
+    const camera = getCameraState(worldViewer);
     const params = new URLSearchParams();
 
-    if (pos) {
-        params.set("lon", pos.longitude.toFixed(6));
-        params.set("lat", pos.latitude.toFixed(6));
-        params.set("h", Math.round(pos.height));
-    }
-    if (rot) {
-        params.set("heading", Math.round(rot.heading));
-        params.set("pitch", Math.round(rot.pitch));
-        params.set("roll", Math.round(rot.roll));
+    if (camera) {
+        params.set("lon", camera.longitude.toFixed(6));
+        params.set("lat", camera.latitude.toFixed(6));
+        params.set("h", Math.round(camera.height));
+        params.set("heading", Math.round(camera.heading));
+        params.set("pitch", Math.round(camera.pitch));
+        params.set("roll", Math.round(camera.roll));
     }
 
-    const activeLayers = layerManager.getAll()
-        .filter(layer => layer.enabled)
-        .map(layer => layer.id);
+    const activeLayers = getActiveLayerIds(layerManager);
     if (activeLayers.length) params.set("layers", activeLayers.join(","));
 
     const basemapId = worldViewer.basemaps?.currentId;
@@ -49,29 +92,21 @@ export async function applyShareLinkFromUrl(worldViewer, layerManager) {
     const params = new URLSearchParams(window.location.search);
     if (![...params.keys()].length) return false;
 
-    const lon = parseFloat(params.get("lon"));
-    const lat = parseFloat(params.get("lat"));
-    const height = parseFloat(params.get("h"));
-    if (Number.isFinite(lon) && Number.isFinite(lat) && Number.isFinite(height)) {
-        worldViewer.setCameraView({
-            longitude: lon,
-            latitude: lat,
-            height,
-            heading: parseFloat(params.get("heading")) || 0,
-            pitch: parseFloat(params.get("pitch")) || -90,
-            roll: parseFloat(params.get("roll")) || 0
-        });
-    }
+    applyCameraState(worldViewer, {
+        longitude: parseFloat(params.get("lon")),
+        latitude: parseFloat(params.get("lat")),
+        height: parseFloat(params.get("h")),
+        heading: parseFloat(params.get("heading")),
+        pitch: parseFloat(params.get("pitch")),
+        roll: parseFloat(params.get("roll"))
+    });
 
     const basemapId = params.get("basemap");
     if (basemapId) await worldViewer.basemaps.setBasemap(basemapId);
 
     const layersParam = params.get("layers");
     if (layersParam !== null) {
-        const wanted = new Set(layersParam.split(",").filter(Boolean));
-        for (const layer of layerManager.getAll()) {
-            if (wanted.has(layer.id) !== layer.enabled) layer.toggle();
-        }
+        applyActiveLayerIds(layerManager, layersParam.split(",").filter(Boolean));
     }
 
     return true;
