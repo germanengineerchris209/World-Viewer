@@ -67,11 +67,15 @@ export class PanelDock {
      * @param {number} [opts.minWidth]
      * @param {number} [opts.minHeight]
      * @param {() => void} opts.close     Echtes Schließen (ruft die bestehende hide-Logik auf)
+     * @param {() => void} [opts.open]    Echtes Öffnen ohne weitere Argumente (für Sitzungs-
+     *                                     wiederherstellung, WEB-161); fehlt es, wird dieses
+     *                                     Panel beim Wiederherstellen übersprungen (z.B. Detail-
+     *                                     Panel, das immer ein ausgewähltes Objekt braucht)
      */
-    register({ id, el, header, minWidth = 260, minHeight = 160, close }) {
+    register({ id, el, header, minWidth = 260, minHeight = 160, close, open }) {
         const saved = this._state[id] || {};
         const panel = {
-            id, el, header, minWidth, minHeight, close,
+            id, el, header, minWidth, minHeight, close, open,
             mode: saved.mode === "floating" ? "floating" : "docked",
             x: saved.x, y: saved.y, width: saved.width, height: saved.height
         };
@@ -93,6 +97,7 @@ export class PanelDock {
             } else if (idx !== -1) {
                 this.openStack.splice(idx, 1);
             }
+            this.onChange?.();
         }).observe(el, { attributes: true, attributeFilter: ["class"] });
 
         return panel;
@@ -113,6 +118,22 @@ export class PanelDock {
         const id = this.openStack[this.openStack.length - 1];
         if (!id) return;
         this.panels.get(id)?.close?.();
+    }
+
+    /** IDs der aktuell offenen Panels (für die Sitzungssicherung, WEB-161). */
+    getOpenPanelIds() {
+        return [...this.panels.values()]
+            .filter(panel => !panel.el.classList.contains("hidden"))
+            .map(panel => panel.id);
+    }
+
+    /**
+     * Öffnet die übergebenen Panel-IDs wieder (Sitzungswiederherstellung,
+     * WEB-161). Panels ohne `open`-Callback bei register() werden
+     * übersprungen statt mit leerem Inhalt zu erscheinen.
+     */
+    openPanels(ids) {
+        for (const id of ids) this.panels.get(id)?.open?.();
     }
 
     _bringToFront(panel) {
