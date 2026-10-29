@@ -72,7 +72,6 @@ export class TrafficLayer extends BaseLayer {
 
         this._lastFlowFetchAt = 0;
         this._flowPending = false;
-        this._timer = null;
     }
 
     get config() { return window.WORLD_VIEWER_CONFIG?.traffic ?? {}; }
@@ -106,14 +105,13 @@ export class TrafficLayer extends BaseLayer {
     }
 
     _startTicking() {
-        if (this._timer) return;
         // Kamera bewegt sich öfter als Flugzeuge schwenken – 2s Takt reicht,
         // um das Gitter nachzuziehen, ohne bei jedem Frame neu zu rechnen.
-        this._timer = setInterval(() => this._rebuildGrid(), 2000);
+        this.startTimer("tick", 2000, () => this._rebuildGrid());
     }
 
     _stopTicking() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
+        this.stopTimer("tick");
     }
 
     async _checkTomTomStatus() {

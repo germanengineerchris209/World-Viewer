@@ -69,7 +69,6 @@ export class WeatherLayer extends BaseLayer {
         this._iconByKey = new Map();
         this.lastFetchAt = 0;
         this.lastError = "";
-        this._timer = null;
     }
 
     async load() {
@@ -79,7 +78,7 @@ export class WeatherLayer extends BaseLayer {
         // Niederschlag/Wind ändern sich schneller als die Luftqualität,
         // aber nicht sekündlich – Standard: alle 15 Minuten neu abfragen.
         const seconds = CFG().refreshSeconds ?? 900;
-        this._timer = setInterval(() => this.refresh(), seconds * 1000);
+        this.startTimer("poll", seconds * 1000, () => this.refresh());
     }
 
     async refresh() {
@@ -203,23 +202,9 @@ export class WeatherLayer extends BaseLayer {
         });
     }
 
-    show() {
-        super.show();
-        if (!this._timer) this.load();
-    }
-
-    hide() {
-        super.hide();
-        this._stopTimer();
-    }
-
     clear() {
-        this._stopTimer();
+        this.stopTimer("poll");
         super.clear();
-    }
-
-    _stopTimer() {
-        if (this._timer) { clearInterval(this._timer); this._timer = null; }
     }
 }
 
