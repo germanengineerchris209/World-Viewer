@@ -882,6 +882,7 @@ export class UI {
                 e.target.checked ? layer.show() : layer.hide();
                 this.updateStats();
                 this._refreshLayerCategoryCounts();
+                this.onLayerToggle?.(layer);
             });
             item.appendChild(label);
             this._renderLayerStatusDot(label, layer);
@@ -1591,6 +1592,11 @@ export class UI {
                 window.prompt("Link kopieren:", url);
             }
             setTimeout(() => { btn.textContent = original; }, 1800);
+        });
+
+        document.getElementById("btn-reset-session").addEventListener("click", () => {
+            if (!window.confirm("Gespeicherte Sitzung (Ebenen, Kamera, Panels) löschen und Seite neu laden?")) return;
+            this.onResetSession?.();
         });
 
         document.getElementById("btn-sensor-style").addEventListener("click", () => {
