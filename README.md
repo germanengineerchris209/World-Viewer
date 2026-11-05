@@ -383,7 +383,8 @@ world-viewer/
 │   ├── ai/
 │   │   ├── assistant.js       Chat-UI (Button unten links)
 │   │   ├── claudeClient.js    Claude-API-Anbindung (Streaming)
-│   │   └── locationContext.js Ortskontext für die KI
+│   │   ├── locationContext.js Ortskontext für die KI
+│   │   └── voice.js           Diktat + Vorlesen (Browser Web-Speech-API)
 │   │
 │   └── layers/           BaseLayer.js + 31 Layer-Klassen → 32 Layer
 │                         (AircraftLayer läuft zweimal: zivil + militärisch;

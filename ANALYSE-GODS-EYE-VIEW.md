@@ -1,30 +1,33 @@
 # Vergleich mit „God's Eye View" & Verbesserungsvorschläge
 
-Stand: 12.10.2026 · Referenzprojekt: [bilawalsidhu/gods-eye-view](https://github.com/bilawalsidhu/gods-eye-view) (MIT-Lizenz)
+Stand: 05.11.2026 (WEB-164) · Referenzprojekt: [bilawalsidhu/gods-eye-view](https://github.com/bilawalsidhu/gods-eye-view) (MIT-Lizenz)
 
-Dieses Dokument vergleicht den **heutigen Stand von ARGUS (`origin/main`,
-Commit `5f34a18`)** mit dem **heutigen Stand von God's Eye View (GEV) `main`**
-(README-Stand Oktober 2026). Es löst die Fassung vom 17.09.2026 ab, die
-veraltet war: Tier 1 ist seither komplett umgesetzt, aus Tier 2 sind
-Routenplanung, Radio, Wetter (kuratiert) und Setup-Diagnose eingebaut, aus
-Tier 3 sind Zeichnen/Messen, taktisches HUD und Erkennungs-Overlay fertig.
-Zusätzlich hat ARGUS mehrere Layer bekommen, die **GEV gar nicht kennt**
+Dieses Dokument vergleicht den **Stand von ARGUS (`origin/main`, Commit
+`7552fe6`)** mit dem **Stand von God's Eye View (GEV) `main`**
+(README-Stand Oktober 2026).
+
+**Was sich seit der Fassung vom 12.10.2026 geändert hat:** Tier 2 ist
+abgeschlossen – ÖPNV (WEB-94), Verkehr (WEB-93), Satelliten-Katalogtiefe
+(WEB-89) und Infrastruktur in Masse (WEB-142) sind gemerged, ebenso die
+damals noch offenen Branches Regenradar (WEB-67), Leihräder (WEB-70) und
+Kamera-Sichtfeld (WEB-72). Aus Tier 3 sind Szenen-Regisseur,
+3D-Flugzeugmodelle und Militärflüge (WEB-90) fertig. Street-Level (WEB-95)
+und ALPR-Standorte (WEB-99) sind dazugekommen – letzteres ist eine
+**Revision einer früheren Entscheidung**, siehe Abschnitt 5.
+
+**Damit sind die Feature-Lücken gegenüber GEV bis auf drei Punkte
+geschlossen:** Militär-Standorte, Blitzdichte (WEB-131) und alles
+Sprachgesteuerte (Tier 3, Freigabe offen).
+
+Zusätzlich hat ARGUS mehrere Layer, die **GEV gar nicht kennt**
 (Asteroiden, Kometen, Tiefraum-Sonden, Weltraumschrott, Weltraumwetter,
 Vulkane, Luftqualität, Kraftstoffreserven, Lage/GDELT, Pattern-of-Life,
-Link-Analyse) – siehe Abschnitt 4.
+Link-Analyse, Strahlungsmessnetz, Tsunami-Warnungen) – siehe Abschnitt 4.
 
-**Wichtiger Hinweis zum Stand von `main`:** Der lokale Checkout, in dem
-dieser Task läuft, ist Teil eines gemeinsam genutzten Arbeitsbaums, in dem
-mehrere Agenten parallel an offenen Branches arbeiten. Der lokale `main`
-lag beim Schreiben dieses Dokuments 3 Commits **hinter** `origin/main` (u. a.
-fehlten dort bereits gemergte Layer wie Asteroiden/Kometen/Weltraumwetter)
-und enthielt umgekehrt 3 Commits, die **noch nicht** auf `origin/main`
-gemerged waren (Regenradar WEB-67, Leihräder WEB-70, Kamera-Sichtfeld-Kegel
-WEB-72 – vermutlich offene PRs). Alle Aussagen unten beziehen sich auf
-**`origin/main`**, den tatsächlich gemergten Stand, nicht auf den lokalen
-Checkout. Die drei genannten Features sind daher unten als **„fehlt (PR
-noch offen, nicht in `origin/main` gemerged)"** markiert, obwohl der Code
-dafür im Repo an anderer Stelle bereits existiert.
+> **Lesehinweis:** Alle Aussagen beziehen sich auf **`origin/main`**, den
+> tatsächlich gemergten Stand. Der lokale Checkout dieses Arbeitsbaums
+> wird von mehreren Agenten parallel genutzt und liegt regelmäßig hinter
+> `origin/main`; er ist als Grundlage für diesen Vergleich nicht geeignet.
 
 ## 1. Architektur im Vergleich
 
@@ -50,28 +53,28 @@ Spalten: **Status** (✅ vorhanden / 🟡 teilweise / ❌ fehlt) ·
 | Feature (GEV) | Status | Datenquelle (ARGUS) | Schlüssel | Kostenrisiko | Datei(en) |
 |---|---|---|---|---|---|
 | Live-Flugzeuge (GEV: 11.000+, OpenSky+adsb.lol) | 🟡 teilweise | OpenSky, adsb.lol, optional FR24 | optional (mehr Kontingent/FR24) | FR24 kostenpflichtig, Rest kostenlos | `js/layers/AircraftLayer.js`, `js/flightData.js`, `server/flightProviders.mjs` — Begründung: funktional gleich (live, Koppelnavigation), aber Objektzahl clientseitig gedeckelt (keine 11.000 gleichzeitig) |
-| Militärflüge amber-markiert | ❌ fehlt | — | — | — | Teil-Infrastruktur vorhanden: `server/flightProviders.mjs` enthält bereits eine Funktion, die ADS-B-Militärflüge mit `military: true` markiert, ist aber **nirgends verdrahtet** (kein Server-Route, kein Layer, kein UI-Toggle) |
+| Militärflüge amber-markiert | ✅ vorhanden | adsb.lol (weltweiter Mil-Feed) | nein | kostenlos | Eigener Layer `militaryAircraft` (WEB-90): zweite `AircraftLayer`-Instanz in Bernstein `#fbbf24` über `/api/flights/military`, ohne Bounding-Box und ohne Demo-Rückfall, dedupliziert gegen den Zivil-Layer |
 | Live-Schiffe (AIS) | ✅ vorhanden | AISStream | ja (kostenlos) | kostenlos | `js/layers/ShipLayer.js`, `js/shipData.js`, `server/aisStream.mjs` |
 | Satelliten (GEV: 838-Katalog, SGP4, Orbit-Ringe) | 🟡 teilweise | CelesTrak TLE + `satellite.js` (SGP4) | nein | kostenlos | `js/layers/SatelliteLayer.js` — Begründung: **echte SGP4-Propagation ist seit WEB-31 umgesetzt** (nicht mehr die alte Kreisbahn-Näherung), inkl. eigener Weltraumschrott-Gruppe; live bis zu 5 Gruppen × 60 Objekte (≈300) gegen GEV 838. Nur der **Demo-Fallback** ohne Netz nutzt noch 12 Objekte mit vereinfachter Kreisbahn (`data/satellites.json`) |
-| 3D-Flugzeugmodelle je Klasse (787, ATR-72, Citation, Bell 206, MQ-9) | ❌ fehlt | — | — | — | nur Icon/Glyph in `js/layers/AircraftLayer.js`; `js/cockpit.js` zeigt Kamerafahrt, aber kein Modellwechsel beim Heranzoomen |
+| 3D-Flugzeugmodelle je Klasse (787, ATR-72, Citation, Bell 206, MQ-9) | ✅ vorhanden | clientseitig (glTF über CDN) | nein | kostenlos | `js/aircraftModels.js` — dieselben fünf Klassen wie GEV, Glyph→Modell-Wechsel ab Zoomschwelle; alle anderen Typen bleiben Glyph |
 
 ### 2.2 Infrastruktur & feste Objekte
 
 | Feature (GEV) | Status | Datenquelle (ARGUS) | Schlüssel | Kostenrisiko | Datei(en) |
 |---|---|---|---|---|---|
-| Rechenzentren (GEV: 4.351) | 🟡 teilweise | handkuratiert | nein | kostenlos | `data/infrastructure.json` (Kategorie `datacenter`) — Begründung: 5 Objekte gegen 4.351, gleiche Darstellung (Punkt + Kategorie-Icon), aber keine Massendaten-Quelle angebunden |
-| Staudämme (GEV: 704) | 🟡 teilweise | handkuratiert | nein | kostenlos | `data/infrastructure.json` (Kategorie `dam`) — 4 Objekte gegen 704 |
-| Unterseekabel (GEV: 712 Trassen) | 🟡 teilweise | handkuratiert, vereinfachte Geodäten | nein | kostenlos | `data/cables.json`, `js/layers/CableLayer.js` — 16 Trassen gegen 712, aber Kernfunktion (Linienzug auf dem Globus) identisch |
-| Militär-Standorte (OSM-Community-Mapping) | ❌ fehlt | — | — | — | – |
-| ALPR-Kamera-Standorte (OSM-Tags) | ❌ fehlt | — | — | — | – (siehe auch Abschnitt 5 – ethisch sensibel, bewusste Zurückhaltung empfohlen) |
+| Rechenzentren (GEV: 4.351) | ✅ vorhanden | OpenStreetMap via Overpass (ODbL) | nein | kostenlos | `data/datacenters.json` mit **4.813** Objekten (WEB-142), eingecheckt, mit Clustering — damit über GEV-Niveau |
+| Staudämme (GEV: 704) | ✅ vorhanden | OpenStreetMap via Overpass (ODbL) | nein | kostenlos | `data/dams.json` mit **16.630** Objekten (WEB-142) — enthält allerdings auch Kleinstwehre, Nachfilterung über Wikidata offen (WEB-151) |
+| Unterseekabel (GEV: 712 Trassen) | 🟡 teilweise | handkuratiert + OpenStreetMap (ODbL) | nein | kostenlos | `data/cables.json` (16) + `data/cables-osm.json` (195) = 211 Trassen gegen 712. Bewusst **nicht** TeleGeography, dessen Submarine Cable Map CC BY-NC-SA 3.0 (nicht-kommerziell) ist und nicht zur Lizenzlage des Projekts passt |
+| Militär-Standorte (OSM-Community-Mapping) | ❌ fehlt | — | — | — | – (einzige verbleibende Infrastruktur-Lücke gegenüber GEV) |
+| ALPR-Kamera-Standorte (OSM-Tags) | ✅ vorhanden | DeFlock/OSM über `/api/alpr` | nein | kostenlos | `js/layers/ALPRLayer.js` (WEB-99) — zeigt **nur Standorte und Gerätetags**, Feld-Whitelist im Server. Die frühere Zurückhaltung wurde revidiert, Begründung in Abschnitt 5 |
 
 ### 2.3 Verkehr & Mobilität
 
 | Feature (GEV) | Status | Datenquelle (ARGUS) | Schlüssel | Kostenrisiko | Datei(en) |
 |---|---|---|---|---|---|
-| Verkehrssimulation (OSM-Fahrzeuge + TomTom-Live-Stauwerte) | ❌ fehlt | — | — | — | – |
-| ÖPNV live (Bus/Tram/Metro/Fähre, GTFS-Realtime) | ❌ fehlt | — | — | — | – |
-| Leihräder/E-Scooter (GBFS) | ❌ fehlt (PR noch offen, nicht in `origin/main` gemerged) | GBFS (9 Systeme handkuratiert) | nein | kostenlos | Code existiert als `js/layers/BikeShareLayer.js` **auf unmergtem lokalem Branch** (WEB-70) — sobald gemerged: ✅ vorhanden |
+| Verkehrssimulation (OSM-Fahrzeuge + TomTom-Live-Stauwerte) | ✅ vorhanden | OSM-Simulation, TomTom optional | optional (TomTom) | TomTom mit Tagesbudget gedeckelt (`TOMTOM_DAILY_BUDGET`) | `js/layers/TrafficLayer.js`, `/api/traffic/flow` (WEB-93) |
+| ÖPNV live (Bus/Tram/Metro/Fähre, GTFS-Realtime) | ✅ vorhanden | GTFS-Realtime ausgewählter Städte | optional (TfL) | kostenlos | `js/layers/TransitLayer.js`, `/api/transit/` (WEB-94) — Protobuf wird mit eigenem Decoder gelesen (`server/gtfsRealtime.mjs`), um die npm-Freiheit zu halten |
+| Leihräder/E-Scooter (GBFS) | ✅ vorhanden | GBFS (9 Systeme handkuratiert) | nein | kostenlos | `js/layers/BikeShareLayer.js`, `data/bikeshare-systems.json` (WEB-70) |
 | Routenplanung (Fuß/Rad/Auto) | ✅ vorhanden | OSRM (FOSSGIS-Demo-Server) | nein | kostenlos | `js/routeTool.js`, `js/drawToolsPanel.js` |
 
 ### 2.4 Kameras & Beobachtung
@@ -80,8 +83,8 @@ Spalten: **Status** (✅ vorhanden / 🟡 teilweise / ❌ fehlt) ·
 |---|---|---|---|---|---|
 | CCTV-Mesh (GEV: ~3.900, 11 Regionen) | 🟡 teilweise | TfL London, Caltrans, Austin + eigene Kameras | nein | kostenlos | `js/layers/CameraLayer.js`, `server/dataProxies.mjs`, `server/cameraProxy.mjs` — Begründung: 17 eigene + Katalog-Kameras aus 3 Regionen gegen 11 Regionen/~3.900 bei GEV; Proxy-Härtung (SSRF-Schutz, Allowlist) ist bereits auf GEV-Niveau |
 | Allsky-Kameras weltweit | ✅ vorhanden (ARGUS-exklusiv, kein GEV-Äquivalent) | handkuratiert | nein | kostenlos | `js/layers/AllskyLayer.js`, `data/allsky-cameras.json` |
-| Street-Level (Mapillary + Viewer + FOLLOW-Modus) | ❌ fehlt | — | — | — | – |
-| Kamera-Sichtfeld (Viewshed) | ❌ fehlt (PR noch offen, nicht in `origin/main` gemerged) | rein geometrisch, aus Kameraposition/Blickrichtung | nein | kostenlos | Code existiert als `js/cameraViewshed.js` **auf unmergtem lokalem Branch** (WEB-72) — sobald gemerged: ✅ vorhanden |
+| Street-Level (Mapillary + Viewer + FOLLOW-Modus) | ✅ vorhanden | Mapillary über Server-Proxy | ja (kostenlos) | kostenlos | `js/layers/StreetLevelLayer.js`, `js/streetLevelPanel.js` (WEB-95) — Abdeckungslinien + Bildkegel; der Token geht nie in `config.js`, der Betrachter holt ihn einmalig über `/api/mapillary/token` |
+| Kamera-Sichtfeld (Viewshed) | ✅ vorhanden | rein geometrisch, aus Kameraposition/Blickrichtung | nein | kostenlos | `js/cameraViewshed.js` (WEB-72) — Sektor aus `heading`/`fovDegrees`/`rangeMeters`, derzeit bei 3 der 17 Kameras gesetzt. Keine Geländeverschattung |
 
 ### 2.5 Ereignisse & Umwelt
 
@@ -90,8 +93,8 @@ Spalten: **Status** (✅ vorhanden / 🟡 teilweise / ❌ fehlt) ·
 | Erdbeben (24 h) | ✅ vorhanden | USGS | nein | kostenlos | `js/layers/EarthquakeLayer.js` |
 | Aktive Brände (24 h) | ✅ vorhanden | NASA FIRMS | ja (kostenlos) | kostenlos | `js/layers/FireLayer.js` |
 | Raketenstarts (30 Tage) | ✅ vorhanden | Launch Library 2 | nein (mehr Kontingent optional) | kostenlos | `js/layers/LaunchLayer.js` |
-| Wind (animiertes Vorhersagefeld, NOAA GFS/ECMWF) | 🟡 teilweise | Open-Meteo (kuratierte Städtepunkte) | nein | kostenlos | `js/layers/WeatherLayer.js` — Begründung: Punktdaten je Stadt statt flächendeckendes animiertes Windfeld |
-| Regenradar / Satellitenwolken / Blitzdichte (Timeline) | ❌ fehlt (PR noch offen, nicht in `origin/main` gemerged) | RainViewer | nein | kostenlos | Code existiert als `js/layers/RadarLayer.js` **auf unmergtem lokalem Branch** (WEB-67), deckt nur Regenradar ab (kein Wolken-/Blitz-Layer) — sobald gemerged: 🟡 teilweise |
+| Wind (animiertes Vorhersagefeld, NOAA GFS/ECMWF) | 🟡 teilweise | Open-Meteo (Städtepunkte + 15°-Raster) | nein | kostenlos | `js/layers/WeatherLayer.js` (40 kuratierte Städte) und `js/layers/WorldWeatherLayer.js` (flächiges 15°-Gradnetz, 264 Zellen, WEB-102). Weiterhin **kein animiertes Windfeld**: Open-Meteo rechnet jede Rasterzelle als eigenen Abruf gegen das Kontingent, ein dichteres Raster sprengt den Fair-Use-Rahmen |
+| Regenradar / Satellitenwolken / Blitzdichte (Timeline) | 🟡 teilweise | RainViewer, NASA GIBS (GOES) | nein | kostenlos | `js/layers/RadarLayer.js` (Regenradar mit Zeitschieber, WEB-67) und `js/layers/GoesCloudLayer.js` (Infrarot-Wolken GOES East/West). **Blitzdichte fehlt weiterhin** — Quelle verifiziert, Aufwand groß, liegt als WEB-131 im `backlog` |
 | Tropische Wirbelstürme (Vorhersagekegel) | ✅ vorhanden | NOAA National Hurricane Center | nein | kostenlos | `js/layers/CycloneLayer.js` |
 | Cockpit-Wettermodus (volumetrische Wolken) | ❌ fehlt | — | — | — | – |
 
@@ -104,7 +107,7 @@ Spalten: **Status** (✅ vorhanden / 🟡 teilweise / ❌ fehlt) ·
 | Erkennungs-Overlay (Bounding Boxes) | ✅ vorhanden | clientseitig, aus geladenen Layer-Objekten | — | kostenlos | `js/hud.js` (`TacticalHUD`) — rein dekorativ auf Basis bereits geladener Objektdaten, keine echte Bilderkennung (wie bei GEV) |
 | Taktisches HUD (Telemetrie-Einblendung) | ✅ vorhanden | wie oben | — | kostenlos | `js/hud.js` — in ARGUS mit Erkennungs-Overlay zu einer Komponente zusammengefasst |
 | Zeichnen/Whiteboard (Fläche/Linie/Pin) | 🟡 teilweise | clientseitig | — | kostenlos | `js/drawTools.js`, `js/drawToolsPanel.js` — Begründung: manuelle Werkzeuge vollständig vorhanden (Freihand, Grenzen, Distanzmessung), aber **keine Sprachsteuerung** des Whiteboards wie bei GEV |
-| Szenen-Regisseur (Kamerafahrten aufzeichnen/teilen) | ❌ fehlt | — | — | — | – |
+| Szenen-Regisseur (Kamerafahrten aufzeichnen/teilen) | ✅ vorhanden | clientseitig | — | kostenlos | `js/sceneDirector.js`, `js/sceneDirectorPanel.js` — Stationen aufnehmen, Reihenfolge/Haltedauer bearbeiten, weich abspielen; Speichern/Teilen über denselben Share-Link-Mechanismus. Eine OSRM-Route lässt sich als Flythrough abspielen |
 | Share-Links (Kamera+Stil+Layer+Ziel in URL) | ✅ vorhanden | clientseitig | — | kostenlos | `js/shareLink.js` |
 | Sprachsteuerung (Kamera/Layer per Zuruf, 30+ Voice-Tools) | ❌ fehlt | — | — | kostenpflichtig bei Umsetzung (OpenAI Realtime) | ARGUS hat nur Diktat/Vorlesen für den Text-Chat (`js/ai/voice.js`, Browser Web-Speech-API) – keine Kamera-/Layersteuerung per Sprache |
 | KI-HUD-Kurzfassung (5-Wort-Szenenbeschreibung) | ❌ fehlt | — | — | kostenpflichtig bei Umsetzung | ARGUS hat Objekt-Kontext für den Chat (`ai/locationContext.js`), aber keine automatische HUD-Kurzfassung |
@@ -112,41 +115,47 @@ Spalten: **Status** (✅ vorhanden / 🟡 teilweise / ❌ fehlt) ·
 
 ## 3. Priorisierte Vorschläge (fortgeschrieben)
 
+> **Stand 05.11.2026 (WEB-164):** Tier 1 und Tier 2 sind vollständig
+> abgeschlossen, Tier 3 bis auf die beiden Sprach-Punkte. Die Abschnitte
+> unten sind entsprechend fortgeschrieben.
+
 ### Tier 1 – abgeschlossen
-Alle fünf ursprünglichen Tier-1-Punkte (Share-Links, Sensor-Stile,
-zusätzliche Infrastruktur-Kategorien, Setup-Diagnose, Kamera-Sichtfeld)
-sind umgesetzt bzw. – beim Sichtfeld – bereits codiert und wartet nur auf
-den Merge nach `origin/main`.
+Alle fünf ursprünglichen Punkte (Share-Links, Sensor-Stile, zusätzliche
+Infrastruktur-Kategorien, Setup-Diagnose, Kamera-Sichtfeld) liegen auf
+`origin/main`; das Kamera-Sichtfeld kam mit WEB-72 dazu.
 
-### Tier 2 – zu ca. 70–80 % erledigt
-Erledigt: Routenplanung (OSRM), Radio, Wetter (kuratiert statt
-flächendeckend). Noch unmerged, aber vorhanden: Leihräder (WEB-70),
-Regenradar (WEB-67). **Offen und nicht begonnen:**
-1. **ÖPNV-Layer**: GTFS-Realtime ausgewählter Städte, meist ohne
-   Anmeldung.
-2. **Verkehr**: OSM-Simulation ohne Schlüssel, TomTom optional für
-   Live-Stauwerte (freies Kontingent).
-3. **Satelliten-Katalogtiefe erhöhen**: mehr CelesTrak-Gruppen/höheres
-   `maxPerGroup`, um näher an die 838 von GEV heranzukommen.
-4. **Mehr Objekte in `infrastructure.json`/`cables.json`**: Rechenzentren,
-   Dämme, Kabel sind als Kategorie vorhanden, aber zahlenmäßig weit von
-   GEV entfernt – ließe sich durch Einbindung öffentlicher Datensätze
-   (z. B. OSM-Overpass-Abfragen) ohne neuen Schlüssel ausbauen.
+### Tier 2 – abgeschlossen
 
-### Tier 3 – größerer Aufwand und/oder laufende Kosten
-5. **Sprachagent (OpenAI Realtime API)**: weiterhin nicht umgesetzt,
-   ergänzt den bestehenden Claude-Text-Assistenten um Sprachsteuerung.
-   Kostenpflichtig nach Nutzungsminuten – braucht weiterhin eine bewusste
-   Freigabe wegen laufender Kosten.
-6. **Szenen-Regisseur**: Aufzeichnen/Abspielen von Kamerafahrten.
-7. **3D-Flugzeugmodelle je Klasse**: Modelle laden und Glyph→Modell-
-   Wechsel beim Heranzoomen, analog zum bestehenden Cockpit-Code.
-8. **Sprachsteuerung fürs Zeichnen/Whiteboard**: baut auf dem bereits
-   vorhandenen `drawTools.js` auf.
-9. **Militärflug-Kennzeichnung aktivieren**: Serverfunktion existiert
-   bereits (`server/flightProviders.mjs`), fehlt nur die Verdrahtung
-   (Route + Layer-Flag + UI-Farbe) – geringerer Aufwand als die übrigen
-   Tier-3-Punkte, aber bewusst zurückgestellt, bis Bedarf klar ist.
+| Punkt | Umgesetzt als |
+|---|---|
+| Routenplanung (OSRM) | `js/routeTool.js` (WEB-71) |
+| Radio, Wetter | `RadioLayer.js`, `WeatherLayer.js` |
+| Leihräder | `BikeShareLayer.js` über GBFS (WEB-70) |
+| Regenradar | `RadarLayer.js` über RainViewer (WEB-67) |
+| ÖPNV-Layer | `TransitLayer.js`, GTFS-Realtime mit eigenem Protobuf-Decoder (WEB-94) |
+| Verkehr | `TrafficLayer.js`, TomTom optional für Live-Werte (WEB-93) |
+| Satelliten-Katalogtiefe | mehr CelesTrak-Gruppen (WEB-89) |
+| Infrastruktur in Masse | 4.813 Rechenzentren, 16.630 Dämme, 195 OSM-Seekabel aus Overpass, eingecheckt (WEB-142) |
+
+Beim letzten Punkt ist ARGUS damit über das GEV-Niveau hinaus, nicht nur
+gleichauf. Offene Restarbeit: WEB-151 filtert die Dammdaten über Wikidata
+nach, weil unter den 16.630 Treffern auch Kleinstwehre sind.
+
+### Tier 3 – teilweise erledigt, Rest braucht Freigabe
+
+Erledigt:
+- **Szenen-Regisseur** – `js/sceneDirector.js` (v2.8).
+- **3D-Flugzeugmodelle je Klasse** – `js/aircraftModels.js`, fünf Klassen
+  mit Glyph→Modell-Wechsel ab Zoomschwelle (v2.8).
+- **Militärflug-Kennzeichnung** – eigener Layer in Bernstein, weltweiter
+  adsb.lol-Feed, dedupliziert gegen den Zivil-Layer (WEB-90).
+
+Weiterhin offen, beide wegen laufender Kosten bewusst zurückgestellt:
+- **Sprachagent (OpenAI Realtime API)** – ergänzt den bestehenden
+  Claude-Text-Assistenten um Sprachsteuerung. Kostenpflichtig nach
+  Nutzungsminuten, braucht eine explizite Freigabe.
+- **Sprachsteuerung fürs Zeichnen/Whiteboard** – baut auf `drawTools.js`
+  auf und hängt an derselben Freigabe.
 
 ## 4. ARGUS-exklusive Layer ohne GEV-Äquivalent
 
@@ -161,9 +170,18 @@ globale Lage/Ereignisse (GDELT, `EventLayer.js`), Pattern-of-Life-Heatmap
 (`HeatmapLayer.js`), Link-Analyse/Netzwerk-Graph (`linkAnalysis.js`,
 `graphView.js`), Objekt-Dossier-Export, Anomalie-Alarme
 (`anomalyAlerts.js`), Zeitleisten-Replay (`historyReplay.js`,
-`timeline.js`) und Watchlist (`watchlist.js`). Diese Breite an
-Palantir-artigen Analyse-Werkzeugen ist eine Stärke, die bei der weiteren
-Priorisierung von GEV-Lücken nicht aus dem Blick geraten sollte.
+`timeline.js`) und Watchlist (`watchlist.js`).
+
+Seit der letzten Fortschreibung dazugekommen: Strahlungsmessnetz
+(Safecast, `RadiationLayer.js`, WEB-154), Tsunami-Warnungen (NOAA
+PTWC/NTWC, `TsunamiAlertLayer.js`, WEB-155), Kontakte-Roster
+(`contactsRoster.js`), Zeichnen & Messen mit GeoJSON-Export
+(`drawTools.js`), sichtbarer Layer-Status (WEB-159) sowie
+Sitzungs-Autosave und PWA-Offlinefähigkeit (WEB-161, WEB-60).
+
+Diese Breite an Palantir-artigen Analyse-Werkzeugen ist eine Stärke, die
+bei der weiteren Priorisierung von GEV-Lücken nicht aus dem Blick geraten
+sollte.
 
 ## 5. Bewusst nicht übernehmen
 
@@ -175,12 +193,20 @@ Priorisierung von GEV-Lücken nicht aus dem Blick geraten sollte.
   Such-/Trackingziel explizit ab; ARGUS zieht dieselbe Grenze. Das
   Erkennungs-Overlay (`js/hud.js`) ist rein dekorativ (keine echte
   Bilderkennung) und bleibt das auch.
-- **ALPR-Kamera-Standorte (Kennzeichen-Scanner)**: GEV bindet
-  OSM-getaggte ALPR-Standorte ein. Auch wenn nur Standorte und keine
-  Kennzeichen-Daten gezeigt werden, passt ein Layer, der gezielt
-  Überwachungsinfrastruktur kartiert, nicht zum in `AGENTS.md`/Issue-
-  Vorgaben verankerten Verzicht auf Personen-Tracking – bewusst nicht
-  übernehmen.
+- ~~**ALPR-Kamera-Standorte (Kennzeichen-Scanner)**~~ – **diese
+  Entscheidung wurde später revidiert.** Der Layer ist mit WEB-99 als
+  `js/layers/ALPRLayer.js` umgesetzt. Ausschlaggebend war, dass das
+  Kartieren von Überwachungsinfrastruktur dem Verzicht auf
+  Personen-Tracking nicht widerspricht, sondern ihn gerade stützt: Die
+  Quelle ist die DeFlock-Community, die Kennzeichenleser als gewöhnliche
+  OSM-Knoten erfasst (`man_made=surveillance` +
+  `surveillance:type=ALPR/ANPR`).
+
+  Die Datenschutzgrenze ist im Code verankert, nicht nur im Dokument:
+  OSM führt an diesen Knoten grundsätzlich keine Kennzeichen-, Fahrzeug-
+  oder Personendaten, und `/api/alpr` reicht zusätzlich nur eine feste
+  Whitelist an Feldern durch (Standort, Hersteller, Modell,
+  Blickrichtung). Der Layer zeigt **Geräte, keine Messungen**.
 - **Sprachagent (OpenAI Realtime API)**: nicht grundsätzlich
   ausgeschlossen, aber laufende Kosten nach Nutzungsminuten erfordern
   eine explizite Freigabe, bevor das umgesetzt wird (siehe Tier 3).
@@ -188,25 +214,26 @@ Priorisierung von GEV-Lücken nicht aus dem Blick geraten sollte.
 
 ## 6. Empfohlene Reihenfolge
 
-1. Die drei unmergten Branches (Regenradar WEB-67, Leihräder WEB-70,
-   Kamera-Sichtfeld WEB-72) nach `origin/main` bringen – das hebt den
-   Tier-2-Stand von „zu 70–80 % erledigt" auf „fast vollständig", ohne
-   dass neuer Code nötig ist.
-2. ÖPNV und Verkehrssimulation (verbleibender Tier-2-Rest) – beide ohne
-   Schlüssel umsetzbar.
-3. Satelliten-/Infrastruktur-Objektzahlen erhöhen (mehr CelesTrak-Gruppen,
-   mehr Datensätze für Rechenzentren/Dämme/Kabel) – kein neuer Schlüssel,
-   nur Datenbeschaffung.
-4. Tier 3 erst nach expliziter Freigabe – insbesondere der Sprachagent,
-   weil er laufende Kosten verursacht.
+Die Punkte 1–3 der früheren Reihenfolge (unmergte Branches, ÖPNV/Verkehr,
+Objektzahlen erhöhen) sind abgearbeitet. Es bleibt:
+
+1. **WEB-151** – Dammdaten über Wikidata nachfiltern. Reine
+   Datenqualität, kein neuer Schlüssel, kein neuer Layer.
+2. **WEB-131** – Blitzdichte. Quelle ist verifiziert, der Aufwand aber
+   groß; liegt im `backlog`.
+3. **Tier 3 nur nach expliziter Freigabe** – die beiden Sprach-Punkte
+   verursachen laufende Kosten nach Nutzungsminuten.
+
+Der Feature-Abstand zu GEV ist damit geschlossen; die verbleibenden
+Punkte sind Nachbesserungen und bewusst zurückgestellte Kostenfragen.
 
 ## 7. Nächste Schritte
 
-1. Rückmeldung, ob die drei unmergten Tier-1/2-Branches zuerst
-   zusammengeführt werden sollen, bevor neue Tier-2-Arbeit (ÖPNV/Verkehr)
-   beginnt.
-2. Entscheidung einholen, ob die Militärflug-Kennzeichnung (serverseitig
-   bereits vorhanden) freigeschaltet werden soll.
+1. **Entscheidung zum Sprachagenten einholen** – der einzige inhaltlich
+   offene GEV-Punkt. Er braucht eine Freigabe wegen laufender Kosten
+   (OpenAI Realtime API, Abrechnung nach Nutzungsminuten), nicht wegen
+   des Aufwands.
+2. **WEB-151 einplanen**, damit die Dammdaten belastbar werden.
 3. Laufende Fortschreibung dieses Dokuments bei jedem GEV-Sync, analog
    zur bestehenden Doku-Konvention (echte Schlüssel nie im Repo, nur
    lokal in `.env`).
