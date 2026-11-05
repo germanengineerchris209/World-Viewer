@@ -1,6 +1,11 @@
-# World Viewer – Dokumentation (Stand: 18.10.2026, v2.8)
+# World Viewer – Dokumentation (Stand: 05.11.2026, v2.9)
 
 Aktueller Stand, Architektur und Erweiterungswege der Anwendung.
+
+> Beschreibt den Stand von `origin/main`. In WEB-164 vollständig gegen den
+> Code abgeglichen: Die Layer-Tabelle (1.2), der Architekturbaum (2) und die
+> Grenzen (5) sind aus `js/app.js`, `js/layerCategories.js` und
+> `server/keyRegistry.mjs` verifiziert, nicht von Hand fortgeschrieben.
 
 ## 1. Was die App kann
 
@@ -34,17 +39,81 @@ Viewer automatisch auf OpenStreetMap um, statt eine leere Kugel zu zeigen.
 
 ### 1.2 Layer
 
-| Layer | Objekte | Simulation |
-|---|---|---|
-| ✈️ Aircraft | live (bis 400) | echte Flugdaten, Koppelnavigation zwischen den Abrufen |
-| 🚢 Ships | live (bis 600) sonst 10 Demo | echte AIS-Daten (AISStream), Koppelnavigation zwischen den Abrufen |
-| 🛰️ Satellites | 12 | vereinfachte Kreisbahn inkl. Erdrotation |
-| 📷 Cameras | 12 eigene + bis 450 aus Katalogen | Livebild von der Originalseite |
-| 🏗️ Infrastructure | 16 | statisch, farbcodiert nach Kategorie |
-| 🌋 Erdbeben | live (USGS, 24 h) | Fläche nach Magnitude, Farbe nach Herdtiefe |
-| 🚀 Raketenstarts | live (30 Tage) | Farbe nach Betreiber |
-| 🔥 Brände | live (NASA FIRMS, 24 h) | Farbe und Größe nach Strahlungsleistung |
-| 📻 Radiosender | live (Radio Browser API, bis 300) | Audioplayer im Detailpanel statt Bild |
+**32 Layer**, in der Sidebar nach den sechs Kategorien aus
+`js/layerCategories.js` gruppiert. Die Reihenfolge unten entspricht den
+`layerManager.register()`-Aufrufen in `js/app.js`. Ein Layer ohne
+Kategorie-Eintrag landet automatisch unter „Werkzeuge", damit ein
+vergessener Eintrag die Konsole nie unsichtbar macht.
+
+**🚀 Bewegung (7)**
+
+| Layer | `id` | Quelle | Darstellung |
+|---|---|---|---|
+| ✈️ Aircraft | `aircraft` | `/api/flights` (OpenSky/FR24/adsb.lol) | live, Koppelnavigation zwischen den Abrufen; Demo-Rückfall ohne Server |
+| 🎖️ Militärflüge | `militaryAircraft` | `/api/flights/military` (adsb.lol) | bernsteinfarben, weltweiter Feed ohne Bounding-Box, kein Demo-Rückfall, dedupliziert gegen `aircraft` |
+| 🚢 Ships | `ships` | `/api/ships` (AISStream) | live mit Key, sonst 10 Demo-Schiffe; Koppelnavigation |
+| 🛰️ Satellites | `satellites` | `/api/celestrak/` + `satellite.js` | **echte SGP4-Bahnen** aus TLE-Daten, Umlaufbahn-Ring beim Anklicken |
+| 🚌 ÖPNV | `transit` | `/api/transit/` (GTFS-Realtime) | Fahrzeugpositionen, serverseitig aus Protobuf dekodiert |
+| 🚗 Verkehr | `traffic` | `/api/traffic/flow` (TomTom) | Verkehrsfluss-Geschwindigkeiten, nur mit TomTom-Key |
+| 🚲 Leihräder | `bikeshare` | `data/bikeshare-systems.json` + GBFS | Stationen mit freien Rädern/Plätzen |
+
+**📷 Kameras (4)**
+
+| Layer | `id` | Quelle | Darstellung |
+|---|---|---|---|
+| 📷 Cameras | `cameras` | `data/cameras.json` (17) + `/api/cctv` | Livebild von der Originalseite, mehrere Ansichten je Standort, optionaler Sichtfeld-Kegel |
+| 🌌 Allsky-Kameras | `allsky` | `data/allsky-cameras.json` (20) + `/api/allsky` | Himmelsaufnahmen von Observatorien |
+| 🪪 Kennzeichenleser (ALPR) | `alpr` | `/api/alpr` (DeFlock/OSM) | **nur Standorte**, kein Tracking und keine Kennzeichen |
+| 📸 Street-Level | `streetlevel` | `/api/mapillary/images` | Abdeckungslinien + Bildkegel, nur mit Mapillary-Key |
+
+**🏗️ Infrastruktur (4)**
+
+| Layer | `id` | Quelle | Darstellung |
+|---|---|---|---|
+| 🏗️ Infrastructure | `infrastructure` | `infrastructure.json` (24) + `datacenters.json` (4.813) + `dams.json` (16.630) | farbcodiert nach Kategorie, mit Clustering |
+| 🔌 Seekabel | `cables` | `cables.json` (16) + `cables-osm.json` (195) | Kabelverläufe als Polylinien |
+| 📻 Radiosender | `radio` | Radio Browser API (bis 300) | Audioplayer im Detailpanel statt Bild |
+| ⛽ Kraftstoffreserven | `fuelReserves` | `data/fuel-reserves.json` (20) | statisch, Füllstände im Detailpanel |
+
+**🚨 Ereignisse (8)**
+
+| Layer | `id` | Quelle | Darstellung |
+|---|---|---|---|
+| 🌋 Erdbeben | `earthquakes` | USGS (direkt, CORS) | Fläche nach Magnitude, Farbe nach Herdtiefe |
+| 🗻 Vulkane | `volcanoes` | `/api/volcanoes` (GVP) + `volcanoes.json` (438) | deutsche Bezeichnungen über `server/volcanoLabels.mjs` |
+| 🔥 Brände | `fires` | `/api/fires` (NASA FIRMS, 24 h) | Farbe und Größe nach Strahlungsleistung |
+| 🚀 Raketenstarts | `launches` | `/api/launches` (Launch Library 2) | Farbe nach Betreiber, mit Launch-Replay |
+| 📢 Ereignisse | `events` | `/api/events` (GDELT) | globale Nachrichtenlage, Symbol je Thema |
+| ☄️ Asteroiden | `asteroids` | `/api/asteroids` (NASA NeoWs) | Erdnahe Objekte mit Vorbeiflugdaten |
+| 🌠 Kometen | `comets` | `/api/comets` (JPL SSD) | Bahnen aus Orbitelementen |
+| 🌊 Tsunami-Warnungen | `tsunamiAlerts` | `/api/tsunami` (NOAA PTWC/NTWC) | aktive Warnungen, keyless |
+
+**🌦️ Wetter (8)**
+
+| Layer | `id` | Quelle | Darstellung |
+|---|---|---|---|
+| 🌦️ Wetter | `weather` | `weather-locations.json` (40) + Open-Meteo | Punktwerte für 40 Städte |
+| 📡 Niederschlagsradar | `radar` | RainViewer | Kachel-Overlay, letzte ~2 h mit Zeitschieber |
+| 🌫️ Luftqualität | `aqi` | `aqi-locations.json` (40) + Open-Meteo | AQI-Werte, farbcodiert |
+| ☢️ Strahlungsmessnetz | `radiation` | `/api/radiation` (Safecast) | Messwerte freiwilliger Sensoren |
+| 🌀 Wirbelstürme | `cyclones` | `/api/storms` + `/api/storms/cone` (NHC) | Zugbahn + Vorhersagekegel aus KMZ |
+| 🌌 Weltraumwetter | `spaceWeather` | NOAA SWPC | Kp-Index, Sonnenwind, Polarlicht-Wahrscheinlichkeit (OVATION-Gitter) |
+| 🛰️ GOES-Infrarot-Wolken | `goesClouds` | NASA GIBS (GOES East/West) | Kachel-Overlay, zwei Satelliten |
+| 🌡️ Weltwetter (Live) | `worldweather` | Open-Meteo, 15°-Raster (264 Zellen) | Gradnetz nach Temperatur gefärbt, inkl. Ozeanen; Schrittweite konfigurierbar |
+
+**🧰 Werkzeuge (1)**
+
+| Layer | `id` | Quelle | Darstellung |
+|---|---|---|---|
+| 🔥 Pattern-of-Life-Heatmap | `heatmap` | abgeleitet aus den aktiven Layern | Dichte-Heatmap, keine eigene Quelle |
+
+> **Massendatensätze liegen im Repo.** `datacenters.json` (4.813),
+> `dams.json` (16.630) und `cables-osm.json` (195) sind seit WEB-142
+> eingecheckt – ein frischer Checkout zeigt sie sofort. Neu erzeugen:
+> `npm run build:infrastructure-mass` (braucht Internet, dauert Minuten).
+
+Welche Layer ohne Schlüssel in welchem Umfang laufen, steht vollständig in
+**DATENQUELLEN.md**; die Kurzform zeigt das POWER-UP-Panel in der App.
 
 ### 1.3 Bilder zu jedem Objekt (neu in v2.0)
 
@@ -535,31 +604,216 @@ das Clustering gebaut wurde. Offene Restarbeit: WEB-151 erzeugt die
 Dammdaten mit einem Wikidata-Filter neu, weil 16.630 Treffer auch
 Kleinstwehre enthalten.
 
+### 1.20 Sichtbarer Layer-Status (neu in v2.9)
+
+Vorher landete jeder Ladefehler nur in der Browser-Konsole – für Nutzende
+war „Quelle kaputt" nicht von „gerade nichts los" zu unterscheiden, beides
+zeigte schlicht *0 Objekte*. Jetzt hat jeder Layer einen sichtbaren Zustand:
+**Laden / Fehler / leer / Schlüssel fehlt** (WEB-159).
+
+- Zustand als **Status-Punkt** direkt am Layer-Schalter, mit Zusatztext im
+  `title`-Attribut (`layer.status` + `layer.statusDetail` in `BaseLayer`).
+- Fehlgeschlagene und bewusst ausgelassene Quellen melden sich zusätzlich
+  als kurzlebiger Hinweis unten links (`js/statusToast.js`): kein Modal,
+  keine Blockade der Karte, Auto-Ausblenden nach 9 s (Fehler) bzw. 5 s
+  (Info), maximal 4 gleichzeitig, identische Meldungen innerhalb von 30 s
+  werden zusammengefasst.
+- „Schlüssel fehlt" ist bewusst ein eigener Zustand und kein Fehler – der
+  Layer ist dann nicht defekt, sondern nur nicht freigeschaltet.
+
+### 1.21 Zentrale Timer-Registrierung (neu in v2.9)
+
+Jeder Layer hielt früher seinen eigenen `setInterval` für das Nachladen.
+Bei 32 Layern liefen damit 32 unabhängige Timer weiter – auch für
+ausgeblendete Layer und auch in einem Hintergrund-Tab. Seit WEB-160 läuft
+das Polling über `LayerManager`/`BaseLayer`:
+
+- Ein Layer meldet sein Intervall über
+  `layerManager.registerTimer(layerId, name, intervalMs, callback)` an,
+  statt selbst ein `setInterval` zu starten. `name` erlaubt mehrere Timer
+  je Layer.
+- Der native Timer läuft **nur, wenn der Tab sichtbar und der Layer
+  eingeblendet ist** – sonst wird er angehalten, nicht nur ignoriert. Das
+  spart echte Abrufe bei Quellen, die pro Anfrage abrechnen (Open-Meteo
+  zählt z. B. jede Koordinate einzeln, nicht jeden HTTP-Aufruf).
+- Bei Rückkehr in den Tab gibt es sofort einen Nachlade-Tick, statt auf das
+  nächste Intervall zu warten – sonst stünden nach dem Wechsel veraltete
+  Positionen auf der Karte.
+- Alle 32 Layer sind umgestellt; `BaseLayer` kennt dafür
+  `this.layerManager`, gesetzt von `LayerManager.register()`.
+
+### 1.22 Sitzung sichern und wiederherstellen (neu in v2.9)
+
+Ein Reload (F5) brachte früher die Standardansicht zurück – bei 32 Layern
+hieß das, sich die Auswahl von Hand neu zusammenzuklicken. Seit WEB-161
+speichert `js/session.js` **aktive Layer, Kameraposition und offene Panels**
+unter `wv-session-v1` in `localStorage` (entprellt, 1,5 s nach der letzten
+Änderung).
+
+Kodiert wird mit derselben Logik wie bei den Share-Links
+(`js/shareLink.js`), nur ohne URL-/Base64-Umweg, weil `localStorage`
+normales JSON kann. **Ein Share-Link in der Adresszeile hat beim Start
+immer Vorrang** vor der gespeicherten Sitzung – sonst würde ein geteilter
+Link beim Empfänger von dessen eigener letzter Sitzung überschrieben.
+
+### 1.23 Routenplanung Fuß/Rad/Auto (neu in v2.9)
+
+Start- und Zielpunkt je per Klick auf den Globus, danach wird die Route
+automatisch beim öffentlichen **OSRM-Demo-Server** abgefragt (WEB-71,
+`js/routeTool.js`). Ergebnis ist Linie + Distanz/Dauer, **keine**
+Turn-by-Turn-Navigation. Eine berechnete Strecke lässt sich als Flythrough
+im Szenen-Regisseur abspielen.
+
+Bewusst ein eigenes Modul neben den lokalen Zeichen-/Mess-Werkzeugen
+(`js/drawTools.js`), weil es als einziges davon einen externen Dienst
+braucht. Der Demo-Server ist laut Betreiber nur für Tests/geringes Volumen
+gedacht und hat keine SLA-Garantie – der Hinweis steht sichtbar im
+Sidebar-Abschnitt.
+
+### 1.24 Kamera-Sichtfeld-Kegel (neu in v2.9)
+
+Beim Öffnen des Detailpanels einer Kamera mit hinterlegtem `heading` wird
+ein Sektor aus Blickrichtung, Öffnungswinkel und Reichweite auf den Globus
+gezeichnet (WEB-72, `js/cameraViewshed.js`) – technisch analog zu den
+Geofence-Kreisen, nur als Kreissektor statt Vollkreis.
+
+Keine neue Datenquelle: `heading`, `fovDegrees` (Standard 60°) und
+`rangeMeters` (Standard 300 m) sind optionale Felder in
+`data/cameras.json`, derzeit bei 3 der 17 Kameras gesetzt. Fehlt `heading`,
+bleibt die Kamera ohne Kegel.
+
+> **Geometrie, keine Sichtbarkeitsanalyse.** Der Kegel berücksichtigt kein
+> Gelände und keine Gebäude – ein Hügel in der Blickachse wird nicht
+> abgeschattet.
+
+### 1.25 Niederschlagsradar-Overlay (neu in v2.9)
+
+Flächendeckende Radaranimation der letzten ~2 Stunden als Cesium-
+`ImageryLayer` über RainViewer (WEB-67, `js/layers/RadarLayer.js`), mit
+Zeitschieberegler und Play/Pause in der Sidebar. Ergänzt den punktweisen
+`weather`-Layer, ersetzt ihn nicht – schlägt der Radarabruf fehl, bleibt
+`weather` unberührt nutzbar.
+
+### 1.26 Leihräder/E-Scooter (neu in v2.9)
+
+Stationen mit freien Rädern und Plätzen aus **GBFS**-Feeds (WEB-70,
+`js/layers/BikeShareLayer.js`), der offenen Standardschnittstelle der
+Sharing-Anbieter. Die abgefragten Systeme stehen in
+`data/bikeshare-systems.json` (9 Einträge); kein Schlüssel nötig.
+
+### 1.27 Strahlungsmessnetz und Tsunami-Warnungen (neu in v2.9)
+
+Zwei keyless Layer aus der R4-Recherche:
+
+- **☢️ Strahlungsmessnetz** (WEB-154) – Messwerte freiwilliger Sensoren
+  über die Safecast-API (CC0), serverseitig über `/api/radiation`.
+- **🌊 Tsunami-Warnungen** (WEB-155) – aktive Warnungen aus den
+  Atom-Feeds von NOAA PTWC und NTWC, über `/api/tsunami`.
+
+### 1.28 Offline-fähige PWA (neu in v2.9)
+
+Die App ist installierbar und startet offline (WEB-60, Phase 1):
+`manifest.json` plus ein Service Worker (`sw.js`) mit
+**stale-while-revalidate** für alle Assets desselben Origin. Neue
+`js/`-Module landen damit beim ersten Online-Besuch automatisch im Cache,
+ohne dass eine Dateiliste gepflegt werden muss.
+
+Bewusst ausgenommen: `/api/*` (Live-Daten werden nie aus dem Cache
+beantwortet) und alles von fremden Origins (Cesium-/vis-network-CDN,
+Kamera- und Flugdaten-Proxys). Die Kern-Shell wird einzeln statt per
+`addAll()` vorab geladen, damit eine fehlende Datei – etwa das lokal
+anzulegende `config.js` – die Installation nicht abbricht.
+
+### 1.29 Weitere Analysewerkzeuge
+
+Vor v2.9 entstanden, in dieser Datei bisher nicht beschrieben:
+
+- **✏️ Zeichnen & Messen** (`js/drawTools.js`) – Punkte, Freihand-Linien,
+  Grenzen und Distanzmessungen rein mit Cesium-Bordmitteln; Geometrien
+  liegen in `localStorage` und lassen sich als GeoJSON exportieren.
+- **🕸️ Graph-Ansicht** (`js/graphView.js`) – zeigt das ausgewählte Objekt
+  und seine Verknüpfungen als interaktiven Node-Graph statt als Liste.
+  Nutzt vis-network (CDN, Apache-2.0), rein clientseitig.
+- **🕰️ Zeitleisten-Replay** (`js/historyReplay.js`) – blendet Erdbeben,
+  Brände und Raketenstarts nach ihrem echten Zeitstempel nacheinander ein,
+  mit Play/Pause/Scrub. Läuft unabhängig von der Simulations-Timeline
+  (`js/timeline.js`), die den Zeitraffer für bewegte Objekte steuert.
+
 ## 2. Architektur
 
 ```
 index.html ──lädt──► config.js (global) ──dann──► js/app.js (ES6-Modul)
+                     sw.js + manifest.json   Service Worker / PWA-Shell
 
 app.js
  ├── WorldViewer (viewer.js)
  │     └── BasemapManager (basemaps.js)   Karten, Gelände, 3D-Gebäude
- ├── LayerManager (layerManager.js)
+ ├── LayerManager (layerManager.js)        32 Layer + zentrale Timer (WEB-160)
  │     ├── AircraftLayer                  Live-Daten + Koppelnavigation
  │     │     ├── flightData.js            Abruf über /api/flights
- │     │     └── aircraftTypes.js         ICAO-Code → Name, Wikipedia
+ │     │     ├── aircraftTypes.js         ICAO-Code → Name, Wikipedia
+ │     │     └── aircraftModels.js        3D-Modelle ab Zoomschwelle
+ │     ├── SatelliteLayer                 CelesTrak-TLE + SGP4 (satellite.js)
+ │     ├── LaunchLayer → launchAscent.js  rekonstruierte Aufstiegsbahn
+ │     ├── ShipLayer → shipData.js        AIS über /api/ships
+ │     ├── CameraLayer → cameraViewshed.js  Sichtfeld-Kegel (WEB-72)
+ │     ├── StreetLevelLayer → streetLevelPanel.js   Mapillary
+ │     ├── DeepSpace (deepSpace.js), cometOrbits.js
  │     └── weitere Layer (js/layers/*)    je Layer eine CustomDataSource
  │           └── dataManager.js           JSON, Datenformat, Geo-Mathematik
- ├── UI (ui.js)
+ ├── UI (ui.js)                           Sidebar, Detailpanel, Status-Punkte
+ │     ├── layerCategories.js       Kategorie-Zuordnung der Layer-Konsole
+ │     ├── panelDock.js             andockbare Panel-Rail rechts
+ │     ├── keyStatusPanel.js        POWER-UP-Panel ← /api/keys
+ │     ├── keyboardShortcuts.js  +  keyboardReference.js  (Taste „?")
+ │     ├── statusToast.js          Lade-/Fehlerhinweise unten links (WEB-159)
+ │     ├── hud.js, cockpit.js, sensorStyles.js, fpsCounter.js
  │     ├── imageProvider.js → illustrations.js
  │     └── streamPlayer.js          Livebild, ggf. über /api/camera
- ├── Search (search.js)
- ├── Timeline (timeline.js)
- ├── Watchlist (watchlist.js) + WatchlistPanel (watchlistPanel.js)
- │     Geofence-Zonen, Ein-/Austritts-Alarme, localStorage
+ ├── Analyse & Werkzeuge
+ │     ├── search.js               Objekte, Städte, Koordinaten
+ │     ├── timeline.js             Zeitraffer der Simulation
+ │     ├── historyReplay.js        echte historische Ereignisse
+ │     ├── watchlist.js + watchlistPanel.js     Geofence-Alarme
+ │     ├── linkAnalysis.js + graphView.js       Verknüpfungen, Node-Graph
+ │     ├── drawTools.js + drawToolsPanel.js     Zeichnen & Messen
+ │     ├── routeTool.js            Route Fuß/Rad/Auto über OSRM (WEB-71)
+ │     ├── contactsRoster.js + contactsPanel.js Objekte im Radius
+ │     ├── sceneDirector.js + sceneDirectorPanel.js  Kamerafahrten
+ │     ├── anomalyAlerts.js, dossier.js, heatmap (layers/)
+ │     └── shareLink.js  ←→  session.js   Teilen bzw. Autosave (WEB-161)
  └── Assistant (ai/assistant.js)
        ├── claudeClient.js       API-Anbindung + SSE-Streaming
        └── locationContext.js    Ortskontext + Reverse-Geocoding
 ```
+
+**Server** (`server/`, Node 18+, keine npm-Pakete):
+
+```
+server.mjs                 Webserver + Routing aller /api/*-Endpunkte
+ ├── loadEnv.mjs           .env lesen – MUSS erster Import sein (siehe unten)
+ ├── keyRegistry.mjs       einzige Liste der optionalen Schlüssel
+ │                         → /api/keys (POWER-UP) und doctor.mjs
+ ├── dataProxies.mjs       gemeinsamer Cache + Serve-Stale für die
+ │                         meisten Fremdquellen
+ ├── flightProviders.mjs   Flightradar24 / OpenSky / adsb.lol
+ ├── aisStream.mjs         AIS über WebSocket (eigener RFC-6455-Client)
+ ├── cameraProxy.mjs       Webcam-Bilder trotz Hotlink-Sperre, mit
+ │                         Erlaubnisliste + SSRF-Schutz
+ ├── gtfsRealtime.mjs      eigener Protobuf-Decoder für GTFS-Realtime
+ ├── kmz.mjs               eigener ZIP-Reader für die NHC-Vorhersagekegel
+ ├── volcanoLabels.mjs     deutsche GVP-Bezeichnungen
+ ├── deepSpace.mjs         Deep-Space-Missionen (JPL Horizons)
+ ├── doctor.mjs            "npm run doctor" – Setup-Diagnose
+ └── claude-proxy.mjs      alter Startbefehl, leitet auf server.mjs
+```
+
+**Warum eigene Decoder für Protobuf und ZIP?** Das Projekt kommt bewusst
+ohne npm-Pakete aus (`dependencies: {}`). GTFS-Realtime ist
+Protobuf-kodiert und die NHC-Vorhersagekegel gibt es nur als KMZ
+(gezipptes KML) – beides muss ohnehin serverseitig verarbeitet werden, weil
+die Feeds kein CORS senden. Protobuf braucht dafür nur Varints und
+Length-Delimited-Felder, ZIP kann Node über `zlib` selbst auspacken.
 
 **Einheitliches Datenformat** (`dataManager.normalizeRecord`):
 
@@ -606,6 +860,23 @@ app.js
 - **Eine `CustomDataSource` pro Layer:** Ein-/Ausblenden ist ein Flag.
 - **Fehlertoleranz überall:** `Promise.allSettled` beim Laden, Timeouts bei
   Fremddiensten, Fallback-Kette bei Karten, Bildern und Streams.
+- **Null npm-Abhängigkeiten, auch wenn es wehtut.** `dependencies` ist leer
+  und bleibt leer. Dafür liegen ein Protobuf-Decoder (`gtfsRealtime.mjs`),
+  ein ZIP-Reader (`kmz.mjs`) und ein WebSocket-Client (`aisStream.mjs`)
+  selbstgeschrieben im Repo – jeweils beschränkt auf das, was die konkrete
+  Quelle braucht. Der Preis ist bewusst bezahlt: kein Build-Schritt, kein
+  Lockfile, keine Lieferketten-Angriffsfläche.
+- **Fehlender Schlüssel ist kein Fehler.** „Schlüssel fehlt" ist ein
+  eigener Layer-Zustand neben „Fehler" (WEB-159). Ein nicht
+  freigeschalteter Layer sieht sonst wie ein defekter aus, und Nutzende
+  suchen den Bug an der falschen Stelle.
+- **Timer gehören dem Manager, nicht dem Layer** (WEB-160). Ein Layer, der
+  seinen eigenen `setInterval` hält, pollt auch unsichtbar weiter. Bei 32
+  Layern und Quellen, die pro Koordinate abrechnen, ist das echtes Geld.
+- **Eine Quelle für den Schlüssel-Status.** `keyRegistry.mjs` beliefert
+  Terminal (`npm run doctor`) und Browser (`/api/keys`) gemeinsam, damit
+  beide nie auseinanderlaufen – und gibt dabei nie einen Wert zurück, nur
+  ob gesetzt und woher.
 
 ## 3. Starten
 
@@ -621,9 +892,27 @@ export ANTHROPIC_API_KEY="sk-ant-…"        # optional: KI-Assistent
 node server/server.mjs
 ```
 
-Umgebungsvariablen des Servers: `FLIGHT_PROVIDER` (fr24|opensky),
-`FR24_API_TOKEN`, `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET`,
-`FLIGHT_CACHE_MS`, `FLIGHT_MAX`, `CAMERA_HOSTS`, `ANTHROPIC_API_KEY`, `PORT`.
+**Umgebungsvariablen.** Alle sind optional – ohne sie läuft die App in
+einem reduzierten Modus. Vollständig kommentiert in `.env.example`;
+`npm run doctor` sagt, was gefunden wurde (nie die Werte selbst).
+
+| Zweck | Variablen |
+|---|---|
+| Flugdaten | `FLIGHT_PROVIDER` (fr24\|opensky), `FR24_API_TOKEN`, `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET`, `MILITARY_FLIGHT_CACHE_MS` |
+| Schiffe (AIS) | `AISSTREAM_API_KEY`, `AISSTREAM_BBOX`, `AISSTREAM_MAX_SHIPS` |
+| KI-Assistent | `ANTHROPIC_API_KEY` |
+| Karten/3D | `CESIUM_ION_TOKEN`, `GOOGLE_MAPS_API_KEY` |
+| Ereignisse | `FIRMS_MAP_KEY` (Brände), `NASA_API_KEY` (Asteroiden), `LL2_API_TOKEN` (Raketenstarts) |
+| Verkehr/Kameras | `TOMTOM_API_KEY`, `TOMTOM_DAILY_BUDGET`, `TFL_APP_KEY`, `CCTV_CALTRANS_DISTRICTS`, `CAMERA_HOSTS` |
+| Street-Level | `MAPILLARY_TOKEN` |
+| Betrieb | `PORT`, `FLIGHT_CACHE_MS`, `FLIGHT_MAX` |
+
+`server/loadEnv.mjs` liest die `.env` ohne npm-Abhängigkeit und **muss in
+`server.mjs` der erste Import sein**: ES-Module werden vollständig
+ausgewertet, bevor der Rumpf des importierenden Moduls läuft – nur so
+stehen die Werte bereit, wenn die Konstanten der anderen Module gelesen
+werden. Bereits gesetzte Umgebungsvariablen behalten Vorrang, damit ein
+Hosting-Secret eine lokale `.env` nicht überschreibt.
 
 → <http://localhost:8000>. Für normales Webhosting genügt es, den Ordner
 hochzuladen (dann ohne KI, bzw. mit dem Proxy auf einem Node-Host).
@@ -652,14 +941,30 @@ Registrieren in `app.js`. Für das Detailpanel einen Eintrag in
 `DETAIL_SCHEMAS` (`ui.js`) ergänzen, für die Illustration einen Eintrag in
 `SILHOUETTES` und `PALETTE` (`illustrations.js`).
 
-**Echte Live-Daten anbinden** – jeweils nur `load()`/`update()` des Layers:
+Soll der Layer periodisch nachladen, **nicht** selbst `setInterval`
+aufrufen, sondern das Intervall zentral anmelden (WEB-160, siehe 1.21):
 
-- Flugzeuge: OpenSky Network REST-API, alle ~10 s pollen
-- Schiffe: erledigt – AIS-Feed über AISStream per Server-WebSocket
-  (`server/aisStream.mjs`), Client pollt `/api/ships`
-- Satelliten: TLE-Daten von celestrak.org + `satellite.js` statt der
-  vereinfachten Kreisbahn
-- Historische Daten: `Timeline.mode = "history"` ist vorbereitet
+```javascript
+this.layerManager.registerTimer("trains", "refresh", 30_000, () => this.load());
+```
+
+Nur so wird der Timer angehalten, wenn der Tab oder der Layer unsichtbar
+ist – sonst zahlt man Abrufe für etwas, das niemand sieht.
+
+**Live-Daten anbinden.** Alle ursprünglich hier als offen geführten Punkte
+sind inzwischen umgesetzt und dienen als Vorlage:
+
+| Vorhaben | Umgesetzt als |
+|---|---|
+| Flugzeuge live | `flightData.js` → `/api/flights`, drei Anbieter hinter einer Schnittstelle |
+| Schiffe live | AIS über Server-WebSocket (`server/aisStream.mjs`), Client pollt `/api/ships` |
+| Echte Satellitenbahnen | CelesTrak-TLE + SGP4 aus `satellite.js` (`SatelliteLayer.js`) |
+| Historische Daten | `js/historyReplay.js` – eigenes Modul statt eines `Timeline`-Modus |
+
+Braucht die Quelle einen Schlüssel oder sendet sie kein CORS, gehört der
+Abruf hinter einen Proxy in `server/dataProxies.mjs` (gemeinsamer Cache +
+Serve-Stale) und der Schlüssel in `server/keyRegistry.mjs`, damit
+`npm run doctor` und das POWER-UP-Panel ihn mitzählen.
 
 ## 5. Bekannte Grenzen
 
@@ -678,9 +983,17 @@ Registrieren in `app.js`. Für das Detailpanel einen Eintrag in
 - Die Feldnamen der FR24-Antwort werden defensiv gelesen (mehrere Varianten
   werden akzeptiert), weil die API-Dokumentation nur mit gültigem Konto
   vollständig einsehbar ist.
-- Satellitenbahnen sind idealisierte Kreisbahnen, keine echten TLE-Bahnen.
 - Die Städte-Suche nutzt eine eingebaute Liste (kein Geocoding-Dienst);
   der KI-Assistent nutzt dagegen echtes Reverse-Geocoding.
+- Der Kamera-Sichtfeld-Kegel ist reine Geometrie – Gelände und Gebäude
+  schatten ihn nicht ab (siehe 1.24).
+- Die Routenplanung hängt am öffentlichen OSRM-Demo-Server: keine
+  SLA-Garantie, ausdrücklich nur für geringes Volumen (siehe 1.23).
+- `NASA_API_KEY` (Asteroiden) fehlt in `server/keyRegistry.mjs` und wird
+  deshalb von `npm run doctor` und dem POWER-UP-Panel nicht angezeigt –
+  nachgetragen in WEB-165.
+- Die Dammdaten enthalten mit 16.630 Treffern auch Kleinstwehre; WEB-151
+  filtert sie über Wikidata nach.
 - Öffentliche Webcam-Quellen können vom Betreiber jederzeit geändert werden
   (siehe 1.4). Ein Austausch ist eine Zeile in `data/cameras.json`.
 - Der Kamera-Proxy umgeht Hotlink-Sperren technisch – die
@@ -711,7 +1024,7 @@ Detailfelder, Bewegung zwischen den Abrufen) und Demo-Rückfall bei
 abgeschaltetem Server.
 
 Außerdem prüft der Browsertest:
-Kartenumschalter, alle 5 Layer (62 Objekte), Suche, Detailpanel,
+Kartenumschalter, Suche, Detailpanel,
 Foto-Nachladen inkl. Fallback auf die Illustration, Bildnachweis und
 Beschreibung, YouTube-Einbettung, Stream-Fallback, KI-Panel, Key-Eingabe,
 SSE-Streaming der Antwort, Ortskontext im System-Prompt und die
@@ -727,6 +1040,38 @@ lösen „betreten"-Alarme mit korrektem Namen/Zeitstempel aus, Alarm-Klick
 fliegt zum Objekt, Zone entfernen räumt Kreis und Zustand auf.
 
 ## 7. Changelog
+
+**05.11.2026 – v2.9** — Betrieb, Bedienbarkeit und vier neue Layer
+
+Alles hier aus Commits auf `origin/main` nach dem letzten Doku-Abgleich
+(`bbd9974`) belegt:
+
+- **Sichtbarer Layer-Status** (WEB-159): Laden/Fehler/leer/Schlüssel fehlt
+  als Status-Punkt am Layer-Schalter, plus kurzlebige Hinweise unten links
+  (`js/statusToast.js`). Vorher waren „Quelle kaputt" und „gerade nichts
+  los" beide schlicht *0 Objekte* — siehe 1.20.
+- **Zentrale Timer-Registrierung** (WEB-160): Statt 32 eigener
+  `setInterval` taktet `LayerManager` alle Layer und hält Timer für
+  unsichtbare Tabs/Layer an, mit Nachlade-Tick bei Rückkehr — siehe 1.21.
+- **Sitzung automatisch sichern** (WEB-161): Aktive Layer, Kamera und
+  offene Panels überleben ein F5 (`js/session.js`, `wv-session-v1`);
+  ein Share-Link in der Adresszeile hat weiter Vorrang — siehe 1.22.
+- **Routenplanung Fuß/Rad/Auto** (WEB-71) über den OSRM-Demo-Server
+  (`js/routeTool.js`), abspielbar als Flythrough — siehe 1.23.
+- **Kamera-Sichtfeld-Kegel** (WEB-72) aus `heading`/`fovDegrees`/
+  `rangeMeters` in `data/cameras.json` (`js/cameraViewshed.js`) — siehe 1.24.
+- **Niederschlagsradar-Overlay** (WEB-67) über RainViewer mit Zeitschieber
+  (`js/layers/RadarLayer.js`) — siehe 1.25.
+- **Leihräder/E-Scooter** (WEB-70) über GBFS
+  (`js/layers/BikeShareLayer.js`) — siehe 1.26.
+- **Strahlungsmessnetz** (WEB-154, Safecast) und **Tsunami-Warnungen**
+  (WEB-155, NOAA PTWC/NTWC), beide keyless — siehe 1.27.
+- **Doku-Abgleich** (WEB-164): Layer-Tabelle auf alle 32 Layer, Architektur-
+  baum inkl. Server-Modulen, vollständige Liste der Umgebungsvariablen.
+  Dabei korrigiert: Die Grenzen führten „idealisierte Kreisbahnen" für
+  Satelliten, obwohl die echten SGP4-Bahnen seit v2.3 drin sind, und
+  DATENQUELLEN.md führte acht längst gemergte Layer als „noch nicht
+  eingebaut".
 
 **18.10.2026 – v2.8** — WEB-81: New Features + UI Overhaul (Integrationswelle)
 - UI-Overhaul: Layer-Konsole in sechs Kategorien (`js/layerCategories.js`),
@@ -749,9 +1094,9 @@ fliegt zum Objekt, Zone entfernen räumt Kreis und Zustand auf.
   inzwischen gemerged: Militärflüge (WEB-90), Verkehrs-, ÖPNV- und
   Street-Level-Layer (WEB-93/94/95), ALPR-Kamerastandorte (WEB-99),
   Contacts-Roster (WEB-91) und der erweiterte Satelliten-Katalog (WEB-89)
-- Offene Folgearbeit aus dem Epic: WEB-151 (Dammdaten nachfiltern),
-  WEB-154/155 (zwei neue Layer-Kandidaten aus der R4-Recherche),
-  WEB-131 (Blitzdichte — Quelle verifiziert, Aufwand groß, im `backlog`)
+- Folgearbeit aus dem Epic: WEB-154/155 sind inzwischen gemerged (siehe
+  v2.9). Offen bleiben WEB-151 (Dammdaten über Wikidata nachfiltern) und
+  WEB-131 (Blitzdichte — Quelle verifiziert, Aufwand groß, im `backlog`).
 
 **20.09.2026 – v2.7** — Objekt-Dossier
 - Neuer Button „📄 Dossier" im Detailpanel: lädt eine Textdatei mit
