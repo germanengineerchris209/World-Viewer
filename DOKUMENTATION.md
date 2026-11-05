@@ -45,6 +45,10 @@ Viewer automatisch auf OpenStreetMap um, statt eine leere Kugel zu zeigen.
 Kategorie-Eintrag landet automatisch unter „Werkzeuge", damit ein
 vergessener Eintrag die Konsole nie unsichtbar macht.
 
+In `js/layers/` liegen 31 Layer-Klassen plus `BaseLayer.js` – 32 Layer
+werden daraus, weil `AircraftLayer` zweimal instanziiert wird: einmal
+zivil, einmal militärisch mit eigener Farbe und eigenem Feed.
+
 **🚀 Bewegung (7)**
 
 | Layer | `id` | Quelle | Darstellung |

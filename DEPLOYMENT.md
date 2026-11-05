@@ -13,12 +13,15 @@ Adresse im Internet kommt – und welche Grenzen die einzelnen Wege haben.
 | **Render / Railway / Fly.io** | ~10 Min | kostenlos möglich | **alles** |
 | **GitHub Pages** | 2 Klicks | – | nur der statische Teil (siehe unten) |
 
-Der wichtigste Punkt: **die Hälfte der App braucht den mitgelieferten Server.**
-Flugzeuge, Satelliten, Webcam-Bilder, Brände, Raketenstarts und der
-KI-Assistent laufen alle über `/api/…`-Endpunkte. Das sind keine Bequemlichkeit,
-sondern Notwendigkeit – die Datenquellen setzen keine CORS-Header, ein
-Browser darf sie also gar nicht direkt abfragen. Dazu kommt, dass alle
+Der wichtigste Punkt: **die Mehrheit der 32 Layer braucht den
+mitgelieferten Server.** Flugzeuge, Schiffe, Satelliten, ÖPNV, Verkehr,
+Street-Level, Webcam-Bilder, Brände, Raketenstarts und der KI-Assistent
+laufen alle über `/api/…`-Endpunkte. Das ist keine Bequemlichkeit, sondern
+Notwendigkeit – die Datenquellen setzen keine CORS-Header, ein Browser
+darf sie also gar nicht direkt abfragen. Dazu kommt, dass alle
 Zugangsdaten bewusst nur auf dem Server liegen.
+
+Welche Layer ohne Server auskommen, steht in Abschnitt 3.
 
 ---
 
@@ -60,6 +63,17 @@ Im Repository liegt bereits ein Blueprint (`render.yaml`):
    | `ANTHROPIC_API_KEY` | KI-Assistent | optional |
    | `OPENSKY_CLIENT_ID` / `_SECRET` | mehr Flugdaten-Kontingent | optional |
    | `GOOGLE_MAPS_API_KEY` | fotorealistische 3D-Gebäude | optional |
+   | `AISSTREAM_API_KEY` | echte Schiffspositionen statt Demo-Schiffen | optional |
+   | `MAPILLARY_TOKEN` | Street-Level-Layer | optional |
+   | `TOMTOM_API_KEY` | echte Verkehrsfluss-Daten | optional |
+   | `TFL_APP_KEY` | mehr Kontingent für die Londoner Kameras | optional |
+   | `LL2_API_TOKEN` | mehr Kontingent für Raketenstarts | optional |
+   | `NASA_API_KEY` | Asteroiden ohne geteilten `DEMO_KEY` | optional |
+
+   Alle genannten Variablen stehen mit `sync: false` im Blueprint – Render
+   fragt sie also von selbst ab und schreibt sie nicht ins Repository.
+   Keine davon ist Pflicht: Ohne Schlüssel läuft der betroffene Layer in
+   einem reduzierten Modus und sagt das über seinen Status-Punkt.
 
 4. Deploy starten. Nach ein bis zwei Minuten läuft die App.
 
@@ -84,13 +98,30 @@ Gleiches Prinzip, ohne Blueprint-Datei:
 Pages liefert nur Dateien aus, es läuft dort kein Node. Damit fällt alles weg,
 was über den Server geht:
 
-**Funktioniert:** Satellitenkarte (Esri), Erdbeben (USGS), Bilder von
-Wikipedia, Ortssuche, Zeitleiste, Demo-Flugzeuge und -Schiffe aus `data/`,
-Kameras, die ihr Bild direkt herausgeben.
+Von den 32 Layern läuft etwa ein Drittel ohne Server – nämlich die, deren
+Quelle selbst CORS-Header setzt, plus die, die aus `data/` lesen.
 
-**Funktioniert nicht:** Live-Flugzeuge, echte Satellitenbahnen, Brände,
-Raketenstarts, der Kamera-Proxy für hotlink-geschützte Webcams, der
+**Funktioniert:** Satellitenkarte (Esri), Ortssuche, Zeitleiste, Bilder von
+Wikipedia sowie alle rein clientseitigen Werkzeuge (Zeichnen & Messen,
+Beobachtungszonen, Verknüpfungen/Graph, Kontakte-Roster, Szenen-Regisseur,
+Routenplanung über OSRM, Sitzungs-Autosave, PWA-Offline-Shell).
+
+Layer ohne Server: Erdbeben (USGS), Radiosender, Wetter, Luftqualität,
+Weltwetter-Raster, Weltraumwetter, GOES-Wolken, Niederschlagsradar,
+Leihräder (GBFS), Seekabel, Infrastruktur, Kraftstoffreserven, Heatmap.
+
+**Funktioniert nicht:** Live-Flugzeuge und Militärflüge, Schiffe (AIS),
+echte Satellitenbahnen, ÖPNV, Verkehr, Street-Level, Kennzeichenleser,
+Brände, Raketenstarts, Asteroiden, Kometen, Wirbelstürme,
+Tsunami-Warnungen, Strahlungsmessnetz, die globale Ereignis-Lage, die
+Kamera-Kataloge und der Proxy für hotlink-geschützte Webcams, sowie der
 KI-Assistent im Proxy-Modus.
+
+Teilweise: **Satelliten**, **Vulkane**, **Kameras** und
+**Allsky-Kameras** fallen auf die eingecheckten Schnappschüsse in `data/`
+zurück – sie sind also sichtbar, aber nicht aktuell. Die betroffenen
+Layer zeigen das von selbst über ihren Status-Punkt („Schlüssel fehlt"
+bzw. „Fehler"), es bleibt also nicht im Verborgenen.
 
 Wenn das reicht:
 
@@ -141,9 +172,22 @@ curl https://DEINE-ADRESSE/api/health
 Die Antwort sieht so aus:
 
 ```json
-{"ok":true,"keyConfigured":false,"flightProvider":"opensky","cameraProxy":true}
+{"ok":true,"keyConfigured":false,"flightProvider":"opensky","cameraProxy":true,"aisConfigured":false}
 ```
 
-`keyConfigured: false` heißt: Es liegt kein `ANTHROPIC_API_KEY` auf dem
-Server, der KI-Assistent fragt den Key dann im Chatfenster ab.
-`flightProvider` zeigt, welcher Dienst die Flugdaten liefert.
+- `keyConfigured: false` – es liegt kein `ANTHROPIC_API_KEY` auf dem
+  Server; der KI-Assistent fragt den Key dann im Chatfenster ab.
+- `flightProvider` – welcher Dienst die Flugdaten liefert.
+- `aisConfigured: false` – kein `AISSTREAM_API_KEY`, der Schiffs-Layer
+  zeigt dann die zehn Demo-Schiffe aus `data/ships.json`.
+
+Den vollständigen Überblick, welche Dienste scharf sind, gibt
+
+```bash
+npm run doctor
+```
+
+im Terminal des Hosters – bzw. das POWER-UP-Panel („🔑 Schlüssel &
+Dienste") in der laufenden App. Beide lesen dieselbe Liste aus
+`server/keyRegistry.mjs` und geben nie einen Schlüsselwert aus, nur ob er
+gesetzt ist.

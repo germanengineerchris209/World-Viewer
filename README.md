@@ -177,18 +177,29 @@ Straßenebene, sanfte Kameraflüge, 2D/3D, Tag-Nacht-Beleuchtung, Koordinatenanz
 Die Sidebar gruppiert alle Layer in sechs Kategorien statt einer langen
 flachen Liste (`js/layerCategories.js`):
 
+**32 Layer** in sechs Kategorien:
+
 | Kategorie | Layer |
 |---|---|
-| 🚀 Bewegung | Aircraft · Ships · Satellites |
-| 📷 Kameras | Cameras · Allsky-Kameras |
-| 🏗️ Infrastruktur | Infrastructure (inkl. Rechenzentren/Dämme in Masse) · Seekabel (inkl. OSM-Massendatensatz) · Radiosender · Kraftstoffreserven |
-| 🚨 Ereignisse | Erdbeben · Vulkane · Brände · Raketenstarts (inkl. Launch-Replay-Rekonstruktion) · Globale Ereignis-Lage · Asteroiden · Kometen |
-| 🌦️ Wetter | Wetter-Overlay (Städte) · Luftqualität (AQI) · Wirbelstürme · Weltraumwetter · GOES-Wolken · Weltwetter-Raster |
-| 🧰 Werkzeuge | Heatmap (Pattern-of-Life) |
+| 🚀 Bewegung (7) | Aircraft · Militärflüge · Ships · Satellites (echte SGP4-Bahnen) · ÖPNV · Verkehr · Leihräder |
+| 📷 Kameras (4) | Cameras (mit Sichtfeld-Kegel) · Allsky-Kameras · Kennzeichenleser (nur Standorte) · Street-Level |
+| 🏗️ Infrastruktur (4) | Infrastructure (inkl. Rechenzentren/Dämme in Masse) · Seekabel (inkl. OSM-Massendatensatz) · Radiosender · Kraftstoffreserven |
+| 🚨 Ereignisse (8) | Erdbeben · Vulkane · Brände · Raketenstarts (inkl. Launch-Replay) · Globale Ereignis-Lage · Asteroiden · Kometen · Tsunami-Warnungen |
+| 🌦️ Wetter (8) | Wetter (Städte) · Niederschlagsradar · Luftqualität (AQI) · Strahlungsmessnetz · Wirbelstürme · Weltraumwetter · GOES-Wolken · Weltwetter-Raster |
+| 🧰 Werkzeuge (1) | Heatmap (Pattern-of-Life) |
+
+Die vollständige Tabelle mit Datenquelle und Darstellung je Layer steht in
+**DOKUMENTATION.md** (1.2), die Schlüssel-Lage in **DATENQUELLEN.md**.
 
 Neue Layer landen automatisch unter „Werkzeuge", bis sie in
 `layerCategories.js` eingetragen werden – das verhindert, dass die Konsole
 durch einen vergessenen Eintrag unsichtbar wird.
+
+**🚥 Jeder Layer zeigt seinen Zustand.** Laden, Fehler, leer oder
+„Schlüssel fehlt" erscheinen als Status-Punkt am Schalter; fehlgeschlagene
+Quellen melden sich zusätzlich kurz unten links. Ein nicht
+freigeschalteter Layer ist damit von einem defekten unterscheidbar –
+vorher zeigten beide schlicht *0 Objekte*.
 
 > **Massendatensätze liegen im Repo.** Rechenzentren (`data/datacenters.json`,
 > 4.813 Objekte), Dämme (`data/dams.json`, 16.630) und OSM-Seekabel
@@ -256,6 +267,39 @@ Antworten werden gestreamt. Im Detailpanel gibt es zusätzlich
 Suche nach Callsign, Schiff, Satellit, Stadt oder Koordinaten (`50.03, 8.56`).
 Timeline unten: Play / Pause / Reset / Zeitraffer 1×–300×.
 
+**💾 Die Sitzung überlebt ein F5.** Aktive Layer, Kameraposition und
+offene Panels werden automatisch in `localStorage` gesichert – bei 32
+Layern muss man sich die Auswahl nach einem Reload nicht neu
+zusammenklicken. Ein Share-Link in der Adresszeile hat beim Start Vorrang
+vor der gespeicherten Sitzung.
+
+**📥 Installierbar und offline startfähig.** Die App ist eine PWA
+(`manifest.json` + `sw.js`): Der Service Worker cacht die Shell
+stale-while-revalidate, Live-Daten unter `/api/*` nie.
+
+**🧭 Routenplanung Fuß/Rad/Auto.** Start und Ziel per Klick auf den
+Globus, Route kommt vom öffentlichen OSRM-Demo-Server – Linie plus
+Distanz/Dauer, keine Turn-by-Turn-Navigation. Die Strecke lässt sich als
+Flythrough abspielen. (Demo-Server: nur für geringes Volumen, keine
+SLA-Garantie.)
+
+**✏️ Zeichnen, Messen, Beobachten.** Punkte, Freihand-Linien, Grenzen und
+Distanzmessungen rein mit Cesium-Bordmitteln, als GeoJSON exportierbar.
+Dazu Beobachtungszonen (Geofences) mit Ein-/Austritts-Alarmen über alle
+Layer hinweg.
+
+**🕸️ Verknüpfungen als Graph.** Das ausgewählte Objekt und seine
+Verbindungen (gemeinsame Airline, Flagge, Betreiber, räumliche Nähe)
+entweder als Liste oder als interaktiver Node-Graph.
+
+**🕰️ Zeitleisten-Replay.** Erdbeben, Brände und Raketenstarts der letzten
+Tage nacheinander nach ihrem echten Zeitstempel, mit Play/Pause/Scrub –
+unabhängig vom Simulations-Zeitraffer.
+
+**👁️ Kamera-Sichtfeld.** Kameras mit hinterlegter Blickrichtung zeichnen
+einen Sektor aus Richtung, Öffnungswinkel und Reichweite auf den Globus.
+Reine Geometrie – Gelände und Gebäude schatten ihn nicht ab.
+
 ## ⌨️ Tastenkürzel
 
 Alle globalen Kürzel laufen über eine zentrale Stelle
@@ -284,54 +328,89 @@ world-viewer/
 ├── index.html            Interface
 ├── style.css             Dunkles, responsives Design
 ├── config.js             API-Keys & Einstellungen (nicht committen!)
+├── manifest.json         PWA-Manifest (installierbar)
+├── sw.js                 Service Worker: Offline-Shell, /api/* ausgenommen
 │
 ├── js/
 │   ├── app.js            Einstiegspunkt + zentrale Update-Schleife
 │   ├── viewer.js         CesiumJS-Kapselung (Kamera, Picking, Modi)
 │   ├── basemaps.js       Kartenhintergründe, Gelände, 3D-Gebäude
-│   ├── flightData.js     Live-Flugdaten holen (mit Demo-Rückfall)
-│   ├── aircraftTypes.js  ICAO-Typcodes → Klarnamen und Wikipedia
-│   ├── layerManager.js   Verwaltung aller Layer
+│   ├── layerManager.js   Verwaltung aller Layer + zentrale Refresh-Timer
 │   ├── dataManager.js    JSON-Laden, Datenformat, Geo-Mathematik
+│   ├── ui.js             Sidebar, Kartenauswahl, Detailpanel, Status-Punkte
+│   │
+│   │   ── Daten & Darstellung ──
+│   ├── flightData.js     Live-Flugdaten holen (mit Demo-Rückfall)
+│   ├── shipData.js       AIS-Schiffsdaten über /api/ships
+│   ├── aircraftTypes.js  ICAO-Typcodes → Klarnamen und Wikipedia
+│   ├── aircraftModels.js 3D-Flugzeugmodelle je Klasse (Glyph-Wechsel)
 │   ├── imageProvider.js  Bildbeschaffung (Wikipedia → Illustration)
 │   ├── illustrations.js  Generierte SVG-Bilder als Fallback
 │   ├── streamPlayer.js   Kamera-Livebilder (Bild/HLS/YouTube/iframe)
-│   ├── ui.js             Sidebar, Kartenauswahl, Detailpanel
-│   ├── search.js         Suche (Objekte, Städte, Koordinaten)
-│   ├── timeline.js       Zeitsteuerung der Simulation
+│   ├── cameraViewshed.js Sichtfeld-Kegel für Kameras
+│   ├── deepSpace.js · cometOrbits.js · launchAscent.js
+│   │
+│   │   ── Oberfläche ──
 │   ├── layerCategories.js   Kategorie-Zuordnung für die Layer-Konsole
-│   ├── panelDock.js         Andock-/Verschiebe-/Skalierlogik der rechten Panel-Rail
+│   ├── panelDock.js         Andock-/Verschiebe-/Skalierlogik der rechten Rail
 │   ├── keyStatusPanel.js    POWER-UP-Chip + Panel „Schlüssel & Dienste"
+│   ├── statusToast.js       Lade-/Fehlerhinweise unten links
 │   ├── keyboardShortcuts.js Zentrale Verwaltung aller globalen Tastenkürzel
 │   ├── keyboardReference.js Einblendbare Kurzreferenz (Taste „?")
-│   ├── contactsRoster.js      Kontakte-Roster: Objekte im Radius, Distanz + Peilung
-│   ├── contactsPanel.js       Panel-UI dazu (in der rechten Rail)
-│   ├── sceneDirector.js       Szenen-Regisseur: Kamerafahrten aufnehmen/abspielen
+│   ├── hud.js · cockpit.js · sensorStyles.js · fpsCounter.js
+│   ├── streetLevelPanel.js  Mapillary-Betrachter
+│   │
+│   │   ── Analyse & Werkzeuge ──
+│   ├── search.js            Suche (Objekte, Städte, Koordinaten)
+│   ├── timeline.js          Zeitraffer der Simulation
+│   ├── historyReplay.js     Echte historische Ereignisse abspielen
+│   ├── watchlist.js         Beobachtungszonen (Geofences) + Alarme
+│   ├── watchlistPanel.js    Panel-UI dazu
+│   ├── anomalyAlerts.js     Auffälligkeiten in den Live-Daten
+│   ├── linkAnalysis.js      Verknüpfte Objekte finden
+│   ├── graphView.js         Dieselben Verknüpfungen als Node-Graph
+│   ├── drawTools.js         Zeichnen & Messen (GeoJSON-Export)
+│   ├── drawToolsPanel.js    Panel-UI dazu (inkl. Routen-Abschnitt)
+│   ├── routeTool.js         Route Fuß/Rad/Auto über OSRM
+│   ├── contactsRoster.js    Objekte im Radius, Distanz + Peilung
+│   ├── contactsPanel.js     Panel-UI dazu (in der rechten Rail)
+│   ├── sceneDirector.js     Kamerafahrten aufnehmen/abspielen
 │   ├── sceneDirectorPanel.js  Sidebar-UI dazu
-│   ├── aircraftModels.js      3D-Flugzeugmodelle je Klasse (Glyph-Wechsel)
-│   ├── launchAscent.js        Rekonstruierte Raketen-Aufstiegsbahn (Launch-Replay)
+│   ├── dossier.js           Objekt-Dossier als Textdatei
+│   ├── shareLink.js         Ansicht als Link teilen
+│   ├── session.js           Dieselbe Kodierung als Autosave in localStorage
 │   │
 │   ├── ai/
 │   │   ├── assistant.js       Chat-UI (Button unten links)
 │   │   ├── claudeClient.js    Claude-API-Anbindung (Streaming)
 │   │   └── locationContext.js Ortskontext für die KI
 │   │
-│   └── layers/
-│       ├── BaseLayer.js  ·  AircraftLayer.js  ·  ShipLayer.js
-│       ├── SatelliteLayer.js  ·  CameraLayer.js  ·  InfrastructureLayer.js
-│       ├── GoesCloudLayer.js  ·  WorldWeatherLayer.js  (neu: WEB-81-Welle)
+│   └── layers/           BaseLayer.js + 31 Layer-Klassen → 32 Layer
+│                         (AircraftLayer läuft zweimal: zivil + militärisch;
+│                          vollständige Liste: DOKUMENTATION.md 1.2)
 │
-├── server/
-│   ├── server.mjs           Webserver + Live-Flugdaten + Claude-Proxy
-│   ├── flightProviders.mjs  Anbindung Flightradar24 / OpenSky
-│   ├── cameraProxy.mjs      Holt Webcam-Bilder trotz Hotlink-Sperren
-│   ├── keyRegistry.mjs      Zentrale Liste der optionalen Schlüssel/Dienste (POWER-UP-Panel + `npm run doctor`)
+├── server/               Node 18+, keine npm-Pakete
+│   ├── server.mjs           Webserver + Routing aller /api/*-Endpunkte
+│   ├── loadEnv.mjs          .env lesen – muss erster Import sein
+│   ├── keyRegistry.mjs      Einzige Liste der optionalen Schlüssel/Dienste
+│   │                        (POWER-UP-Panel + `npm run doctor`)
+│   ├── dataProxies.mjs      Gemeinsamer Cache + Serve-Stale für Fremdquellen
+│   ├── flightProviders.mjs  Flightradar24 / OpenSky / adsb.lol
+│   ├── aisStream.mjs        AIS per WebSocket (eigener RFC-6455-Client)
+│   ├── cameraProxy.mjs      Webcam-Bilder trotz Hotlink-Sperre (+ SSRF-Schutz)
+│   ├── gtfsRealtime.mjs     Eigener Protobuf-Decoder für GTFS-Realtime
+│   ├── kmz.mjs              Eigener ZIP-Reader für die NHC-Vorhersagekegel
+│   ├── volcanoLabels.mjs    Deutsche GVP-Bezeichnungen
+│   ├── deepSpace.mjs        Deep-Space-Missionen (JPL Horizons)
+│   ├── doctor.mjs           Setup-Diagnose (`npm run doctor`)
 │   └── claude-proxy.mjs     Alter Startbefehl (leitet auf server.mjs weiter)
 │
 ├── scripts/
-│   └── build-infrastructure-mass.mjs   Erzeugt Rechenzentren/Dämme/Seekabel aus OpenStreetMap (Overpass API)
+│   ├── build-infrastructure-mass.mjs  Rechenzentren/Dämme/Seekabel aus OSM
+│   └── build-volcano-fallback.mjs     Offline-Schnappschuss der GVP-Vulkane
 │
-└── data/                 aircraft · ships · satellites · cameras · infrastructure
+└── data/                 Demo- und Katalogdaten sowie die eingecheckten
+                          Massendatensätze (datacenters, dams, cables-osm)
 ```
 
 ## 🧩 Erweitern
@@ -385,7 +464,16 @@ Im Chatfenster lässt sich ein Key auch direkt eintragen; er wird dann nur im
 
 - **DATENQUELLEN.md** – alle Datenquellen, APIs und Schlüssel im Überblick:
   was kostenlos ist, was einen Schlüssel braucht, was Geld kostet
-- **DOKUMENTATION.md** – Stand, Architektur, Erweiterungswege, Changelog
+- **DOKUMENTATION.md** – Stand, Architektur, Erweiterungswege, Changelog;
+  enthält in 1.2 die vollständige Layer-Tabelle
+- **DEPLOYMENT.md** – lokal starten, auf Render/Railway/eigenem Server
+  hosten, Grenzen von GitHub Pages
+- **ANALYSE-GODS-EYE-VIEW.md** – Vergleich mit dem Referenzprojekt und
+  offene Vorschläge
+- **docs/** – Notizen je Arbeitspaket (Recherche, Entscheidungen,
+  Verifikation); Übersicht in `docs/README.md`
+
+Schnell prüfen, was lokal konfiguriert ist: `npm run doctor`.
 
 ## 🙏 Herkunft
 
