@@ -2,9 +2,15 @@
 
 Diese Übersicht beantwortet: **Was brauche ich, damit welche Ebene läuft?**
 
-Kurzfassung: **Der größte Teil funktioniert ohne einen einzigen Schlüssel.**
-Zwei Ebenen brauchen einen kostenlosen Schlüssel, zwei weitere sind
-kostenpflichtig und rein optional.
+Kurzfassung: **Der größte Teil der 32 Layer funktioniert ohne einen
+einzigen Schlüssel.** Neun Funktionen lassen sich mit einem *kostenlosen*
+Schlüssel freischalten oder aufwerten (meist nur höheres Kontingent), drei
+sind kostenpflichtig und rein optional.
+
+**Kein Schlüssel heißt nie „kaputt".** Ohne Schlüssel läuft der betroffene
+Layer in einem reduzierten Modus, mit Demo-Daten oder gar nicht – und sagt
+das selbst über seinen Status-Punkt („Schlüssel fehlt", bewusst
+unterschieden von „Fehler").
 
 ---
 
@@ -18,6 +24,25 @@ kostenpflichtig und rein optional.
 | Anthropic | ⬜ offen | `.env` (Server) | ✨ KI-Assistent |
 | Flightradar24 | ⬜ offen | `.env` (Server) | Route, Registrierung, Flugnummer |
 | TomTom Traffic | ⬜ offen | `.env` (Server) | 🚦 Echte Verkehrsfluss-Geschwindigkeiten |
+| AISStream | ⬜ offen | `.env` (Server) | 🚢 Schiffe mit echten AIS-Live-Daten (sonst Demo-Schiffe) |
+| Mapillary | ⬜ offen | `.env` (Server) | 📸 Street-Level-Fotos (Abdeckungslinien + Bildkegel) |
+| OpenSky Network | ⬜ offen | `.env` (Server) | ✈️ Mehr OpenSky-Kontingent (läuft auch ohne Konto) |
+| Launch Library 2 | ⬜ offen | `.env` (Server) | 🚀 Mehr Raketenstart-Kontingent |
+| Transport for London | ⬜ offen | `.env` (Server) | 📷 Mehr TfL-Kamera-Kontingent |
+| NASA (NeoWs) | ⬜ offen | `.env` (Server) | ☄️ Asteroiden mit eigenem Kontingent statt `DEMO_KEY` (30 → 1.000 Abrufe/h) |
+
+> **Diese Tabelle ist handgepflegt und kann veralten.** Den tatsächlichen
+> Stand sagt `npm run doctor` im Terminal bzw. das POWER-UP-Panel
+> („🔑 Schlüssel & Dienste") in der App – beide lesen dieselbe Liste aus
+> `server/keyRegistry.mjs` und zeigen nur, *ob* ein Schlüssel gesetzt ist,
+> nie seinen Wert. Alle hier als „offen" geführten Dienste sind optional;
+> die Layer laufen ohne Schlüssel in einem reduzierten Modus oder mit
+> Demo-Daten weiter.
+>
+> **Ausnahme:** `NASA_API_KEY` (Asteroiden) ist derzeit *nicht* in
+> `keyRegistry.mjs` eingetragen und erscheint deshalb weder bei
+> `npm run doctor` noch im POWER-UP-Panel. Ob er greift, verrät nur die
+> Server-Logzeile beim Start. Nachgetragen wird das in WEB-165.
 
 **Warum an zwei verschiedenen Orten?** Der Cesium-Ion-Token muss im
 Browser stehen – die Kartenbibliothek lädt die Kacheln selbst. Alle
@@ -761,6 +786,30 @@ kurzen Abständen wiederholen).
 > `npm run build:infrastructure-mass` bewusst neu erzeugt — nicht im
 > laufenden Betrieb und nicht beim Start.
 
+### 🧭 Routenplanung (Fuß/Rad/Auto)
+
+**OSRM-Demo-Server** (`router.project-osrm.org`, FOSSGIS/Project-OSRM-
+Community) – kein Account/Key nötig, CORS gesetzt, wird direkt aus dem
+Browser abgefragt (`js/routeTool.js`). Start- und Zielpunkt per Klick auf
+den Globus, Antwort ist Linie + Distanz/Dauer; keine Turn-by-Turn-
+Navigation. Datengrundlage ist OpenStreetMap (**ODbL 1.0**).
+
+> **Ausdrücklich nur für Tests/geringes Volumen.** Der Betreiber gibt für
+> den Demo-Server keine Verfügbarkeits- oder SLA-Garantie. Derselbe Hinweis
+> steht sichtbar im Routen-Abschnitt der Sidebar (`index.html`). Für
+> ernsthafte oder öffentliche Nutzung gehört hier eine eigene
+> OSRM-Instanz hin.
+
+### 👁️ Kamera-Sichtfeld (Viewshed)
+
+**Keine externe Quelle.** Der Sichtfeld-Kegel (`js/cameraViewshed.js`)
+wird aus den optionalen Feldern `heading`, `fovDegrees` und `rangeMeters`
+in `data/cameras.json` gerechnet und rein clientseitig gezeichnet. Fehlt
+`heading`, bleibt die Kamera ohne Kegel – derzeit sind die Felder bei drei
+der 17 Kameras gesetzt. Es handelt sich um einen
+geometrischen Sektor, **keine** Geländeverschattung – Hügel und Gebäude
+werden nicht berücksichtigt.
+
 ### 🗺️ Karten und Gelände
 
 | | Quelle | Schlüssel |
@@ -785,16 +834,17 @@ Aus dem Referenzprojekt sinnvoll ergänzbar, aber noch offen:
 - **Sprachsteuerung des Globus** – im Referenzprojekt 28 Sprachbefehle über
   die OpenAI-Realtime-API. Mit der Claude API ließe sich das über
   Werkzeugaufrufe nachbauen.
-- Militärflüge als eigener Layer (adsb.lol, Sonderfarbe) – Issue WEB-90.
-- Verkehrs-Layer (OSM-Simulation, TomTom-Live optional) – Issue WEB-93.
-- ÖPNV-Layer (GTFS-Realtime, 1–2 Städte) – Issue WEB-94.
-- Street-Level-Panel (Mapillary) mit Abdeckungslinien – Issue WEB-95.
-- ALPR-Kamerastandorte aus OpenStreetMap (nur Standorte, kein Tracking) –
-  Issue WEB-99, PR offen.
-- Erweiterte SGP4-Katalog-Anbindung (mehr CelesTrak-Gruppen) – Issue WEB-89.
-- Zwei weitere Layer-Kandidaten in Recherche, noch nicht beauftragt:
-  globales Strahlungsmessnetz (Safecast, CC0) und NOAA-Tsunami-Warnungen –
-  Issue WEB-140.
+- **Blitzdichte** – Quelle ist verifiziert, der Aufwand aber groß
+  (Issue WEB-131, liegt im `backlog`).
+- **Flagge/Nationalität bei AIS-Schiffen** – AISStream liefert das Feld
+  nicht mit; ließe sich über den MMSI-Ländercode (erste drei Ziffern)
+  nachrüsten.
+
+Die zuvor hier als offen geführten Layer sind inzwischen gemerged und
+oben in Abschnitt 3 beschrieben: Militärflüge (WEB-90), Verkehrsfluss
+(WEB-93), ÖPNV (WEB-94), Street-Level/Mapillary (WEB-95),
+ALPR-Kamerastandorte (WEB-99), erweiterter SGP4-Katalog (WEB-89),
+Strahlungsmessnetz (WEB-154) und Tsunami-Warnungen (WEB-155).
 
 ---
 

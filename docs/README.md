@@ -31,7 +31,26 @@ nicht rückwirkend umbenannt.
 | WEB-33 | UI Update – Liquid Glass + Rebranding zu ARGUS | erledigt | [WEB-33-ui-update-liquid-glass.md](./WEB-33-ui-update-liquid-glass.md) |
 | WEB-83 | [R2] Datenquellen-Spezifikation Verkehr/ÖPNV/Street-Level/Militär | erledigt | [WEB-83-datenquellen-verkehr-oepnv-streetlevel-militaer.md](./WEB-83-datenquellen-verkehr-oepnv-streetlevel-militaer.md) |
 | WEB-84 | [R3] SGP4-Satellitenpropagation ohne Build-Schritt | erledigt | [WEB-84-sgp4-satellitenpropagation-ohne-build-schritt.md](./WEB-84-sgp4-satellitenpropagation-ohne-build-schritt.md) |
-| WEB-81 | New Features + UI Overhaul (Epic-Dossier) | größter Teil erledigt, Details siehe Dokument | [WEB-81-gev-features-ui-overhaul.md](./WEB-81-gev-features-ui-overhaul.md) |
+| WEB-81 | New Features + UI Overhaul (Epic-Dossier) | vollständig erledigt, inkl. der zunächst offenen Teile | [WEB-81-gev-features-ui-overhaul.md](./WEB-81-gev-features-ui-overhaul.md) |
 | — | Integrationsbericht zur WEB-81-Welle vom 17.10.2026 | erledigt | [WEB-81-integrationswelle.md](./WEB-81-integrationswelle.md) |
+| WEB-86 | Verifikations-Screenshots (Panels, Reload) | erledigt | [web-86-verification/](./web-86-verification/) |
+| WEB-164 | Dokumentation komplett gegen `main` abgleichen | erledigt | Ergebnis steckt direkt in `README.md`, `DOKUMENTATION.md` (v2.9) und `DATENQUELLEN.md` |
 
 *(Wird vom Documentation Agent bei jedem neuen/aktualisierten Task ergänzt.)*
+
+## Was wo steht
+
+Diese Task-Dokumente sind **Historie**, kein Nachschlagewerk. Wer den
+aktuellen Stand sucht, liest:
+
+| Frage | Datei |
+|---|---|
+| Was kann die App, wie ist sie gebaut? | `DOKUMENTATION.md` |
+| Welche Layer gibt es, woher kommen ihre Daten? | `DOKUMENTATION.md`, Abschnitt 1.2 |
+| Brauche ich für X einen Schlüssel? | `DATENQUELLEN.md` |
+| Wie starte ich das? | `README.md`, danach `npm run doctor` |
+| Wie hoste ich das? | `DEPLOYMENT.md` |
+
+Veraltet ein Task-Dokument durch spätere Arbeit, wird es **nicht**
+rückwirkend umgeschrieben – es beschreibt den Stand zum Zeitpunkt des
+Tasks. Verbindlich ist immer die Datei aus der Tabelle oben.

@@ -41,6 +41,24 @@ services:
       - key: AISSTREAM_API_KEY
         sync: false
 
+      # -- Ereignisse --------------------------------------------
+      # Raketenstarts und Asteroiden laufen auch ohne Key, dann aber
+      # mit geteiltem Kontingent (NeoWs faellt auf DEMO_KEY zurueck).
+      - key: LL2_API_TOKEN
+        sync: false
+      - key: NASA_API_KEY
+        sync: false
+
+      # -- Verkehr, OEPNV, Kameras -------------------------------
+      - key: TOMTOM_API_KEY
+        sync: false
+      - key: TFL_APP_KEY
+        sync: false
+
+      # -- Street-Level (Mapillary) ------------------------------
+      - key: MAPILLARY_TOKEN
+        sync: false
+
       # -- KI-Assistent ------------------------------------------
       - key: ANTHROPIC_API_KEY
         sync: false
