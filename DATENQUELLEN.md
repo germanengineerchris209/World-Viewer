@@ -2,9 +2,15 @@
 
 Diese Übersicht beantwortet: **Was brauche ich, damit welche Ebene läuft?**
 
-Kurzfassung: **Der größte Teil funktioniert ohne einen einzigen Schlüssel.**
-Zwei Ebenen brauchen einen kostenlosen Schlüssel, zwei weitere sind
-kostenpflichtig und rein optional.
+Kurzfassung: **Der größte Teil der 32 Layer funktioniert ohne einen
+einzigen Schlüssel.** Neun Funktionen lassen sich mit einem *kostenlosen*
+Schlüssel freischalten oder aufwerten (meist nur höheres Kontingent), drei
+sind kostenpflichtig und rein optional.
+
+**Kein Schlüssel heißt nie „kaputt".** Ohne Schlüssel läuft der betroffene
+Layer in einem reduzierten Modus, mit Demo-Daten oder gar nicht – und sagt
+das selbst über seinen Status-Punkt („Schlüssel fehlt", bewusst
+unterschieden von „Fehler").
 
 ---
 

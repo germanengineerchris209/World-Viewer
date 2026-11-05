@@ -902,7 +902,7 @@ einem reduzierten Modus. Vollständig kommentiert in `.env.example`;
 
 | Zweck | Variablen |
 |---|---|
-| Flugdaten | `FLIGHT_PROVIDER` (fr24\|opensky), `FR24_API_TOKEN`, `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET`, `MILITARY_FLIGHT_CACHE_MS` |
+| Flugdaten | `FLIGHT_PROVIDER` (`fr24` oder `opensky`), `FR24_API_TOKEN`, `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET`, `MILITARY_FLIGHT_CACHE_MS` |
 | Schiffe (AIS) | `AISSTREAM_API_KEY`, `AISSTREAM_BBOX`, `AISSTREAM_MAX_SHIPS` |
 | KI-Assistent | `ANTHROPIC_API_KEY` |
 | Karten/3D | `CESIUM_ION_TOKEN`, `GOOGLE_MAPS_API_KEY` |
